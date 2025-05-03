@@ -145,132 +145,377 @@ START:
 
 ;------------------------------------------------------------------------------
 
+L7184:	.WORD	L84A8	; Current Room address
+L7186:	.WORD	LA0B5	; Ninja sprite address
+
+L7232:	.BYTE	0	; Input bits: 000FUDLR
+
+L7343:	.BYTE	7	; Counter used in movement handlers
+L7344:	.BYTE	0	; Dog's flag: 1 = ignore left/right limit
+L7345:	.BYTE	20.	; Dog ??
+L7346:	.BYTE	10.	; Guard walking phase $00..$03 or other state: $09 = Guard dead; ...
+L7347:	.BYTE	1	; Guard direction
+
+; Room token #0E: Put one tile at the given address; params: 3 bytes (tile, address)
+L734D:
+	;TODO
+	RETURN ;STUB
+; Room token #0D: Set border color; params: 1 byte
+L7359:
+	;TODO
+	RETURN ;STUB
+; Room token #01: Fill to down; params: 4 bytes (count, filler, address)
+L7381:
+	;TODO
+	RETURN ;STUB
+; Room token #0A: Fill to down-right; params: 4 bytes (count, filler, address)
+L7395:
+	;TODO
+	RETURN ;STUB
+; Room token #0B: Fill to down-left; params: 4 bytes (count, filler, address)
+L739A:
+	;TODO
+	RETURN ;STUB
+; Room token #02: Fill to right; params: 4 bytes (count, filler, address)
+L739F:
+	;TODO
+	RETURN ;STUB
+; Room token #06: Fill triangle from wide top
+L73A4:
+	;TODO
+	RETURN ;STUB
+; Room token #07: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
+L73C5:
+	;TODO
+	RETURN ;STUB
+; Room token #08: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
+L73EB:
+	;TODO
+	RETURN ;STUB
+; Room token #09: Fill triangle from wide top
+L73EF:
+	;TODO
+	RETURN ;STUB
+; Room token #04: Fill whole Tile screen 0 with one tile; params: 1 byte (filler)
+L73F3:
+	;TODO
+	RETURN ;STUB
+; Room token #05: Copy block of tiles; params: 6 bytes (width, height, srcaddr, address)
+L7406:
+	;TODO
+	RETURN ;STUB
+; Room token #0C: Copy block of tiles N times; params: 6 bytes (srcaddr, width, count, address)
+L742B:
+	;TODO
+	RETURN ;STUB
+; Room token #03: Fill rectangle; params: 5 bytes (filler, width, height, address)
+L7452:
+	;TODO
+	RETURN ;STUB
+
 L7918:	; Room procedure (for 19 rooms with a guard)
 	JMP	LB44C
 L791B:	; Rooms 7C9C/92EF initialization
 	JMP	LB425
-LA0DF:
+
+; Initialize a dog
+L9DCD:
 	;TODO
-LA0E8:
+	RETURN ;STUB
+
+; Decrease Energy by B
+L9DD9:
 	;TODO
-LA0ED:
+	RETURN ;STUB
+
+; Sprite Ninja/Guard dead, 6x7 tiles
+LA0B5:	;TODO
+
+LA0DF:	; Room 94AB initialization
+	MOV	LA1E1, R3		; Guard data address
+; Initialize a guard, then Standard room initialization
+LA0E2:	CALL	LB40A			; Initialize a guard
+LA0E5:	JMP	LB422			; Standard room initialization
+LA0E8:	; Room 7DA9 initialization
+	MOV	LA1E7, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA0ED:	; Room 7E8C initialization
+	MOV	LA1ED, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA0F2:	; Room 920A initialization
+	MOV	LA1F3, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA0F7:	; Room 8F84 initialization
+	MOV	LA1F9, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA0FC:	; Room 8B71 initialization
+	MOV	LA1FF, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA101:	; Room 8739 initialization
+	MOV	LA205, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA106:	; Room 858F initialization
+	MOV	LA20B, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA10B:	; Room 84EE initialization
+	MOV	LA211, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA110:	; Room 99A6 initialization
+	MOV	LA21D, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA115:	; Room 97F8 initialization
+	MOV	LA223, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA11A:	; Room 94CF initialization
+	MOV	LA229, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA11F:	; Room 9B51 initialization
+	MOV	LA22F, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA124:	; Room 9F3A initialization
+	MOV	LA235, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA129:	; Room 9F7E initialization
+	MOV	LA23B, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA12E:	; Room 9EB8 initialization
+	MOV	LA241, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA133:	; Room 9B19 initialization
+	MOV	LA247, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+LA138:	; Room 9DF5 initialization
+	MOV	LA24D, R3		; Guard data address
+	BR	LA0E2			; Initialize a guard, then Standard room initialization
+
+LA142:	; Room 7A17 initialization
+	MOV	LA33E, R3		; Turret data address
+; Initialize a turret, then Standard room initialization
+LA145:	CALL	LB461			; Initialize a turret
+	BR	LA0E5			; Standard room initialization
+LA14A:	; Room 7D5A initialization
+	MOV	LA32F, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+LA14F:	; Room 7F48 initialization
+	MOV	LA332, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+LA154:	; Room 7EF2 initialization
+	MOV	LA299, R3		; Dog data address
+	CALL	L9DCD			; Initialize a dog
+	MOV	LA338, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+LA15F:	; Room 909F initialization
+	MOV	LA2E9, R3		; Dog data address
+	CALL	L9DCD			; Initialize a dog
+	MOV	LA338, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+LA16A:	; Room 8FBD initialization
+	MOV	LA335, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+LA16F:	; Room 92A7 initialization
+	MOV	LA338, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+LA174:	; Room 8B25 initialization
+	MOV	LA33B, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+LA179:	; Room 8526 initialization
+	MOV	LA33E, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+
+LA183:	; Room 95D6 initialization
+	MOV	LA344, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+LA188:	; Room 968A initialization
+	MOV	LA347, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+LA18D:	; Finish Room 97A6 initialization
+	MOV	LA34A, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+LA192:	; Room 9A9A initialization
+	MOV	LA332, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+LA197:	; Room 9552 initialization
+	MOV	LA34D, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+LA19C:	; Room 9BE7 initialization
+	MOV	LA350, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+LA1A1:	; Room 8D5C initialization
+	MOV	LA33B, R3		; Turret data address
+	BR	LA145			; Initialize a turret, then Standard room initialization
+LA1A6:	; Room 7C2E initialization
+	MOV	LA271, R3		; Dog data address
+	CALL	L9DCD			; Initialize a dog
+	MOV	LA253, R3		; Guard data address
+LA1AF:	; Finish room initialization
+	CALL	LB40A			; Initialize a guard
+	JMP	LB422			; Standard room initialization
+LA1B5:	; Room 7F9C initialization
+	MOV	LA27B, R3		; Dog data address
+	CALL	L9DCD			; Initialize a dog
+	MOV	LA259, R3		; Guard data address
+	BR	LA1AF			; Initialize a guard, then Standard room initialization
+LA1C0:	; Room 8162 initialization
+	MOV	LA28F, R3		; Dog data address
+	CALL	L9DCD			; Initialize a dog
+	MOV	LA265, R3		; Guard data address
+	BR	LA1AF			; Initialize a guard, then Standard room initialization
+LA1CB:	; Room 80A7 initialization
+	MOV	LA2AD, R3		; Dog data address
+	CALL	L9DCD			; Initialize a dog
+	MOV	LA265, R3		; Guard data address
+	BR	LA1AF			; Initialize a guard, then Standard room initialization
+LA1D6:	; Room 9B9D initialization
+	MOV	LA325, R3		; Dog data address
+	CALL	L9DCD			; Initialize a dog
+	MOV	LA26B, R3		; Guard data address
+	BR	LA1AF			; Initialize a guard, then Standard room initialization
+
+; Guards data, 24 records, 6 bytes each
+LA1E1:	.BYTE	235,000,007,005,012,001	; Room 94AB guard
+LA1E7:	.BYTE	030,001,012,011,012,000	; Room 7DA9 guard
+LA1ED:	.BYTE	024,001,006,011,012,000	; Room 7E8C guard
+LA1F3:	.BYTE	023,001,005,011,012,000	; Room 920A guard
+LA1F9:	.BYTE	310,000,024,006,012,000	; Room 8F84 guard
+LA1FF:	.BYTE	040,001,022,011,012,001	; Room 8B71 guard
+LA205:	.BYTE	120,000,024,002,012,001	; Room 8739 guard
+LA20B:	.BYTE	036,001,020,011,012,000	; Room 858F guard
+LA211:	.BYTE	001,001,021,010,012,001	; Room 84EE guard
+LA217:	.BYTE	030,001,012,011,012,000	; UNUSED, see A13D
+LA21D:	.BYTE	042,001,024,011,012,001	; Room 99A6 guard
+LA223:	.BYTE	371,000,011,010,012,000	; Room 97F8 guard
+LA229:	.BYTE	002,001,022,010,012,001	; Room 94CF guard
+LA22F:	.BYTE	337,000,015,007,012,001	; Room 9B51 guard
+LA235:	.BYTE	367,000,007,010,012,001	; Room 9F3A guard
+LA23B:	.BYTE	370,000,010,010,012,000	; Room 9F7E guard
+LA241:	.BYTE	206,000,016,004,012,001	; Room 9EB8 guard
+LA247:	.BYTE	242,000,014,005,012,000	; Room 9B19 guard
+LA24D:	.BYTE	273,000,007,006,012,000	; Room 9DF5 guard
+LA253:	.BYTE	302,000,016,006,012,000	; Room 7C2E guard
+LA259:	.BYTE	324,000,002,007,012,000	; Room 7F9C guard
+LA25F:	.BYTE	013,000,013,000,012,001	; Room 8162 guard
+LA265:	.BYTE	040,001,022,011,012,001	; Room 80A7 guard
+LA26B:	.BYTE	060,000,022,001,012,001	; Room 9B9D guard
+
+; Dogs data, 19 records, 10 bytes each
+LA271:	.BYTE	074,001,000,020,000,003,026,000,003,001	; Room 7C2E dog
+LA27B:	.BYTE	136,001,001,024,000,003,026,001,004,001	; Room 7F9C dog
+LA285:	.BYTE	245,000,000,017,000,005,017,000,376,001	; Room 81E5 dog
+LA28F:	.BYTE	172,000,001,002,000,000,030,001,375,001	; Room 8162 dog
+LA299:	.BYTE	217,001,001,011,000,003,030,001,006,001	; Room 7EF2 dog
+LA2A3:	.BYTE	212,001,001,004,000,002,032,001,006,001	; Room 7E05 dog
+LA2AD:	.BYTE	232,001,000,024,001,003,025,001,006,001	; Room 80A7 dog
+LA2B7:	.BYTE	222,001,000,014,000,005,031,000,006,001	; Room 83ED dog
+LA2C1:	.BYTE	214,001,001,006,001,001,027,000,006,001	; Room 80F6 dog
+LA2CB:	.BYTE	220,001,000,012,000,004,027,000,006,001	; Room 924E dog
+LA2D5:	.BYTE	033,001,001,015,000,006,030,001,002,001	; Room 91BA dog
+LA2DF:	.BYTE	166,001,001,016,000,000,017,001,005,001	; Room 90DB dog
+LA2E9:	.BYTE	227,001,001,021,000,015,032,001,006,001	; Room 909F dog
+LA2F3:	.BYTE	274,000,000,010,000,001,016,000,377,001	; Room 8802 dog
+LA2FD:	.BYTE	244,000,000,016,000,002,016,000,376,001	; Room 8608 dog
+LA307:	.BYTE	216,001,000,010,000,007,027,000,006,001	; Room 844E dog
+LA311:	.BYTE	215,001,001,007,000,003,025,001,006,001	; Room 9739 dog
+LA31B:	.BYTE	366,000,000,006,000,002,017,000,001,001	; Room 9A5A dog
+LA325:	.BYTE	214,001,001,006,000,004,030,001,006,001	; Room 9B9D dog
+
+; Turrets data, 12 records, 3 bytes each
+LA32F:	.BYTE	304,000,016	; Room 7A17 turret
+LA332:	.BYTE	047,000,007	; Room 7F48/9A9A turret
+LA335:	.BYTE	021,000,017	; Room 8FBD turret
+LA338:	.BYTE	053,000,012	; Room 7EF2/909F/92A7 turret
+LA33B:	.BYTE	113,000,015	; Room 8B25/8D5C turret
+LA33E:	.BYTE	057,000,017	; Room 7A17/8526 turret
+LA341:	.BYTE	062,000,022	; UNUSED, see A17E
+LA344:	.BYTE	235,000,005	; Room 95D6 turret
+LA347:	.BYTE	246,000,016	; Room 968A turret
+LA34A:	.BYTE	012,001,030	; Room 968A turret
+LA34D:	.BYTE	077,000,001	; Room 9552 turret
+LA350:	.BYTE	243,000,013	; Room 9BE7 turret
+
+LA353:	; Room 81E5 initialization
+	MOV	LA285, R3		; Dog data address
+; Initialize a dog, then Standard room initialization
+LA356:	CALL	L9DCD			; Initialize a dog
+	JMP	LB422			; Standard room initialization
+LA35C:	; Room 7E05 initialization
+	MOV	LA2A3, R3		; Dog data address
+	BR	LA356			; Initialize a dog, then Standard room initialization
+LA361:	; Room 83ED initialization
+	MOV	LA2B7, R3		; Dog data address
+	BR	LA356			; Initialize a dog, then Standard room initialization
+LA366:	; Room 924E initialization
+	MOV	LA2CB, R3		; Dog data address
+	BR	LA356			; Initialize a dog, then Standard room initialization
+LA36B:	; Room 91BA initialization
 	;TODO
-LA0F2:
+LA370:	; Room 90DB initialization
 	;TODO
-LA0F7:
+LA375:	; Room 8802 initialization
 	;TODO
-LA0FC:
+LA37A:	; Room 8608 initialization
 	;TODO
-LA101:
+LA37F:	; Room 844E initialization
 	;TODO
-LA106:
+LA384:	; Room 9739 initialization
 	;TODO
-LA10B:
+LA389:	; Room 9A5A initialization
 	;TODO
-LA110:
+LA38E:	; Room 80F6 initialization
 	;TODO
-LA115:
-	;TODO
-LA11A:
-	;TODO
-LA11F:
-	;TODO
-LA124:
-	;TODO
-LA129:
-	;TODO
-LA12E:
-	;TODO
-LA133:
-	;TODO
-LA138:
-	;TODO
-LA142:
-	;TODO
-LA14A:
-	;TODO
-LA14F:
-	;TODO
-LA154:
-	;TODO
-LA15F:
-	;TODO
-LA16A:
-	;TODO
-LA16F:
-	;TODO
-LA174:
-	;TODO
-LA179:
-	;TODO
-LA183:
-	;TODO
-LA188:
-	;TODO
-LA192:
-	;TODO
-LA197:
-	;TODO
-LA19C:
-	;TODO
-LA1A1:
-	;TODO
-LA1A6:
-	;TODO
-LA1B5:
-	;TODO
-LA1C0:
-	;TODO
-LA1CB:
-	;TODO
-LA1D6:
-	;TODO
-LA353:
-	;TODO
-LA35C:
-	;TODO
-LA361:
-	;TODO
-LA366:
-	;TODO
-LA36B:
-	;TODO
-LA370:
-	;TODO
-LA375:
-	;TODO
-LA37A:
-	;TODO
-LA37F:
-	;TODO
-LA384:
-	;TODO
-LA389:
-	;TODO
-LA38E:
-	;TODO
+
 LB368:
 	;TODO
-LB41F:
+
+; Room token #00: Barrel, 3x3 tiles 7C21; params: 2 bytes (address)
+LB38F:
 	;TODO
-LB422:
+	RETURN ;STUB
+
+LB40A:	; Initialize a guard
 	;TODO
-LB425:
+	RETURN ;STUB
+LB41F:	; Standard room procedure (for 63 rooms)
 	;TODO
-LB42E:
+LB422:	; Standard room initialization (for 60 rooms)
 	;TODO
-LB446:
+LB425:	; Rooms 7C9C/92EF initialization (redirect from 791B)
 	;TODO
-LB44C:
+LB42E:	; Room 79C6 initialization
 	;TODO
-LB452:
+
+LB446:	; Room B513 procedure (initial Room)
 	;TODO
-LB458:
+LB44C:	; Room procedure (for 19 rooms with a guard) (redirect from 7918)
 	;TODO
-LB47A:
+LB452:	; Room procedure (for 18 rooms with a dog)
+	;TODO
+LB458:	; Room procedure (for 5 rooms with a guard and a dog)
+	;TODO
+; Turret initialization
+LB461:
+	RETURN ;STUB
+LB47A:	; Room procedure (for 2 rooms with a turret and a dog)
 	;TODO
 LB483:
 	;TODO
+
+; Table of Room tokens
+LB706:	.WORD	LB38F	; #00: Put 3x3 tiles $7C21; params: 2 bytes (address)
+LB708:	.WORD	L7381	; #01: Fill to down; params: 4 bytes (count, filler, address)
+LB70A:	.WORD	L739F	; #02: Fill to right; params: 4 bytes (count, filler, address)
+LB70C:	.WORD	L7452	; #03: Fill rectangle; params: 5 bytes (filler, width, height, address)
+LB70E:	.WORD	L73F3	; #04: Fill whole Tile screen 0 with one tile; params: 1 byte (filler)
+LB710:	.WORD	L7406	; #05: Copy block of tiles; params: 6 bytes (width, height, srcaddr, address)
+LB712:	.WORD	L73A4	; #06: Fill triangle from wide top; params: 4 bytes (filler, count, address)
+LB714:	.WORD	L73C5	; #07: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
+LB716:	.WORD	L73EB	; #08: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
+LB718:	.WORD	L73EF	; #09: Fill triangle from wide top; params: 4 bytes (filler, count, address)
+LB71A:	.WORD	L7395	; #0A: Fill to down-right; params: 4 bytes (count, filler, address)
+LB71C:	.WORD	L739A	; #0B: Fill to down-left; params: 4 bytes (count, filler, address)
+LB71E:	.WORD	L742B	; #0C: Copy block of tiles N times; params: 6 bytes (srcaddr, width, count, address)
+LB720:	.WORD	L7359	; #0D: Set border color; params: 1 byte
+LB722:	.WORD	L734D	; #0E: Put one tile at the given address; params: 3 bytes (tile, address)
+
 LC64C:
 	;TODO
 LC671:
