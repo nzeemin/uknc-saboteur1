@@ -27,7 +27,7 @@ K01000:
 	MTPS	#000340			; Disable interrupts
 	MOV	SP, OSTACK		; Сохраняем начальное значение SP
 	MOV	#1000, SP
-	CALL	STPAL			; Установить игровую палитру
+;	CALL	STPAL			; Установить игровую палитру
 	MOV	#GAMESC, R1		; Строка для подготовки игрового экрана
 	CALL	PRINT
 	CALL	PAUSE			; подождём пока очистится экран
@@ -135,6 +135,16 @@ PPSEND:	MOV	#PPBADR, R0
 ;------------------------------------------------------------------------------
 ;
 START:
+
+	CALL	LACCA			; Frames/indicators
+
+;	MOV	#16., R1
+;	MOV	#LDF27, R3
+;	MOV	#<SCREEN>, R2
+;	CALL	LAED1			; Print string "S START MISSION"
+
+100$:	BR	100$	;DEADLOOP
+
 	RETURN ;STUB
 
 ;------------------------------------------------------------------------------
@@ -381,7 +391,7 @@ LA1FF:	.BYTE	040,001,022,011,012,001	; Room 8B71 guard
 LA205:	.BYTE	120,000,024,002,012,001	; Room 8739 guard
 LA20B:	.BYTE	036,001,020,011,012,000	; Room 858F guard
 LA211:	.BYTE	001,001,021,010,012,001	; Room 84EE guard
-LA217:	.BYTE	030,001,012,011,012,000	; UNUSED, see A13D
+;LA217:	.BYTE	030,001,012,011,012,000	; UNUSED, see A13D
 LA21D:	.BYTE	042,001,024,011,012,001	; Room 99A6 guard
 LA223:	.BYTE	371,000,011,010,012,000	; Room 97F8 guard
 LA229:	.BYTE	002,001,022,010,012,001	; Room 94CF guard
@@ -463,6 +473,97 @@ LA389:	; Room 9A5A initialization
 LA38E:	; Room 80F6 initialization
 	;TODO
 
+; Draw game screen frames and indicator text
+LACCA:
+	MOV	#<SCREEN+4>, @#176640	; Screen start address
+	MOV	#LAD65, R2		; Game screen frames/indicators RLE encoded sequence
+	CLR	R5			; счётчик до 32.
+10$:	CLR	R0
+	BISB	(R2)+, R0
+	CMPB	R0, #377
+	BEQ	LAD1D
+	PUSH	R2
+	MOV	#1, R1
+	CMPB	R0, #23.
+	BLO	20$
+	SUB	#20., R0
+	MOV	R0, R1
+	POP	R2
+	CLR	R0
+	BISB	(R2)+, R0
+	PUSH	R2
+20$:	MOV	R0, R2
+	ASL	R0
+	ASL	R0
+	ASL	R0			; * 8.
+	ADD	R0, R2			; * 9.
+	ADD	#LAE02, R2		; Indicator tiles address
+27$:	MOV	#8., R4
+30$:	CLR	R0
+	BISB	(R2)+, R0
+	MOV	R0, @#176642		; Пишем данные в ВОЗУ УКНЦ
+	ADD	#120, @#176640		; next line
+	SOB	R4, 30$
+	SUB	#<1200-1>, @#176640	; next column
+	INC	R5
+	BIC	#177740, R5		; keep 5 lower bits = 0..31.
+	BNE	40$
+	ADD	#<1200-40>, @#176640	; next row
+40$:	SUB	#8., R2
+	SOB	R1, 27$
+	POP	R2
+	BR	10$
+LAD1D:
+	MOV	#<SCREEN+4+<1200*19.>+7.>, R2
+	MOV	#13., R1
+	MOV	#LAD4A, R3
+	CALL	LAED1			; Print string "PAY : $ 00000"
+	MOV	#<SCREEN+4+<1200*20.>+23.>, R2
+	MOV	#2, R1
+	CALL	LAED1			; Print string "99"
+	MOV	#<SCREEN+4+<1200*22.>+1.>, R2
+	MOV	#4, R1
+	CALL	LAED1			; Print string "HELD"
+	MOV	#<SCREEN+4+<1200*22.>+22.>, R2
+	MOV	#4, R1
+	CALL	LAED1			; Print string "TIME"
+	MOV	#<SCREEN+4+<1200*22.>+27.>, R2
+	MOV	#4, R1
+	CALL	LAED1			; Print string "NEAR"
+
+	;TODO
+	RETURN ;STUB
+
+; Indicator messages
+LAD4A:	.ASCII	/PAY : $ /
+LAD52:	.ASCII	/00000/			; Pay value text
+LAD57:	.ASCII	/99/			; Indicator time value
+LAD59:	.ASCII	/HELDTIMENEAR/
+
+.INCLUDE /S1INDS.MAC/
+	.EVEN
+
+; Print string on the screen; R1 = length, R2 = screen address, R3 = string address
+LAED1:
+1$:	CLR	R0
+	BISB	(R3)+, R0		; get symbol byte
+	ASL	R0
+	ASL	R0
+	ASL	R0			; * 8
+	ADD	#<LC721-400>, R0	; + font base address
+	MOV	#8., R4
+10$:	CLR	R5
+	BISB	(R0), R5
+	SWAB	R5
+	BISB	(R0)+, R5
+	MOV	R2, @#176640		; Пишем адрес в ВОЗУ УКНЦ
+	MOV	R5, @#176642		; Пишем данные в ВОЗУ УКНЦ
+	ADD	#120, R2		; к следующей строке экрана
+	SOB	R4, 10$
+	SUB	#<1200-1>, R2		; на 8. строк выше, плюс колонка вправо
+	SOB	R1, 1$
+	RETURN
+
 LB368:
 	;TODO
 
@@ -505,14 +606,14 @@ LB708:	.WORD	L7381	; #01: Fill to down; params: 4 bytes (count, filler, address)
 LB70A:	.WORD	L739F	; #02: Fill to right; params: 4 bytes (count, filler, address)
 LB70C:	.WORD	L7452	; #03: Fill rectangle; params: 5 bytes (filler, width, height, address)
 LB70E:	.WORD	L73F3	; #04: Fill whole Tile screen 0 with one tile; params: 1 byte (filler)
-LB710:	.WORD	L7406	; #05: Copy block of tiles; params: 6 bytes (width, height, srcaddr, address)
+LB710:	.WORD	L7406	; #05: Copy block of tiles; params: 5 bytes (width, height, source, address)
 LB712:	.WORD	L73A4	; #06: Fill triangle from wide top; params: 4 bytes (filler, count, address)
 LB714:	.WORD	L73C5	; #07: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
 LB716:	.WORD	L73EB	; #08: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
 LB718:	.WORD	L73EF	; #09: Fill triangle from wide top; params: 4 bytes (filler, count, address)
 LB71A:	.WORD	L7395	; #0A: Fill to down-right; params: 4 bytes (count, filler, address)
 LB71C:	.WORD	L739A	; #0B: Fill to down-left; params: 4 bytes (count, filler, address)
-LB71E:	.WORD	L742B	; #0C: Copy block of tiles N times; params: 6 bytes (srcaddr, width, count, address)
+LB71E:	.WORD	L742B	; #0C: Copy block of tiles N times; params: 5 bytes (source, width, count, address)
 LB720:	.WORD	L7359	; #0D: Set border color; params: 1 byte
 LB722:	.WORD	L734D	; #0E: Put one tile at the given address; params: 3 bytes (tile, address)
 
@@ -524,6 +625,9 @@ LC681:
 	;TODO
 LC6A5:
 	;TODO
+
+LDF27:	.ASCII	/S  START MISSION/
+
 LF973:
 	;TODO
 
