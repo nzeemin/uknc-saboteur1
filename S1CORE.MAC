@@ -155,8 +155,26 @@ START:
 
 ;------------------------------------------------------------------------------
 
-L7184:	.WORD	L84A8	; Current Room address
+L7184:	.WORD	LB513	; Current Room address
 L7186:	.WORD	LA0B5	; Ninja sprite address
+
+L71C3:	.WORD	257.	; Current Guard position in tilemap
+L71C5:	.BYTE	17.	; Current Guard X position
+L71C6:	.BYTE	8.	; Current Guard Y position
+
+L71CB:	.WORD	398.	; Dog position in tilemap
+L71CD:	.BYTE	0	; Dog direction
+L71CE:	.BYTE	8.	; Dog X position
+L71CF:	.BYTE	0	; Dog ??
+L71D0:	.BYTE	7	; Dog's left limit
+L71D1:	.BYTE	23.	; Dog's right limit
+L71D2:	.BYTE	0	; Dog ??
+L71D3:	.BYTE	6	; Dog Y position
+	.EVEN
+
+L71D4:	.BYTE
+L71D5:	.BYTE	1
+L71D6:	;TODO		; Room 79C6 dog data
 
 L7232:	.BYTE	0	; Input bits: 000FUDLR
 
@@ -166,61 +184,183 @@ L7345:	.BYTE	20.	; Dog ??
 L7346:	.BYTE	10.	; Guard walking phase $00..$03 or other state: $09 = Guard dead; ...
 L7347:	.BYTE	1	; Guard direction
 
-; Room token #0E: Put one tile at the given address; params: 3 bytes (tile, address)
-L734D:
-	;TODO
-	RETURN ;STUB
+;
+; Room token #0E: Put one tile at the given address; params: 3 bytes (tile, offset)
+L734D:	POP	R3			; Restore token sequence address
+	INC	R3			; Skip token byte
+	MOVB	(R3)+, R0		; get tile byte
+	CLR	R2
+	BISB	(R3)+, R2		; get offset low byte
+	SWAB	R2
+	BISB	(R3), R2		; get offset high byte
+	SWAB	R2
+	ADD	#L6590, R2		; + Tile screen 0 address
+	PUSH	R3
+	MOVB	R0, (R2)		; put tile into tilemap
+	BR	L734A			; => B702 Proceed to the next room token
 ; Room token #0D: Set border color; params: 1 byte
-L7359:
-	;TODO
-	RETURN ;STUB
-; Room token #01: Fill to down; params: 4 bytes (count, filler, address)
-L7381:
-	;TODO
-	RETURN ;STUB
-; Room token #0A: Fill to down-right; params: 4 bytes (count, filler, address)
-L7395:
-	;TODO
-	RETURN ;STUB
-; Room token #0B: Fill to down-left; params: 4 bytes (count, filler, address)
-L739A:
-	;TODO
-	RETURN ;STUB
-; Room token #02: Fill to right; params: 4 bytes (count, filler, address)
-L739F:
-	;TODO
-	RETURN ;STUB
-; Room token #06: Fill triangle from wide top
-L73A4:
-	;TODO
-	RETURN ;STUB
-; Room token #07: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
-L73C5:
-	;TODO
-	RETURN ;STUB
-; Room token #08: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
-L73EB:
-	;TODO
-	RETURN ;STUB
+L7359:	HALT	; DO NOTHING, we're not processing this token
+; Room token #01: Fill to down; params: 4 bytes (count, filler, offset)
+L7381:	MOV	#30., R4		; shift = 30.
+L7384:	POP	R3			; Restore token sequence address
+	INC	R3			; Skip token byte
+	MOVB	(R3)+, R1		; get count byte
+	MOVB	(R3)+, R0		; get tile byte
+	CLR	R2
+	BISB	(R3)+, R2		; get offset low byte
+	SWAB	R2
+	BISB	(R3), R2		; get offset high byte
+	SWAB	R2
+	ADD	#L6590, R2		; + Tile screen 0 address
+	PUSH	R3
+10$:	MOVB	R0, (R2)		; put tile into tilemap
+	ADD	R4, R2			; apply the shift
+	SOB	R1, 10$
+L734A:	JMP	LB702			; => Proceed to the next room token
+; Room token #0A: Fill to down-right; params: 4 bytes (count, filler, offset)
+L7395:	MOV	#31., R4		; shift = 30. + 1
+	BR	L7384
+; Room token #0B: Fill to down-left; params: 4 bytes (count, filler, offset)
+L739A:	MOV	#29., R4		; shift = 30. - 1
+	BR	L7384
+; Room token #02: Fill to right; params: 4 bytes (count, filler, offset)
+L739F:	MOV	#1, R4			; shift = 1
+	BR	L7384
+; Room token #06: Fill triangle from wide top; params: 4 bytes (filler, count, offset)
+L73A4:	MOV	#1, R4			; shift = 1
+L73A6:	POP	R3			; Restore token sequence address
+	INC	R3			; Skip token byte
+	MOVB	(R3)+, R0		; get tile byte
+	CLR	R1
+	BISB	(R3)+, R1		; get count byte
+	CLR	R2
+	BISB	(R3)+, R2		; get offset low byte
+	SWAB	R2
+	BISB	(R3), R2		; get offset high byte
+	SWAB	R2
+	ADD	#L6590, R2		; + Tile screen 0 address
+	PUSH	R3
+L73B8:	PUSH	R2
+	MOV	R1, R3
+L73BA:	MOVB	R0, (R2)		; put tile into tilemap
+	ADD	R4, R2			; apply the shift
+	SOB	R3, L73BA
+	POP	R2
+	ADD	#30., R2		; next row
+	SOB	R1, L73B8		; continue loop by rows
+	BR	L734A			; => B702 Proceed to the next room token
+; Room token #07: Fill triangle from wide bottom; params: 4 bytes (filler, count, offset)
+L73C5:	MOV	#1, R4			; shift = 1
+L73C7:	POP	R3			; Restore token sequence address
+	INC	R3			; Skip token byte
+	MOVB	(R3)+, R0		; get tile byte
+	MOVB	(R3)+, R1		; get count byte
+	CLR	R2
+	BISB	(R3)+, R2		; get offset low byte
+	SWAB	R2
+	BISB	(R3), R2		; get offset high byte
+	SWAB	R2
+	ADD	#L6590, R2		; + Tile screen 0 address
+	PUSH	R3
+	MOV	#1, R3
+L73DB:	PUSH	R2
+L73DD:	MOVB	R0, (R2)		; put tile into tilemap
+	ADD	R4, R2			; apply the shift
+	SOB	R3, L73DD
+	POP	R2
+	INC	R2
+	ADD	#30., R2		; next row
+	SOB	R1, L73DB		; continue loop by rows
+	BR	L734A			; => B702 Proceed to the next room token
+; Room token #08: Fill triangle from wide bottom; params: 4 bytes (filler, count, offset)
+L73EB:	MOV	#-1, R4			; shift = -1
+	BR	L73C7
 ; Room token #09: Fill triangle from wide top
-L73EF:
-	;TODO
-	RETURN ;STUB
+L73EF:	MOV	#-1, R4			; shift = -1
+	BR	L73A6
 ; Room token #04: Fill whole Tile screen 0 with one tile; params: 1 byte (filler)
-L73F3:
-	;TODO
-	RETURN ;STUB
-; Room token #05: Copy block of tiles; params: 6 bytes (width, height, srcaddr, address)
-L7406:
-	;TODO
-	RETURN ;STUB
-; Room token #0C: Copy block of tiles N times; params: 6 bytes (srcaddr, width, count, address)
-L742B:
-	;TODO
-	RETURN ;STUB
-; Room token #03: Fill rectangle; params: 5 bytes (filler, width, height, address)
-L7452:
-	;TODO
+L73F3:	POP	R3			; Restore token sequence address
+	INC	R3			; Skip token byte
+	MOVB	(R3), R0		; get tile byte
+	PUSH	R3
+	MOV	#L6590, R2		; Tile screen 0 start address
+	MOV	#510., R1		; count
+10$:	MOVB	R0, (R2)+
+	SOB	R1, 10$
+	BR	L734A			; => B702 Proceed to the next room token
+; Room token #05: Copy block of tiles; params: 5 bytes (width, height, source, offset)
+L7406:	POP	R3			; Restore token sequence address
+	INC	R3			; Skip token byte
+	MOVB	(R3)+, R4		; get width
+	MOVB	(R3)+, R1		; get count/height
+	MOVB	(R3)+, R0		; get source index
+	ASL	R0
+	MOV	TBLOCK(R0), R0		; Convert source index to source address
+	CLR	R2
+	BISB	(R3)+, R2		; get offset low byte
+	SWAB	R2
+	BISB	(R3), R2		; get offset high byte
+	SWAB	R2
+	ADD	#L6590, R2		; + Tile screen 0 address
+	PUSH	R3
+L7415:	PUSH	R4
+L7416:	MOVB	(R0)+, (R2)+
+	SOB	R4, L7416		; continue loop by columns
+	POP	R4
+	ADD	#30., R2		; next row
+	SOB	R1, L7415
+	BR	L734A			; => B702 Proceed to the next room token
+; Room token #0C: Copy block of tiles N times; params: 5 bytes (source, width, count, offset)
+L742B:	POP	R3			; Restore token sequence address
+	INC	R3			; Skip token byte
+	MOVB	(R3)+, R0		; get source index
+	ASL	R0
+	MOV	TBLOCK(R0), R0		; Convert source index to source address
+	MOVB	(R3)+, R4		; get width
+	MOVB	(R3)+, R1		; get count/height
+	CLR	R2
+	BISB	(R3)+, R2		; get offset low byte
+	SWAB	R2
+	BISB	(R3), R2		; get offset high byte
+	SWAB	R2
+	ADD	#L6590, R2		; + Tile screen 0 address
+	PUSH	R3
+L743A:	PUSH	R4
+	PUSH	R2
+L743D:	MOVB	(R0)+, (R2)+
+	SOB	R4, L743D
+	POP	R2
+	POP	R4
+	SOB	R1, L743A
+	BR	L734A			; => B702 Proceed to the next room token
+; Room token #03: Fill rectangle; params: 5 bytes (filler, width, height, offset)
+L7452:	POP	R3			; Restore token sequence address
+	INC	R3			; Skip token byte
+	MOVB	(R3)+, R0		; get tile byte
+	MOVB	(R3)+, R4		; get width
+	MOVB	(R3)+, R1		; get count/height
+	CLR	R2
+	BISB	(R3)+, R2		; get offset low byte
+	SWAB	R2
+	BISB	(R3), R2		; get offset high byte
+	SWAB	R2
+	ADD	#L6590, R2		; + Tile screen 0 address
+	PUSH	R3
+L7463:	PUSH	R2
+	PUSH	R4
+L7465:	MOVB	R0, (R2)+
+	SOB	R4, L7465
+	POP	R4
+	POP	R2
+	ADD	#30., R2
+	SOB	R1, L7463
+	JMP	LB702			; => Proceed to the next room token
+
+L749C:	.BYTE	19.			; Energy $04..$13
+L749D:	.BYTE	1			; Energy lower, running bit
+
+; Decreasing Energy
+L749E:
 	RETURN ;STUB
 
 L7918:	; Room procedure (for 19 rooms with a guard)
@@ -228,15 +368,27 @@ L7918:	; Room procedure (for 19 rooms with a guard)
 L791B:	; Rooms 7C9C/92EF initialization
 	JMP	LB425
 
+L9C40:	.BYTE	8.			; Ninja Y within the room, 0 at the top
+L9C41:	.BYTE	6			; Ninja X within the room
+L9C42:	.WORD	246.			; Ninja position in tilemap: Y * 30. + X
+
+; Process a dog
+L9C44:
+	RETURN	;STUB
+
 ; Initialize a dog
+; Input: R3 = dog data address
 L9DCD:
 	;TODO
 	RETURN ;STUB
 
 ; Decrease Energy by B
-L9DD9:
+L9DD9:	RETURN				; !!MUT-CMD!! "PUSH R1" or "RETURN"
+	CALL	L749E			; Decrease Energy
+	POP	R1
 	;TODO
-	RETURN ;STUB
+	SOB	R1, L9DD9
+	RETURN
 
 ; Sprite Ninja/Guard dead, 6x7 tiles
 LA0B5:	;TODO
@@ -457,21 +609,33 @@ LA366:	; Room 924E initialization
 	MOV	LA2CB, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
 LA36B:	; Room 91BA initialization
-	;TODO
+	MOV	LA2D5, R3		; Dog data address
+	BR	LA356			; Initialize a dog, then Standard room initialization
 LA370:	; Room 90DB initialization
-	;TODO
+	MOV	LA2DF, R3		; Dog data address
+	BR	LA356			; Initialize a dog, then Standard room initialization
 LA375:	; Room 8802 initialization
-	;TODO
+	MOV	LA2F3, R3		; Dog data address
+	BR	LA356			; Initialize a dog, then Standard room initialization
 LA37A:	; Room 8608 initialization
-	;TODO
+	MOV	LA2FD, R3		; Dog data address
+	BR	LA356			; Initialize a dog, then Standard room initialization
 LA37F:	; Room 844E initialization
-	;TODO
+	MOV	LA307, R3		; Dog data address
+	BR	LA356			; Initialize a dog, then Standard room initialization
 LA384:	; Room 9739 initialization
-	;TODO
+	MOV	LA311, R3		; Dog data address
+	BR	LA356			; Initialize a dog, then Standard room initialization
 LA389:	; Room 9A5A initialization
-	;TODO
+	MOV	LA31B, R3		; Dog data address
+	BR	LA356			; Initialize a dog, then Standard room initialization
 LA38E:	; Room 80F6 initialization
-	;TODO
+	MOV	LA2C1, R3		; Dog data address
+	BR	LA356			; Initialize a dog, then Standard room initialization
+
+; Reset Guard data and Dog data
+LAC44:
+	RETURN	;STUB
 
 ; Draw game screen frames and indicator text
 LACCA:
@@ -530,9 +694,7 @@ LAD1D:
 	MOV	#<SCREEN+4+<1200*22.>+27.>, R2
 	MOV	#4, R1
 	CALL	LAED1			; Print string "NEAR"
-
-	;TODO
-	RETURN ;STUB
+	RETURN
 
 ; Indicator messages
 LAD4A:	.ASCII	/PAY : $ /
@@ -543,7 +705,8 @@ LAD59:	.ASCII	/HELDTIMENEAR/
 .INCLUDE /S1INDS.MAC/
 	.EVEN
 
-; Print string on the screen; R1 = length, R2 = screen address, R3 = string address
+; Print string on the screen
+; Input: R1 = length, R2 = screen address, R3 = string address
 LAED1:
 1$:	CLR	R0
 	BISB	(R3)+, R0		; get symbol byte
@@ -564,25 +727,40 @@ LAED1:
 	SOB	R1, 1$
 	RETURN
 
+; Room 97A6 initialization
 LB368:
 	;TODO
+
+; Play melody ??; HL = melody address
+LB371:
+	RETURN	;STUB
 
 ; Room token #00: Barrel, 3x3 tiles 7C21; params: 2 bytes (address)
 LB38F:
 	;TODO
 	RETURN ;STUB
 
-LB40A:	; Initialize a guard
+; Initialize a guard
+; Input: R3 = Guard data address, see A1E1
+LB40A:
 	;TODO
 	RETURN ;STUB
-LB41F:	; Standard room procedure (for 63 rooms)
-	;TODO
-LB422:	; Standard room initialization (for 60 rooms)
-	;TODO
-LB425:	; Rooms 7C9C/92EF initialization (redirect from 791B)
-	;TODO
-LB42E:	; Room 79C6 initialization
-	;TODO
+; Standard room procedure (for 63 rooms)
+LB41F:
+	JMP	LB937
+; Standard room initialization (for 60 rooms)
+LB422:
+	JMP	LB724			; => Finish room initialization
+; Rooms 7C9C/92EF initialization (redirect from 791B)
+LB425:
+	MOV	#LC66B, R3		; Guard data address
+	CALL	LB40A			; Initialize a guard
+	JMP	LB724			; => Finish room initialization
+; Room 79C6 initialization
+LB42E:
+	MOV	#L71D6, R3		; Dog data address
+	CALL	L9DCD			; Initialize a dog
+	JMP	LB724			; => Finish room initialization
 
 LB446:	; Room B513 procedure (initial Room)
 	;TODO
@@ -599,6 +777,36 @@ LB47A:	; Room procedure (for 2 rooms with a turret and a dog)
 	;TODO
 LB483:
 	;TODO
+
+LB5C4:	.BYTE	25	; Time fast counter 50..0
+LB5C5:	.BYTE	1	; Ninja standing counter
+LB5C6:	.BYTE	0	; Time mode: 0 = time ticking; 1 = Time stopped; 2 = BOMB ticking mode
+	.EVEN
+
+LB5C7:
+	CALL	LAC44
+	;TODO
+
+; Current Room changed, entering the new Room
+LB66A:
+	;TODO
+
+LB6EE:	CLR	R0
+	BISB	(R3), R0		; get next token
+	CMPB	R0, #377		; End of sequence?
+	BNE	LB6F4			; no =>
+LB6F1:	JMP	@#LB724			; !!MUT-ARG!! => run Room initialization code
+LB6F4:	PUSH	R3			; Save address in the room sequence
+	ASL	R0			; * 2
+	ADD	#<LB706>, R0		; Table of Room tokens
+	MOV	(R0), R0		; get token procedure address
+	JMP	@R0			; => run token procedure
+;
+; Proceed to the next room token
+LB702:
+	POP	R3			; Restore address in the room sequence
+	INC	R3			; to next token
+	BR	LB6EE			; => continue room sequence processing
 
 ; Table of Room tokens
 LB706:	.WORD	LB38F	; #00: Put 3x3 tiles $7C21; params: 2 bytes (address)
@@ -617,19 +825,59 @@ LB71E:	.WORD	L742B	; #0C: Copy block of tiles N times; params: 5 bytes (source, 
 LB720:	.WORD	L7359	; #0D: Set border color; params: 1 byte
 LB722:	.WORD	L734D	; #0E: Put one tile at the given address; params: 3 bytes (tile, address)
 
+; Finish room initialization
+LB724:
+	;TODO
+
+; Game loop start
+LB77B:
+	;TODO
+
 LC64C:
 	;TODO
+
+LC66B:	; Guard data for rooms 7C9C/92EF
+	;TODO
+
+; Room 93DF/947C (room right from Train) initialization
 LC671:
 	;TODO
+; Room 982B initialization
 LC681:
 	;TODO
+; Room 7C9C procedure (tunnel Train)
 LC6A5:
+	;TODO
+
+; Movement handler (B8CE handler): Train moving left
+LC6E2:
+	;TODO
+
+; Movement handler (B8CE handler): Train moving right
+LC70C:
 	;TODO
 
 LDF27:	.ASCII	/S  START MISSION/
 
+LB937:
+
 LF973:
 	;TODO
+
+;------------------------------------------------------------------------------
+
+; Tile screen 0 30x17 tiles, 510 bytes - background
+L6590:	.BLKW	510.
+; Tile screen 1 30x17 tiles, 510 bytes - update flags
+L678E:	.BLKW	510.
+; Tile screen 2 30x17 tiles, 510 bytes - Ninja screen
+L698C:	.BLKW	510.
+; Tile screen 3 30x17 tiles, 510 bytes - Dog screen
+L6B8A:	.BLKW	510.
+; Tile screen 4 30x17 tiles, 510 bytes - Guard screen
+L6D88:	.BLKW	510.
+; Tile screen 5 30x17 tiles, 510 bytes - front
+L6F86:	.BLKW	510.
 
 ;------------------------------------------------------------------------------
 	.END	STCORE
