@@ -60,13 +60,13 @@ PAUSE:	; Pause to let PPU finish the previous commands
 RETN:	RETURN
 
 GAMESC:	; Строка подготовки игрового экрана
-;	.BYTE	33,246,061	; Формат экрана 80x24 ;DEBUG
 	.BYTE	33,246,62	; Формат экрана 40x24
 	.BYTE	33,240,63	; Цвет символа
 	.BYTE	33,241,60	; Цвет знакоместа 0
 	.BYTE	33,242,60	; Цвет фона 0
 	.BYTE	14		; Clear screen
 	.BYTE	33,247,60	; Цвет курсора
+	.BYTE	033,131,60,40	; Курсор в позицию
 	.BYTE	0
 EXITSC:	; Строка очистки экрана перед выходом
 	.BYTE	33,246,061	; Формат экрана 80x24
@@ -137,15 +137,17 @@ PPSEND:	MOV	#PPBADR, R0
 START:
 
 	CALL	LACCA			; Frames/indicators
+	JMP	LB66A
 
 ;	MOV	#16., R1
 ;	MOV	#LDF27, R3
 ;	MOV	#<SCREEN>, R2
 ;	CALL	LAED1			; Print string "S START MISSION"
 
-100$:	BR	100$	;DEADLOOP
+;100$:	BR	100$	;DEADLOOP
+;	HALT
 
-	RETURN ;STUB
+;	RETURN ;STUB
 
 ;------------------------------------------------------------------------------
 
@@ -155,7 +157,7 @@ START:
 
 ;------------------------------------------------------------------------------
 
-L7184:	.WORD	LB513	; Current Room address
+L7184:	.WORD	L791E	; Current Room address
 L7186:	.WORD	LA0B5	; Ninja sprite address
 
 L71C3:	.WORD	257.	; Current Guard position in tilemap
@@ -177,12 +179,20 @@ L71D5:	.BYTE	1
 L71D6:	;TODO		; Room 79C6 dog data
 
 L7232:	.BYTE	0	; Input bits: 000FUDLR
+	.EVEN
+
+L733B:	; Table of four addresses of Ninja/Guard walking sprites
+	.WORD	LD3DE			; Sprite Ninja/Guard walking 1
+	.WORD	LD408			; Sprite Ninja/Guard walking 2
+	.WORD	LD432			; Sprite Ninja/Guard walking 3
+	.WORD	LD45C			; Sprite Ninja/Guard walking 4
 
 L7343:	.BYTE	7	; Counter used in movement handlers
 L7344:	.BYTE	0	; Dog's flag: 1 = ignore left/right limit
 L7345:	.BYTE	20.	; Dog ??
 L7346:	.BYTE	10.	; Guard walking phase $00..$03 or other state: $09 = Guard dead; ...
 L7347:	.BYTE	1	; Guard direction
+	.EVEN
 
 ;
 ; Room token #0E: Put one tile at the given address; params: 3 bytes (tile, offset)
@@ -356,12 +366,25 @@ L7465:	MOVB	R0, (R2)+
 	SOB	R1, L7463
 	JMP	LB702			; => Proceed to the next room token
 
+L7472:
+	;TODO
+	RETURN	;STUB
+
 L749C:	.BYTE	19.			; Energy $04..$13
 L749D:	.BYTE	1			; Energy lower, running bit
 
 ; Decreasing Energy
 L749E:
+	;TODO
 	RETURN ;STUB
+
+; Draw NEAR/HELD item
+L74CD:
+	;TODO
+	RETURN ;STUB
+
+L755B:	.BYTE	0			; Ninja falling count, to decrease Energy on hit
+	.EVEN
 
 L7918:	; Room procedure (for 19 rooms with a guard)
 	JMP	LB44C
@@ -387,7 +410,9 @@ L9DD9:	RETURN				; !!MUT-CMD!! "PUSH R1" or "RETURN"
 	CALL	L749E			; Decrease Energy
 	POP	R1
 	;TODO
-	SOB	R1, L9DD9
+	JMP	LBEAA			; Energy is out => Saboteur dead
+L9DF1:	SOB	R1, L9DD9
+	;TODO	DI
 	RETURN
 
 ; Sprite Ninja/Guard dead, 6x7 tiles
@@ -534,6 +559,7 @@ LA1D6:	; Room 9B9D initialization
 	BR	LA1AF			; Initialize a guard, then Standard room initialization
 
 ; Guards data, 24 records, 6 bytes each
+; +$04: Guard energy, initially 10
 LA1E1:	.BYTE	235,000,007,005,012,001	; Room 94AB guard
 LA1E7:	.BYTE	030,001,012,011,012,000	; Room 7DA9 guard
 LA1ED:	.BYTE	024,001,006,011,012,000	; Room 7E8C guard
@@ -560,6 +586,12 @@ LA265:	.BYTE	040,001,022,011,012,001	; Room 80A7 guard
 LA26B:	.BYTE	060,000,022,001,012,001	; Room 9B9D guard
 
 ; Dogs data, 19 records, 10 bytes each
+; +$00/$01: Dog position in tilemap
+; +$02: Dog direction
+; +$03: Dog X position
+; +$05: Dog left limit
+; +$06: Dog right limit
+; +$08: Dog Y position
 LA271:	.BYTE	074,001,000,020,000,003,026,000,003,001	; Room 7C2E dog
 LA27B:	.BYTE	136,001,001,024,000,003,026,001,004,001	; Room 7F9C dog
 LA285:	.BYTE	245,000,000,017,000,005,017,000,376,001	; Room 81E5 dog
@@ -632,6 +664,31 @@ LA389:	; Room 9A5A initialization
 LA38E:	; Room 80F6 initialization
 	MOV	LA2C1, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
+
+LA39E:	.BYTE	000
+	.EVEN
+LA3B3:	.BYTE	15.
+LA3B4:	.BYTE	1			; ?? Guard counter
+
+; ?? something about Ninja and Guard
+LA3B5:
+	;TODO
+
+; ?? something about Ninja and Guard
+LA3D1:
+	;TODO
+
+; ?? something about Ninja and Guard
+LA3EE:
+	;TODO
+
+; ?? something about Ninja and Guard
+LA418:
+	;TODO
+
+; ?? something about Guard
+LA434:
+	;TODO
 
 ; Reset Guard data and Dog data
 LAC44:
@@ -727,6 +784,143 @@ LAED1:
 	SOB	R1, 1$
 	RETURN
 
+;------------------------------------------------------------------------------
+
+L722F:	.WORD	0			; address in Tile screen 0
+L7231:	.WORD	0			; address in Tile screen 2
+L7233:	.WORD	0			; address in Tile screen 3
+L7235:	.WORD	0			; address in Tile screen 4
+L7237:	.WORD	0			; address in Tile screen 5
+
+; Tile buffer
+LB13E:	.BLKB	8.			; Pixel bytes
+	.BYTE	0			; Attribute byte
+	.BYTE	0			; Background attribute byte
+
+; Draw tile map on the screen
+LB148:	MOV	#17., R1		; 17. rows
+	MOV	#<SCREEN+4+1200+1>, @#176640	; screen address
+	MOV	#L678E, R3		; start address in Tile screen 1
+	MOV	#L6590, L722F		; start address in Tile screen 0
+	MOV	#L698C, L7231		; start address in Tile screen 2
+	MOV	#L6B8A, L7233		; start address in Tile screen 3
+	MOV	#L6D88, L7235		; start address in Tile screen 4
+	MOV	#L6F86, L7237		; start address in Tile screen 5
+; Loop start
+LB16D:	PUSH	R1			; save rows counter
+	MOV	#30., R4		; 30. columns
+LB16F:	PUSH	R4			; save columns counter
+	PUSH	R3			; save address in Tile screen 1
+	MOVB	(R3), R0		; check "need update" flag in Tile screen 1
+	BNE	LB177			; not zero => do the tile rendering
+; Next column
+LB2A9:	MOV	#L722F, R3
+	INC	(R3)+			; next address in Tile screen 0
+	INC	(R3)+			; next address in Tile screen 2
+	INC	(R3)+			; next address in Tile screen 3
+	INC	(R3)+			; next address in Tile screen 4
+	INC	(R3)			; next address in Tile screen 5
+	POP	R3			; restore address in Tile screen 1
+	INC	R3			; next address in Tile screen 1
+	POP	R4			; restore columns counter
+	SOB	R4, LB16F		; continue loop by columns
+; Next tile row
+	ADD	#<1200-30.>, @#176640	; screen address to next row
+	POP	R1			; restore rows counter
+	SOB	R1, LB16D		; continue loop by rows
+	RETURN
+
+; Do the tile rendering
+LB177:	CLRB	(R3)			; clear "need to update" flag
+; Process Tile screen 0 - background tile
+	MOVB	@L722F, R0		; get tile from Tile screen 0
+	CMPB	R0, #377		; $FF - "earth" background?
+	;TODO
+	BIC	#17400, R0
+	ASL	R0
+	ASL	R0
+	ASL	R0			; * 8.
+	ADD	#LF700, R0		; + Background tiles base address
+	;TODO
+	MOV	R0, R3
+	MOV	#LB13E, R2		; buffer address
+	MOV	(R3)+, (R2)+		; copy two bytes
+	MOV	(R3)+, (R2)+
+	MOV	(R3)+, (R2)+
+	MOV	(R3)+, (R2)+		; copied 8. bytes
+; Process Tile screen 2 tile - Ninja
+LB1A3:	MOV	L7231, R3		; get address in Tile scrren 2
+	MOVB	(R3), R0		; get tile from Tile screen 2
+	CMPB	R0, #377		; $FF ?
+	BEQ	LB1FC			; $FF => skip Ninja tile drawing
+	BIC	#17400, R0
+	ASL	R0
+	ASL	R0
+	ASL	R0
+	ASL	R0			; * 16.
+	ADD	#LE700, R0		; + Ninja tiles base address
+	;TODO
+	MOV	#8., R1
+	;TODO
+; Process Tile screen 3 tile - Dog
+LB1FC:	MOV	L7233, R3		; get address in Tile scrren 3
+	MOVB	(R3), R0		; get tile from Tile screen 3
+	CMPB	R0, #377		; $FF ?
+	BEQ	LB230			; $FF => skip Dog tile drawing
+	BIC	#17400, R0
+	ASL	R0
+	ASL	R0
+	ASL	R0
+	ASL	R0			; * 16.
+	ADD	#LF0F0, R0		; + Dog tiles base address
+	MOV	#8., R1
+	;TODO
+; Process Tile screen 4 tile - Guard
+LB230:	MOV	L7235, R3		; get address in Tile scrren 4
+	MOVB	(R3), R0		; get tile from Tile screen 4
+	CMPB	R0, #377		; $FF ?
+	BEQ	LB263			; $FF => skip Guard tile drawing
+	BIC	#17400, R0
+	ASL	R0
+	ASL	R0
+	ASL	R0
+	ASL	R0			; * 16.
+	ADD	#LE700, R0		; + Guard tiles base address
+	MOV	#8., R1
+	;TODO
+; Process Tile screen 5 tile - front
+LB263:	MOV	L7237, R3		; get address in Tile scrren 5
+	MOVB	(R3), R0		; get tile from Tile screen 5
+	CMPB	R0, #377		; $FF - transparent?
+	BEQ	LB293			; $FF => skip front tile drawing
+	BIC	#17400, R0
+	ASL	R0
+	ASL	R0
+	ASL	R0
+	ASL	R0			; * 16.
+	ADD	#LD600, R0		; + front tiles base address
+	MOV	R0, R3
+	MOV	#LB13E, R2		; buffer address
+	MOV	#8., R1
+10$:	MOVB	(R2), R0		; get byte from the buffer
+	BICB	(R3)+, R0		; apply the mask
+	BISB	(R3)+, R0		; apply the pixels
+	MOVB	R0, (R2)+		; store byte back to the buffer
+	SOB	R1, 10$
+; Draw prepared tile on the screen
+LB293:	MOV	#LB13E, R2
+	MOV	#8., R1
+LB29B:	CLR	R0
+	BISB	(R2)+, R0		; get byte from the buffer
+	MOV	R0, @#176642		; put byte on the screen
+	ADD	#120, @#176640		; screen address next line
+	SOB	R1, LB29B
+;
+	ADD	#<1-1200>, @#176640	; screen address +1
+	JMP	LB2A9			; continue the loop
+
+;------------------------------------------------------------------------------
+
 ; Room 97A6 initialization
 LB368:
 	;TODO
@@ -763,7 +957,8 @@ LB42E:
 	JMP	LB724			; => Finish room initialization
 
 LB446:	; Room B513 procedure (initial Room)
-	;TODO
+	CALL	LB4FA			; Processing in the initial room
+	JMP	LB937			; Standard room procedure
 LB44C:	; Room procedure (for 19 rooms with a guard) (redirect from 7918)
 	;TODO
 LB452:	; Room procedure (for 18 rooms with a dog)
@@ -778,6 +973,19 @@ LB47A:	; Room procedure (for 2 rooms with a turret and a dog)
 LB483:
 	;TODO
 
+; Processing in initial room - the boat moving
+LB4FA:
+	;TODO
+	RETURN ;STUB
+
+; Movement handler for initial room (B8CE handler)
+LB532:
+	INC	L9C42			; increase Ninja position in tilemap
+	INCB	L9C41			; increase Ninja X
+	;TODO
+
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
+
 LB5C4:	.BYTE	25	; Time fast counter 50..0
 LB5C5:	.BYTE	1	; Ninja standing counter
 LB5C6:	.BYTE	0	; Time mode: 0 = time ticking; 1 = Time stopped; 2 = BOMB ticking mode
@@ -787,10 +995,33 @@ LB5C7:
 	CALL	LAC44
 	;TODO
 
+	CALL	L7472
+	;TODO	DI
+	MOV	#LB513, L7184		; set Current Room = Initial room
+	MOV	#LB532, LB8CE		; set movement handler = movement handler for initial room
+	MOV	#LD558, L7186		; set Ninja sprite = Ninja sitting
+	MOVB	#1, L9C41		; set Ninja X = 1
+	MOVB	#5, L9C40		; set Ninja Y = 5
+	MOV	#151., L9C42		; set Ninja position in tilemap: Y * 30. + X
+	MOVB	#19., L7343		; set counter = 19.
+
 ; Current Room changed, entering the new Room
 LB66A:
 	;TODO
 
+	MOV	#L6590, R3		; Tile screen 0 start address
+	MOV	#<510./2>, R1
+LB6CD:	CLR	(R3)+			; clear two bytes
+	SOB	R1, LB6CD
+	;TODO
+	MOV	#L6D88, R3		; Tile screen 4 start address
+	MOV	#510., R1		; to fill Tile Tile screen 4 and Tile screen 5
+LB6DA:	MOV	#177777, (R3)+		; put two bytes $FF = transparent tile
+	SOB	R1, LB6DA
+	MOV	L7184, R3		; get Current Room address
+	MOV	2(R3), R0		; get Room init address
+	;TODO	; set Room init address
+	ADD	#12., R3		; now R3 = room sequence start address
 LB6EE:	CLR	R0
 	BISB	(R3), R0		; get next token
 	CMPB	R0, #377		; End of sequence?
@@ -826,12 +1057,161 @@ LB720:	.WORD	L7359	; #0D: Set border color; params: 1 byte
 LB722:	.WORD	L734D	; #0E: Put one tile at the given address; params: 3 bytes (tile, address)
 
 ; Finish room initialization
-LB724:
-	;TODO
+LB724:	MOV	#L678E, R3		; Tile screen 1 start address
+	MOV	#<510./2>, R1
+10$:	MOV	#401, (R3)+		; put two bytes $01
+	SOB	R1, 10$
+; R3 = L698C (Tile screen 2 start address)
+	MOV	#510., R1		; to fill Tile screen 2 and Tile screen 3
+20$:	MOV	#177777, (R3)+		; put two bytes $FF = transparent tile
+	SOB	R1, 20$
+	CALL	LB148			; Draw tile map on the screen
+	HALT
 
 ; Game loop start
 LB77B:
 	;TODO
+
+; Increase Energy a bit
+LB83C:
+	;TODO
+	RETURN	;STUB
+
+; Set initial data in Table of Objects
+LB851:
+	;TODO
+	RETURN	;STUB
+
+; ?? Adjust table 751B by DE
+LB86C:
+	;TODO
+	RETURN	;STUB
+
+LB889:
+	;TODO
+LB891:
+	;TODO
+
+	CALL	L74CD			; Draw NEAR/HELD item
+	;TODO	DI
+	CLRB	LA39E
+LB8CD:	JMP	LBEB3			; !!MUT-ARG!! => run handler
+LB8CE = LB8CD + 2
+
+; Update Ninja on tilemap
+LB8D0:
+	;TODO
+
+; Standard room procedure (redirect from B41F)
+LB937:
+	;TODO
+
+LBC0D:
+; Prepare screen background for title picture
+	;TODO
+
+LBC13:
+	;TODO
+
+; Show the title picture
+LBC3B:
+	;TODO
+
+; Movement handler: Ninja standing
+LBC55:
+; Increase Energy if needed
+	MOV	#LB5C5, R3		; Ninja standing counter address
+	DECB	(R3)			; decrease counter
+	BNE	LBC76
+	MOVB	#2, (R3)		; reload the counter
+	;TODO
+
+	CALL	LB83C			; Increase Energy a bit
+	MOV	#1, R1
+	CALL	L9DD9			; Decrease Energy by R1
+	CALL	LB83C			; Increase Energy a bit
+; Move the head (idle animation)
+LBC76:
+
+; Fire pressed, Ninja standing, no object nearby
+LBD37:
+	;TODO
+
+	MOV	#LD504, R2
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
+
+LBDAF:	; Ninja standing (redirect)
+	JMP	LC226			; => Ninja standing
+
+LBDB2:
+	;TODO
+
+LBDDD:
+	;TODO
+
+; ?? Movement handler
+LBE0D:
+	;TODO
+
+; Ninja sit, and then fall and DIE
+LBE5A:	MOV	#LBE63, R3		; Movement handler: Ninja dead
+	MOV	#LD558, R2		; Sprite Ninja sitting
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
+
+; Movement handler (B8CE handler): Ninja dead
+LBE63:	MOV	#000207, L9DD9		; set instruction = RETURN
+	MOV	#LBEB3, R3		; Movement handler: Game Over
+	MOV	#LA0B5, R2		; Sprite Ninja dead
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
+
+; Time is out
+LBE71:	CMP	LB5C6, #2		; Time mode = BOMB ticking mode?
+	BEQ	LBE80			; yes =>
+	MOV	#LBF35, <LBEB3+2>	; set wo-line Game Over message = "TIME OUT" / "MISSION TERMINATED"
+	BR	LBE63			; => Ninja dead
+; BOMB time is out, BOMB explodes
+LBE80:
+	;TODO
+	PUSH	R3
+; Saboteur is dead
+LBEAA:	POP	R3
+	MOV	#LBF58, <LBEB3+2>	; set two-line Game Over message = "SABOTEUR DEAD" / "MISSION FAILURE"
+	BR	LBE63			; => Ninja dead
+
+; Movement handler: Game Over
+LBEB3:	MOV	#LBEEF, R3		; !!MUT-ARG!! two-line message address
+	MOV	#<SCREEN+4>, R2
+	MOV	#15., R1
+	CALL	LAED1			; Print string 1st line
+	MOV	#<SCREEN+4>, R2
+	MOV	#20., R1
+	CALL	LAED1			; Print string 1st line
+	;
+	CALL	LF9B9			; Pause, then wait for any key pressed
+
+	;TODO
+	JMP	LBC0D			; => Title picture and music, then go to Main menu
+
+LBEEF:	.ASCII	/     SEPUKU    /
+	.ASCII	/  MISSION ABORTED   /
+LBF12:	.ASCII	/     ESCAPE    /
+	.ASCII	/ MISSION SUCCESSFUL /
+LBF35:	.ASCII	/    TIME OUT   /
+	.ASCII	/ MISSION TERMINATED /
+LBF58:	.ASCII	/ SABOTEUR DEAD /
+	.ASCII	/  MISSION FAILURE   /
+
+; Set movement handler = R3, set Ninja sprite = R2
+LBFB0:
+	MOV	R3, LB8CE		; set movement handler
+	MOV	R2, L7186		; set Ninja sprite address
+	JMP	LB8D0			; => Update Ninja on tilemap
+
+; Ninja standing
+LC226:
+	MOV	#LBC55, R3		; Movement handler: Ninja standing
+	MOV	#LD486, R2		; Sprite Ninja/Guard standing
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 LC64C:
 	;TODO
@@ -857,27 +1237,49 @@ LC6E2:
 LC70C:
 	;TODO
 
+; Ninja/Guard sprites
+LD3DE:	;TODO
+LD408:	;TODO
+LD432:	;TODO
+LD45C:	;TODO
+LD486:	;TODO
+LD4B0:	;TODO
+LD4DA:	;TODO
+LD504:	;TODO
+LD52E:	;TODO
+LD558:	;TODO
+LD582:	;TODO
+LD5AC:	;TODO
+LD5D6:	;TODO
+
 LDF27:	.ASCII	/S  START MISSION/
 
-LB937:
-
+; Room 84A8 initialization
 LF973:
 	;TODO
+
+LF9B9:
+	;TODO
+	RETURN	;STUB
+
+;------------------------------------------------------------------------------
+
+.INCLUDE /S1SPRT.MAC/
 
 ;------------------------------------------------------------------------------
 
 ; Tile screen 0 30x17 tiles, 510 bytes - background
-L6590:	.BLKW	510.
+L6590:	.BLKB	510.
 ; Tile screen 1 30x17 tiles, 510 bytes - update flags
-L678E:	.BLKW	510.
+L678E:	.BLKB	510.
 ; Tile screen 2 30x17 tiles, 510 bytes - Ninja screen
-L698C:	.BLKW	510.
+L698C:	.BLKB	510.
 ; Tile screen 3 30x17 tiles, 510 bytes - Dog screen
-L6B8A:	.BLKW	510.
+L6B8A:	.BLKB	510.
 ; Tile screen 4 30x17 tiles, 510 bytes - Guard screen
-L6D88:	.BLKW	510.
+L6D88:	.BLKB	510.
 ; Tile screen 5 30x17 tiles, 510 bytes - front
-L6F86:	.BLKW	510.
+L6F86:	.BLKB	510.
 
 ;------------------------------------------------------------------------------
 	.END	STCORE
