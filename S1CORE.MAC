@@ -134,10 +134,12 @@ PPSEND:	MOV	#PPBADR, R0
 
 ;------------------------------------------------------------------------------
 ;
-START:
+START:	CALL	PREPAR
 
-	CALL	LACCA			; Frames/indicators
-	JMP	LB66A
+	CALL	L6289
+
+;	CALL	LACCA			; Frames/indicators
+;	JMP	LB66A
 
 ;	MOV	#16., R1
 ;	MOV	#LDF27, R3
@@ -145,7 +147,7 @@ START:
 ;	CALL	LAED1			; Print string "S START MISSION"
 
 ;100$:	BR	100$	;DEADLOOP
-;	HALT
+	HALT
 
 ;	RETURN ;STUB
 
@@ -154,6 +156,45 @@ START:
 .INCLUDE /S1ROOM.MAC/
 
 .INCLUDE /S1FONT.MAC/
+
+;------------------------------------------------------------------------------
+
+; Show title picture (two ninjas)
+L6289:	MOV	#L62DB, R3		; Encoded picture data address
+	MOV	#L6590, R2		; Tile screens address, used as a buffer
+L628F:	MOVB	(R3)+, R0		; Load next byte of picture data
+	BEQ	L62A1			; $00 => repeat byte N times
+	CMPB	R0, #2			; check for control byte $02 - end of sequence
+	BEQ	L62A9			; => Copy the buffer to screen
+	CMPB	R0, #377		; check for block marker
+	BEQ	L62A1			; => repeat byte N times
+	MOVB	R0, (R2)+		; Store regular byte into tile screen
+	BR	L628F			; Loop back to process next byte
+L62A1:	CLR	R1
+	BISB	(R3)+, R1		; get repeat count
+L62A2:	MOVB	R0, (R2)+		; store repeated byte in buffer
+	SOB	R1, L62A2		; repeat
+	BR	L628F
+; Buffer is ready, copy to screen
+L62A9:	MOV	#<SCREEN+4>, R3		; Screen address
+	MOV	#L6590, R2		; Tile screens address, used as a buffer
+	MOV	#12., R4		; Number of columns = 12.
+L62B1:	PUSH	R3			; save screen address
+	MOV	#<24.*8.>, R1		; Number of lines = 24. * 8.
+	MOV	R3, @#176640
+L62B4:	MOVB	(R2)+, R0
+	MOVB	REFBFH(R0), R0		; byte mirroring
+	BIC	#177400, R0
+	MOV	R0, @#176642		; put pixels on the screen
+	ADD	#120, @#176640
+	SOB	R1, L62B4		; continue loop for lines
+	POP	R3			; restore screen address
+	INC	R3			; next column
+	SOB	R4, L62B1		; continue loop for columns
+	RETURN
+
+.INCLUDE /S1PICT.MAC/
+	.EVEN
 
 ;------------------------------------------------------------------------------
 
@@ -1261,8 +1302,30 @@ LF9B9:
 
 ;------------------------------------------------------------------------------
 
+REFBF:	.BLKW	256.
+REFBFH = REFBF + 200
+
 ; Tile screen 0 30x17 tiles, 510 bytes - background
-L6590:	.BLKB	510.
+L6590:
+
+; Preparing reflection table, but starting from 128.
+PREPAR:	MOV	#000200, R4		; ^B10000000 = 200 = 128.
+	CLR	R0
+	MOV	#000400, R1		; 256.
+	MOV	#REFBF, R3		; REFBF table address
+10$:	MOVB	#000010, R2		; <  8.
+	CLR	R5
+	BISB	R4, R5
+20$:	RORB	R5			; | <
+	ROLB	R0			; | |
+	SOB	R2, 20$			; | repeat
+	MOVB	R0, (R3)+
+	INCB	R4
+	SOB	R1, 10$			; repeat
+	RETURN
+
+	.BLKB	<510.-<.-L6590>>
+
 ; Tile screen 1 30x17 tiles, 510 bytes - update flags
 L678E:	.BLKB	510.
 ; Tile screen 2 30x17 tiles, 510 bytes - Ninja screen
