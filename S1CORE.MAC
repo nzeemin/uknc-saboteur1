@@ -66,7 +66,7 @@ GAMESC:	; Строка подготовки игрового экрана
 	.BYTE	33,242,60	; Цвет фона 0
 	.BYTE	14		; Clear screen
 	.BYTE	33,247,60	; Цвет курсора
-	.BYTE	033,131,60,40	; Курсор в позицию
+	.BYTE	033,131,61,40	; Курсор в позицию
 	.BYTE	0
 EXITSC:	; Строка очистки экрана перед выходом
 	.BYTE	33,246,061	; Формат экрана 80x24
@@ -157,7 +157,7 @@ START:
 
 ;------------------------------------------------------------------------------
 
-L7184:	.WORD	L791E	; Current Room address
+L7184:	.WORD	L8DCA	; Current Room address
 L7186:	.WORD	LA0B5	; Ninja sprite address
 
 L71C3:	.WORD	257.	; Current Guard position in tilemap
@@ -226,7 +226,7 @@ L7384:	POP	R3			; Restore token sequence address
 10$:	MOVB	R0, (R2)		; put tile into tilemap
 	ADD	R4, R2			; apply the shift
 	SOB	R1, 10$
-L734A:	JMP	LB702			; => Proceed to the next room token
+	BR	L734A			; => Proceed to the next room token
 ; Room token #0A: Fill to down-right; params: 4 bytes (count, filler, offset)
 L7395:	MOV	#31., R4		; shift = 30. + 1
 	BR	L7384
@@ -258,7 +258,7 @@ L73BA:	MOVB	R0, (R2)		; put tile into tilemap
 	POP	R2
 	ADD	#30., R2		; next row
 	SOB	R1, L73B8		; continue loop by rows
-	BR	L734A			; => B702 Proceed to the next room token
+L734A:	JMP	LB702			; => B702 Proceed to the next room token
 ; Room token #07: Fill triangle from wide bottom; params: 4 bytes (filler, count, offset)
 L73C5:	MOV	#1, R4			; shift = 1
 L73C7:	POP	R3			; Restore token sequence address
@@ -273,12 +273,14 @@ L73C7:	POP	R3			; Restore token sequence address
 	ADD	#L6590, R2		; + Tile screen 0 address
 	PUSH	R3
 	MOV	#1, R3
-L73DB:	PUSH	R2
+L73DB:	PUSH	R3
+	PUSH	R2
 L73DD:	MOVB	R0, (R2)		; put tile into tilemap
 	ADD	R4, R2			; apply the shift
 	SOB	R3, L73DD
 	POP	R2
-	INC	R2
+	POP	R3
+	INC	R3
 	ADD	#30., R2		; next row
 	SOB	R1, L73DB		; continue loop by rows
 	BR	L734A			; => B702 Proceed to the next room token
@@ -314,8 +316,10 @@ L7406:	POP	R3			; Restore token sequence address
 	ADD	#L6590, R2		; + Tile screen 0 address
 	PUSH	R3
 L7415:	PUSH	R4
+	PUSH	R2
 L7416:	MOVB	(R0)+, (R2)+
 	SOB	R4, L7416		; continue loop by columns
+	POP	R2
 	POP	R4
 	ADD	#30., R2		; next row
 	SOB	R1, L7415
@@ -335,12 +339,15 @@ L742B:	POP	R3			; Restore token sequence address
 	SWAB	R2
 	ADD	#L6590, R2		; + Tile screen 0 address
 	PUSH	R3
-L743A:	PUSH	R4
+L743A:	PUSH	R0
+	PUSH	R4
 	PUSH	R2
 L743D:	MOVB	(R0)+, (R2)+
 	SOB	R4, L743D
 	POP	R2
+	ADD	#30., R2		; next row
 	POP	R4
+	POP	R0
 	SOB	R1, L743A
 	BR	L734A			; => B702 Proceed to the next room token
 ; Room token #03: Fill rectangle; params: 5 bytes (filler, width, height, offset)
@@ -903,8 +910,8 @@ LB263:	MOV	L7237, R3		; get address in Tile scrren 5
 	MOV	#LB13E, R2		; buffer address
 	MOV	#8., R1
 10$:	MOVB	(R2), R0		; get byte from the buffer
-	BICB	(R3)+, R0		; apply the mask
-	BISB	(R3)+, R0		; apply the pixels
+	BISB	(R3)+, R0		; apply the mask
+	BICB	(R3)+, R0		; apply the pixels
 	MOVB	R0, (R2)+		; store byte back to the buffer
 	SOB	R1, 10$
 ; Draw prepared tile on the screen
@@ -1264,7 +1271,7 @@ LF9B9:
 
 ;------------------------------------------------------------------------------
 
-.INCLUDE /S1SPRT.MAC/
+.INCLUDE /S1TILE.MAC/
 
 ;------------------------------------------------------------------------------
 
