@@ -157,7 +157,7 @@ START:
 
 ;------------------------------------------------------------------------------
 
-L7184:	.WORD	L8DCA	; Current Room address
+L7184:	.WORD	L8E9C	; Current Room address
 L7186:	.WORD	LA0B5	; Ninja sprite address
 
 L71C3:	.WORD	257.	; Current Guard position in tilemap
@@ -421,9 +421,6 @@ L9DD9:	RETURN				; !!MUT-CMD!! "PUSH R1" or "RETURN"
 L9DF1:	SOB	R1, L9DD9
 	;TODO	DI
 	RETURN
-
-; Sprite Ninja/Guard dead, 6x7 tiles
-LA0B5:	;TODO
 
 LA0DF:	; Room 94AB initialization
 	MOV	LA1E1, R3		; Guard data address
@@ -1244,21 +1241,6 @@ LC6E2:
 LC70C:
 	;TODO
 
-; Ninja/Guard sprites
-LD3DE:	;TODO
-LD408:	;TODO
-LD432:	;TODO
-LD45C:	;TODO
-LD486:	;TODO
-LD4B0:	;TODO
-LD4DA:	;TODO
-LD504:	;TODO
-LD52E:	;TODO
-LD558:	;TODO
-LD582:	;TODO
-LD5AC:	;TODO
-LD5D6:	;TODO
-
 LDF27:	.ASCII	/S  START MISSION/
 
 ; Room 84A8 initialization
@@ -1271,7 +1253,11 @@ LF9B9:
 
 ;------------------------------------------------------------------------------
 
+.INCLUDE /S1SPRT.MAC/
+	.EVEN
+
 .INCLUDE /S1TILE.MAC/
+	.EVEN
 
 ;------------------------------------------------------------------------------
 
