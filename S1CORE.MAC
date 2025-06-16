@@ -130,16 +130,14 @@ PPSEND:	MOV	#PPBADR, R0
 	MTPS	#0
 	RETURN
 
-	.BLKW	63	;NOTE: Свободное место
-
 ;------------------------------------------------------------------------------
 ;
 START:	CALL	PREPAR
 
-	CALL	L6289
+;	CALL	L6289			; Show Two Ninjas
 
 ;	CALL	LACCA			; Frames/indicators
-;	JMP	LB66A
+	JMP	LB66A
 
 ;	MOV	#16., R1
 ;	MOV	#LDF27, R3
@@ -193,6 +191,7 @@ L62B4:	MOVB	(R2)+, R0
 	SOB	R4, L62B1		; continue loop for columns
 	RETURN
 
+; Title picture (two ninjas), RLE encoded
 .INCLUDE /S1PICT.MAC/
 	.EVEN
 
@@ -220,6 +219,9 @@ L71D5:	.BYTE	1
 L71D6:	;TODO		; Room 79C6 dog data
 
 L7232:	.BYTE	0	; Input bits: 000FUDLR
+	.EVEN
+
+L7239:	.BYTE	0	; Ninja direction: 0 = left, 1 = right
 	.EVEN
 
 L733B:	; Table of four addresses of Ninja/Guard walking sprites
@@ -255,7 +257,8 @@ L7359:	HALT	; DO NOTHING, we're not processing this token
 L7381:	MOV	#30., R4		; shift = 30.
 L7384:	POP	R3			; Restore token sequence address
 	INC	R3			; Skip token byte
-	MOVB	(R3)+, R1		; get count byte
+	CLR	R1
+	BISB	(R3)+, R1		; get count byte
 	MOVB	(R3)+, R0		; get tile byte
 	CLR	R2
 	BISB	(R3)+, R2		; get offset low byte
@@ -948,8 +951,8 @@ LB263:	MOV	L7237, R3		; get address in Tile scrren 5
 	MOV	#LB13E, R2		; buffer address
 	MOV	#8., R1
 10$:	MOVB	(R2), R0		; get byte from the buffer
-	BISB	(R3)+, R0		; apply the mask
-	BICB	(R3)+, R0		; apply the pixels
+	BICB	(R3)+, R0		; apply the mask
+	BISB	(R3)+, R0		; apply the pixels
 	MOVB	R0, (R2)+		; store byte back to the buffer
 	SOB	R1, 10$
 ; Draw prepared tile on the screen
@@ -974,10 +977,24 @@ LB368:
 LB371:
 	RETURN	;STUB
 
-; Room token #00: Barrel, 3x3 tiles 7C21; params: 2 bytes (address)
-LB38F:
-	;TODO
-	RETURN ;STUB
+; Room token #00: Barrel, 3x3 tiles 7C21; params: 2 bytes (offset)
+LB38F:	POP	R3			; Restore token sequence address
+	INC	R3			; Skip token byte
+	CLR	R2
+	BISB	(R3)+, R2		; get offset low byte
+	SWAB	R2
+	BISB	(R3), R2		; get offset high byte
+	SWAB	R2
+	ADD	#L6590, R2		; + Tile screen 0 address
+	PUSH	R3
+	MOV	#L7C21, R3		; Tile block address
+	MOV	#3, R1			; 3 rows
+LB39B:	MOVB	(R3)+, (R2)+
+	MOVB	(R3)+, (R2)+
+	MOVB	(R3)+, (R2)
+	ADD	#28., R2
+	SOB	R1, LB39B
+	JMP	LB702			; => Proceed to the next room token
 
 ; Initialize a guard
 ; Input: R3 = Guard data address, see A1E1
@@ -1144,12 +1161,54 @@ LB8CD:	JMP	LBEB3			; !!MUT-ARG!! => run handler
 LB8CE = LB8CD + 2
 
 ; Update Ninja on tilemap
-LB8D0:
+LB8D0:	CALL	LBBBB			; Set update flags for Ninja, 6x7 tiles
+	MOV	#L6D88, R3		; Tile screen 4 start address
+	MOV	#<510./2>, R1
+10$:	MOV	#177777, (R3)+
+	SOB	R1, 10$
+; Draw Ninja on tilemap
+LB8E0:	MOV	L9C42, R3		; get Ninja position in tilemap
+	MOVB	L7239, R0		; get Ninja direction
 	;TODO
 
 ; Standard room procedure (redirect from B41F)
 LB937:
 	;TODO
+
+LBA20:
+	;TODO
+
+; Draw Explosion image on the screen and make some noise
+LBA52:
+	;TODO
+	JMP	LB77B			; => Game loop start
+
+LBBAE:
+	;TODO
+	RETURN	;STUB
+
+; Set update flags for Ninja, 6x7 tiles
+LBBBB:	MOV	L9C42, R3		; get Ninja position in tilemap
+	ADD	#L678E, R3		; Tile screen 1 start address
+	MOV	#7, R1			; 7 rows
+10$:	MOV	#6, R4			; 6 columns
+12$:	MOVB	#1, (R3)+		; put "need to update" mark
+	SOB	R4, 12$			; continue by columns
+	ADD	#24, R3			; next row
+	SOB	R1, 10$			; continue by rows
+	RETURN
+
+; Movement handler: Ninja punching
+LBBD4:	CALL	LBBDF			; Read input
+	BIT	#20, R0			; check FIRE bit
+	BNE	10$
+	JMP	LC226			; => Ninja standing
+10$:	JMP	LB8D0			; => Update Ninja on tilemap
+
+; Read Input
+LBBDF:
+	;TODO
+	RETURN	;STUB
 
 LBC0D:
 ; Prepare screen background for title picture
@@ -1252,11 +1311,26 @@ LBFB0:
 	MOV	R2, L7186		; set Ninja sprite address
 	JMP	LB8D0			; => Update Ninja on tilemap
 
+LC16E:	JMP	LB8D0			; => Update Ninja on tilemap
+
 ; Ninja standing
 LC226:
 	MOV	#LBC55, R3		; Movement handler: Ninja standing
 	MOV	#LD486, R2		; Sprite Ninja/Guard standing
 	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
+
+; Movement handler (B8CE handler): Ninja sitting
+LC22F:	CALL	LBBDF			; Read input
+	BIT	#4, R0			; check DOWN bit
+	BNE	LC239			; still pressed =>
+	JMP	LC226			; DOWN key released => stand up
+LC239:	MOV	L9C42, R3		; get Ninja position in tilemap
+	;TODO
+	JMP	LC16E			; => Object procedure
+
+; Movement handler (B8CE handler): Ninja walking
+LC24B:
+	;TODO
 
 LC64C:
 	;TODO
@@ -1282,12 +1356,33 @@ LC6E2:
 LC70C:
 	;TODO
 
+; Clear strings on the screen
+LDEC1:
+	;TODO
+	RETURN	;STUB
+
+LDEE6:	.ASCII	/                /	; String 18 spaces
+
 LDF27:	.ASCII	/S  START MISSION/
+
+LDF37:
+	;TODO
+
+; Main menu
+LDF60:	CALL	LDEC1			; Clear strings on the screen
+	;TODO
+	MOV	#16., R1
+	MOV	#LDF27, R3
+	MOV	#<SCREEN+4>, R2		;TODO
+	CALL	LAED1			; Print string "S START MISSION"
+	;TODO
 
 ; Room 84A8 initialization
 LF973:
-	;TODO
+;NOTE: Crane sprite copying moved into room sequence
+	JMP	LB422
 
+; Pause, then wait for any key pressed
 LF9B9:
 	;TODO
 	RETURN	;STUB
