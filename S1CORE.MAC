@@ -136,7 +136,7 @@ START:	CALL	PREPAR
 
 ;	CALL	L6289			; Show Two Ninjas
 
-;	CALL	LACCA			; Frames/indicators
+	CALL	LACCA			; Frames/indicators
 	JMP	LB66A
 
 ;	MOV	#16., R1
@@ -197,7 +197,7 @@ L62B4:	MOVB	(R2)+, R0
 
 ;------------------------------------------------------------------------------
 
-L7184:	.WORD	L8E9C	; Current Room address
+L7184:	.WORD	L791E	; Current Room address
 L7186:	.WORD	LA0B5	; Ninja sprite address
 
 L71C3:	.WORD	257.	; Current Guard position in tilemap
@@ -224,6 +224,8 @@ L7232:	.BYTE	0	; Input bits: 000FUDLR
 L7239:	.BYTE	0	; Ninja direction: 0 = left, 1 = right
 	.EVEN
 
+L733A:	.BYTE	0	; Ninja walking phase
+	.EVEN
 L733B:	; Table of four addresses of Ninja/Guard walking sprites
 	.WORD	LD3DE			; Sprite Ninja/Guard walking 1
 	.WORD	LD408			; Sprite Ninja/Guard walking 2
@@ -430,7 +432,7 @@ L749E:
 	RETURN ;STUB
 
 ; Draw NEAR/HELD item
-L74CD:
+L74CD:	MOVB	#000, R0		; !!MUT-ARG!! item number
 	;TODO
 	RETURN ;STUB
 
@@ -448,7 +450,28 @@ L9C42:	.WORD	246.			; Ninja position in tilemap: Y * 30. + X
 
 ; Process a dog
 L9C44:
+	;TODO
 	RETURN	;STUB
+
+; Part of Dog processing
+L9CA8:
+	;TODO
+
+L9D58:	CALL	L9D5C			; Set update flags for Dog, 4x3 tiles
+	RETURN
+
+; Set update flags for Dog, 4x3 tiles
+L9D5C:	MOV	L71CB, R3
+	ADD	#L678E, R3		; Tile screen 1 start address
+	MOV	#3, R1			; 3 rows
+	MOV	#001, R0		; "need to update" flag
+10$:	MOVB	R0, (R3)+
+	MOVB	R0, (R3)+
+	MOVB	R0, (R3)+
+	MOVB	R0, (R3)
+	ADD	#<30.-3>, R3		; next row
+	SOB	R1, 10$			; continue loop by rows
+	RETURN
 
 ; Initialize a dog
 ; Input: R3 = dog data address
@@ -738,6 +761,21 @@ LA418:
 LA434:
 	;TODO
 
+; Set update flags for Guard, 6x7 tiles
+LA75B:	MOV	L71C3, R3		; get Current Guard position in tilemap
+	ADD	#L678E, R3		; Tile screen 1 start address
+	MOV	#7, R1			; 7 rows
+	MOV	#001, R0		; "need to update" flag
+10$:	MOVB	R0, (R3)+		; 6 columns
+	MOVB	R0, (R3)+
+	MOVB	R0, (R3)+
+	MOVB	R0, (R3)+
+	MOVB	R0, (R3)+
+	MOVB	R0, (R3)
+	ADD	#<30.-5>, R3		; next row
+	SOB	R1, 10$			; continue loop by rows
+	RETURN
+
 ; Reset Guard data and Dog data
 LAC44:
 	RETURN	;STUB
@@ -831,6 +869,52 @@ LAED1:
 	SUB	#<1200-1>, R2		; на 8. строк выше, плюс колонка вправо
 	SOB	R1, 1$
 	RETURN
+
+LAEF0:
+	;TODO
+LAF7E:
+	;TODO
+LAF84:
+	;TODO
+
+LAF9C:
+	;TODO
+LAFAA:
+	;TODO
+LAFBE:
+	;TODO
+
+; Print table of records
+LB005:
+	;TODO
+	RETURN
+
+LB040:
+	;TODO
+	JMP	LAFBE
+
+LB061:	.ASCII	/00  $/
+
+; Table of records
+LB066:	.ASCII	/020 THE CAT  /
+	.ASCII	/018JOOLZ     /
+	.ASCII	/016MICKY     /
+	.ASCII	/014DAVE      /
+	.ASCII	/012GEOFF P   /
+	.ASCII	/010SHARFACE  /
+	.ASCII	/008HOLLY     /
+	.ASCII	/006BRAD      /
+	.ASCII	/004TOZZY     /
+	.ASCII	/002MAT LE FAT/
+
+LB0E8:	.ASCII	/          /		; String 10 spaces
+
+LB0F2:	.ASCII	/EXCELLENT WORK./
+	.ASCII	/OU ARE ONE OF/
+	.ASCII	/ OUR TEN BEST/
+	.ASCII	/NINJA SABOTEURS./
+	.ASCII	/ENTER YOUR NAME.../
+	.EVEN
 
 ;------------------------------------------------------------------------------
 
@@ -969,9 +1053,33 @@ LB29B:	CLR	R0
 
 ;------------------------------------------------------------------------------
 
+; Object procedure: flip trigger "D": set/remove wall in room 9739
+LB320:	MOV	#6, R0
+	;TODO	XOR	R0, L9756
+	JMP	LB350			; => Change Console color in NEAR
+; Object procedure: flip trigger "E": set/remove wall in room 97A6
+LB32A:	MOV	#377, R0
+	;TODO
+	JMP	LB350			; => Change Console color in NEAR
+; Object procedure: flip trigger "C": set/remove wall in room 8D5C
+LB334:	MOV	#6, R0
+	;TODO
+	JMP	LB350			; => Change Console color in NEAR
+; Object procedure: flip trigger "B": set/remove wall in room 8F20
+LB33E:	MOV	#8., R0
+	;TODO
+	JMP	LB350			; => Change Console color in NEAR
+; Object procedure: flip trigger "A": set/remove wall in room 7F48
+LB348:	MOV	#9., R0
+	;TODO
+LB350:
+	;TODO
+	JMP	LB8D0			; => Update Ninja on tilemap
+
 ; Room 97A6 initialization
 LB368:
 	;TODO
+	JMP	LA18D			; => Finish Room 97A6 initialization
 
 ; Play melody ??; HL = melody address
 LB371:
@@ -996,44 +1104,71 @@ LB39B:	MOVB	(R3)+, (R2)+
 	SOB	R1, LB39B
 	JMP	LB702			; => Proceed to the next room token
 
+LB3B0:
+	;TODO
+	JMP	LB5C7
+
 ; Initialize a guard
 ; Input: R3 = Guard data address, see A1E1
-LB40A:
-	;TODO
-	RETURN ;STUB
+LB40A:	MOV	L71C3, R2		; address to store guard data
+	MOV	R3, @#<LB695+2>		; Save Guard data address
+	MOV	(R3)+, (R2)+		; copy Guard data - position in tilemap
+	MOV	(R3)+, (R2)		; copy Guard data - X/Y position
+	MOVB	(R3)+, L7346		; set Guard state
+	MOVB	(R3)+, L7347		; set Guard direction
+	RETURN
+
 ; Standard room procedure (for 63 rooms)
-LB41F:
-	JMP	LB937
+LB41F:	JMP	LB937
 ; Standard room initialization (for 60 rooms)
-LB422:
-	JMP	LB724			; => Finish room initialization
+LB422:	JMP	LB724			; => Finish room initialization
 ; Rooms 7C9C/92EF initialization (redirect from 791B)
-LB425:
-	MOV	#LC66B, R3		; Guard data address
+LB425:	MOV	#LC66B, R3		; Guard data address
 	CALL	LB40A			; Initialize a guard
 	JMP	LB724			; => Finish room initialization
 ; Room 79C6 initialization
-LB42E:
-	MOV	#L71D6, R3		; Dog data address
+LB42E:	MOV	#L71D6, R3		; Dog data address
 	CALL	L9DCD			; Initialize a dog
 	JMP	LB724			; => Finish room initialization
-
-LB446:	; Room B513 procedure (initial Room)
-	CALL	LB4FA			; Processing in the initial room
+; Room B513 procedure (initial Room)
+LB446:	CALL	LB4FA			; Processing in the initial room
 	JMP	LB937			; Standard room procedure
-LB44C:	; Room procedure (for 19 rooms with a guard) (redirect from 7918)
-	;TODO
-LB452:	; Room procedure (for 18 rooms with a dog)
-	;TODO
-LB458:	; Room procedure (for 5 rooms with a guard and a dog)
-	;TODO
+; Room procedure (for 19 rooms with a guard) (redirect from 7918)
+LB44C:	CALL	LA434			; Process a guard
+	JMP	LB937			; Standard room procedure
+; Room procedure (for 18 rooms with a dog)
+LB452:	CALL	L9C44			; Process a dog
+	JMP	LB937			; Standard room procedure
+; Room procedure (for 5 rooms with a guard and a dog)
+LB458:	CALL	L9C44			; Process a dog
+	CALL	LA434			; Process a guard
+	JMP	LB937			; Standard room procedure
+
 ; Turret initialization
 LB461:
 	RETURN ;STUB
-LB47A:	; Room procedure (for 2 rooms with a turret and a dog)
+
+; Room procedure (for 2 rooms with a turret and a dog)
+LB47A:	CALL	L9C44			; Process a dog
+	CALL	LB489			; Process turret
+	JMP	LB937			; Standard room procedure
+
+; Room procedure (for 14 rooms with a turret)
+LB483:	CALL	LB489			; Process turret
+	JMP	LB937			; Standard room procedure
+
+; Process turret
+LB489:
 	;TODO
-LB483:
+	RETURN
+
+LB4DD:	.BYTE	50.	; Turret counter 50..0
+	.EVEN
+
+; Increase PAY value by B * 100.
+LB4DE:
 	;TODO
+	RETURN ;STUB
 
 ; Processing in initial room - the boat moving
 LB4FA:
@@ -1053,8 +1188,7 @@ LB5C5:	.BYTE	1	; Ninja standing counter
 LB5C6:	.BYTE	0	; Time mode: 0 = time ticking; 1 = Time stopped; 2 = BOMB ticking mode
 	.EVEN
 
-LB5C7:
-	CALL	LAC44
+LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	;TODO
 
 	CALL	L7472
@@ -1070,6 +1204,8 @@ LB5C7:
 ; Current Room changed, entering the new Room
 LB66A:
 	;TODO
+
+LB695:	MOV	#000000, R2		; !!MUT-ARG!! current Guard data address
 
 	MOV	#L6590, R3		; Tile screen 0 start address
 	MOV	#<510./2>, R1
@@ -1128,29 +1264,94 @@ LB724:	MOV	#L678E, R3		; Tile screen 1 start address
 20$:	MOV	#177777, (R3)+		; put two bytes $FF = transparent tile
 	SOB	R1, 20$
 	CALL	LB148			; Draw tile map on the screen
-	HALT
-
+	MOV	#LD34D, R3		; Table of objects address
+	MOV	#35., R1		; 35 objects
+	;TODO
+	CMPB	#9., L7346 		; Guard state = 9. ?
+	BEQ	LB77B
+	MOVB	#10., L7346		; set Guard state = $0A
+;
 ; Game loop start
 LB77B:
 	;TODO
+	CMPB	#1, LB5C6		; Time mode = stopped ?
+	BEQ	LB7AF			; yes =>
+; Decrease Time, check if Time is out
+	;TODO
+
+; Check for BOMB
+LB7AF:
+	;TODO
+; BOMB ticking mode
+LB7B6:	MOV	#LB5C6, R3		; Time mode address
+	CMPB	#2, (R3)		; already in BOMB ticking mode?
+	BEQ	LB7ED			; yes =>
+; Set up BOMB ticking mode
+	MOVB	#2, (R3)		; set Time mode = BOMB ticking mode
+	MOV	#LBD2F, R3		; "BOMB"
+	MOV	#<SCREEN+4+<1200*22.>+22.>, R2	; screen address under timer value
+	MOV	#4, R1
+	CALL	LAED1			; Print string "BOMB"
+LB7CA:	MOV	#34471, R3		; !!MUT-ARG!! "99" bomb timer initial value
+	MOV	R3, LAD57		; set Indicator Time value
+	MOVB	#1, LB5C4
+	;TODO
+	MOV	#50., R1
+	CALL	LB4DE			; Increase PAY value by 5000
+LB7ED:	MOV	#L678E, R3		; Tile screen 1 start address
+	MOV	#<510./2>, R1
+10$:	CLR	(R3)+			; put two bytes $00 = "no need to update" value
+	SOB	R1, 10$
+	CALL	LBBBB			; Set update flags for Ninja, 6x7 tiles
+	MOV	#L698C, R3		; Tile screen 2 start address
+	MOV	#<510./2>, R1
+20$:	MOV	#177777, (R3)+		; put two bytes $FF
+	SOB	R1, 20$
+	CLRB	LB84C			; clear Object tile
+	MOV	#35., R1		; 35 = number of records in LD256
+	MOV	#LD256, R2		; Table address
+; Loop through the table
+LB814:
+	;TODO
+
+	JMP	LB891
 
 ; Increase Energy a bit
 LB83C:
 	;TODO
 	RETURN	;STUB
 
-; Set initial data in Table of Objects
-LB851:
-	;TODO
-	RETURN	;STUB
+LB84A:	.WORD	0			; Object address + 4, in table LD256
+LB84C:	.BYTE	0			; Object tile
+	.EVEN
+LB84D:	.WORD	0			; Object procedure address
+LB84F:	.BYTE	0			; NEAR item
+	.EVEN
+LB850:	.BYTE	0			; HELD tile
+	.EVEN
 
-; ?? Adjust table 751B by DE
+; Set initial data in Table of Objects LD256
+LB851:	MOV	#35., R1		; 35 objects
+	MOV	#<LD256+3>, R4		; address for Table of Objects + 3
+	MOV	#LD210, R3		; address for table with initial data
+10$:	MOVB	(R3)+, (R4)+		; set byte +$03 in the record
+	MOVB	(R3), (R4)		; set byte +$04 in the record
+	ADD	#<8.-1>, R4		; next record
+	SOB	R1, 10$			; continue the loop
+	RETURN
+
+; ?? Adjust table L751B by DE
 LB86C:
 	;TODO
 	RETURN	;STUB
 
 LB889:
-	;TODO
+	INC	R2
+	INC	R2
+	INC	R2
+	INC	R2
+	DEC	R1
+	BNE	LB814			; continue the loop through the table
 LB891:
 	;TODO
 
@@ -1183,6 +1384,10 @@ LBA52:
 	;TODO
 	JMP	LB77B			; => Game loop start
 
+LBBA7:
+	;TODO
+	JMP	LBA20
+
 LBBAE:
 	;TODO
 	RETURN	;STUB
@@ -1191,10 +1396,14 @@ LBBAE:
 LBBBB:	MOV	L9C42, R3		; get Ninja position in tilemap
 	ADD	#L678E, R3		; Tile screen 1 start address
 	MOV	#7, R1			; 7 rows
-10$:	MOV	#6, R4			; 6 columns
-12$:	MOVB	#1, (R3)+		; put "need to update" mark
-	SOB	R4, 12$			; continue by columns
-	ADD	#24, R3			; next row
+	MOV	#001, R0		; "need to update" mark
+10$:	MOVB	R0, (R3)+		; 6 columns
+	MOVB	R0, (R3)+
+	MOVB	R0, (R3)+
+	MOVB	R0, (R3)+
+	MOVB	R0, (R3)+
+	MOVB	R0, (R3)
+	ADD	#<30.-5>, R3		; next row
 	SOB	R1, 10$			; continue by rows
 	RETURN
 
@@ -1236,6 +1445,17 @@ LBC55:
 	CALL	LB83C			; Increase Energy a bit
 ; Move the head (idle animation)
 LBC76:
+	;TODO
+
+; Check for suicide key combination
+LBC9D:
+	;TODO
+
+; "BOMB" message
+LBD2F:	.ASCII	/BOMB/
+
+LBD33:
+	;TODO
 
 ; Fire pressed, Ninja standing, no object nearby
 LBD37:
@@ -1284,10 +1504,10 @@ LBEAA:	POP	R3
 
 ; Movement handler: Game Over
 LBEB3:	MOV	#LBEEF, R3		; !!MUT-ARG!! two-line message address
-	MOV	#<SCREEN+4>, R2
+	MOV	#<SCREEN+<1200*3.>+12.>, R2
 	MOV	#15., R1
 	CALL	LAED1			; Print string 1st line
-	MOV	#<SCREEN+4>, R2
+	MOV	#<SCREEN+<1200*5.>+10.>, R2
 	MOV	#20., R1
 	CALL	LAED1			; Print string 1st line
 	;
@@ -1354,6 +1574,21 @@ LC6E2:
 
 ; Movement handler (B8CE handler): Train moving right
 LC70C:
+	;TODO
+
+; Table of 35 records, 2 bytes each, see LB851
+LD210:
+	.BLKB	<35.*2.> ;STUB
+	;TODO
+
+; Table ?? objects, 35 records, 8 bytes each
+LD256:
+	.BLKB	<35.*8.> ;STUB
+	;TODO
+
+; Table of objects, 35 records, 6 bytes each
+LD34D:
+	.BLKB	<35.*6.> ;STUB
 	;TODO
 
 ; Clear strings on the screen
