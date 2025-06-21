@@ -447,7 +447,9 @@ L791B:	; Rooms 7C9C/92EF initialization
 	JMP	LB425
 
 L9C40:	.BYTE	8.			; Ninja Y within the room, 0 at the top
+	.EVEN
 L9C41:	.BYTE	6			; Ninja X within the room
+	.EVEN
 L9C42:	.WORD	246.			; Ninja position in tilemap: Y * 30. + X
 
 ; Process a dog
@@ -1182,18 +1184,36 @@ LB4DE:
 
 ; Processing in initial room - the boat moving
 LB4FA:
-	;TODO
-	RETURN ;STUB
+	;TODO: Update front tile
+	MOV	#<L678E+<30.*9.>>, R3
+	MOV	#30., R1
+10$:	MOVB	#1, (R3)+		; put "need update" mark
+	SOB	R1, 10$
+	RETURN
 
 ; Movement handler for initial room (B8CE handler)
-LB532:
-	INC	L9C42			; increase Ninja position in tilemap
+LB532:	INC	L9C42			; increase Ninja position in tilemap
 	INCB	L9C41			; increase Ninja X
+LB53D:	MOV	#<L6F86+349.>, R2	; !!MUT-ARG!! address in Tile screen 5 (front)
+	MOV	#LB5A7, R3		; Boat sprite address
+	MOV	#9., R1
+10$:	MOVB	(R3)+, (R2)+
+	SOB	R1, 10$
+	ADD	#-2041., R2
+	MOVB	#1, (R2)		; put "need update" flag
+	ADD	#-8., R2
+	MOVB	#1, (R2)		; put "need update" flag
+	INC	@#<LB53D+2>		; increase boat position
 	;TODO
-
+	DECB	L7343			; decrease counter
+	BEQ	LB577
+	JMP	LB8D0			; => Update Ninja on tilemap
+LB577:	INCB	L9C41			; increrase Ninja X
+	INC	L9C42			; increase Ninja position in tilemap
+	;TODO
 	MOV	#LD5AC, R2		; Sprite Ninja jumping 3
 	MOV	#LC4F6, R3		; Movement handler address
-	;TODO
+	MOVB	#4, L7343		; set counter = 4
 	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 LB5C4:	.BYTE	25	; Time fast counter 50..0
@@ -1204,7 +1224,14 @@ LB5C6:	.BYTE	0	; Time mode: 0 = time ticking; 1 = Time stopped; 2 = BOMB ticking
 LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	;TODO
 	CALL	LACCA			; Draw game screen frames and indicator text
+	CLR	LB5C6			; set Time mode = time ticking
+	CLR	LB850			; clear HELD tile
+	;TODO
+	MOVB	#1, L7239		; set Ninja direction = 1 = right
+	MOVB	#1, LB84F		; set NEAR item = 1
+	MOV	#<L6F86+330.>, @#<LB53D+2>	; set initial position for boat
 
+	CALL	LB851			; Set initial data in Table of Objects
 	CLR	<LB673+2>		; set current Dog data address = no dog
 	CLR	<LB695+2>		; set current Guard data address = no guard
 	;TODO
@@ -1389,10 +1416,21 @@ LB8D0:	CALL	LBBBB			; Set update flags for Ninja, 6x7 tiles
 	SOB	R1, 10$
 ; Draw Ninja on tilemap
 LB8E0:	MOV	L9C42, R3		; get Ninja position in tilemap
-	MOVB	L7239, R0		; get Ninja direction
-	;TODO
-
-	ADD	#L698C, R3		; Tile screen 2 start address
+	TSTB	L7239			; get Ninja direction
+	BNE	LB907			; right =>
+	ADD	#<L698C+6>, R3		; Tile screen 2 start address + 6
+	MOV	L7186, R2		; get Ninja sprite address
+	MOV	#7, R1
+10$:	MOVB	(R2)+, -(R3)
+	MOVB	(R2)+, -(R3)
+	MOVB	(R2)+, -(R3)
+	MOVB	(R2)+, -(R3)
+	MOVB	(R2)+, -(R3)
+	MOVB	(R2)+, -(R3)
+	ADD	#<30.+6>, R3
+	SOB	R1, 10$
+	BR	LB922
+LB907:	ADD	#L698C, R3		; Tile screen 2 start address
 	MOV	L7186, R2		; get Ninja sprite address
 	MOV	#7, R1
 10$:	MOVB	(R2)+, (R3)+
@@ -1455,9 +1493,36 @@ LBBD4:	CALL	LBBDF			; Read input
 10$:	JMP	LB8D0			; => Update Ninja on tilemap
 
 ; Read Input
-LBBDF:
-	;TODO
-	RETURN	;STUB
+LBBDF:	TSTB	@#177560		; do we have an unprocessed key?
+	BPL	K41276			; no => jump
+	MOVB	@#177562, R0		; get the key
+	MOV	#KEYMAP, R3		; table address
+	MOV	#5., R1			; table size
+K41256:	CMPB	(R3)+, R0		; <  matches the key?
+	BNE	K41270			; |  no => jump
+	MOVB	(R3), R0		; |  get the result byte
+	BR	K41300			; |  break the loop
+K41270:	INC	R3			; |  to next key probe
+	SOB	R1, K41256		; repeat
+K41276:	CLR	R0			; not found - result is empty
+K41300:	MOVB	R0, L7232		; store input bits
+	RETURN
+
+; Game controls
+;  7   6   5   4   3   2   1   0
+;              Fr  Up  Dn  Lt  Rt
+;
+; Key mappings
+KEYMAP:	.BYTE	070, 010		; '8' - up
+	.BYTE	062, 004		; '2' - down
+	.BYTE	064, 002		; '4' - left
+	.BYTE	066, 001		; '6' - right
+	.BYTE	065, 020		; '5' - fire
+;	.BYTE	061, 000		; '1' - up + left
+;	.BYTE	063, 000		; '3' - up + right
+;	.BYTE	067, 000		; '7' - down + fire
+;	.BYTE	071, 000		; '9' - down + fire
+	.EVEN
 
 LBC0D:
 ; Prepare screen background for title picture
@@ -1481,9 +1546,11 @@ LBC55:
 	DECB	(R3)			; decrease counter
 	BNE	LBC76
 	MOVB	#2, (R3)		; reload the counter
-	;TODO
-
-	CALL	LB83C			; Increase Energy a bit
+	CMPB	#19., L749C		; Energy at MAX?
+	BNE	LBC6B
+	CMPB	#1, L749D		; check Energy lower
+	BEQ	LBC76
+LBC6B:	CALL	LB83C			; Increase Energy a bit
 	MOV	#1, R1
 	CALL	L9DD9			; Decrease Energy by R1
 	CALL	LB83C			; Increase Energy a bit
@@ -1493,6 +1560,18 @@ LBC76:
 
 ; Check for suicide key combination
 LBC9D:
+	;TODO
+
+LBCB6:	CALL	LC5A3			; Check for falling
+	BNE	LBCBC
+	JMP	LC643			; => Ninja falling
+LBCBC:
+
+LBCC4:	CALL	LBBDF			; Read Input
+	BIT	#20, R0			; check FIRE bit
+	BEQ	LBDDD
+;FIRE pressed, ninja standing
+	HALT
 	;TODO
 
 ; "BOMB" message
@@ -1515,7 +1594,17 @@ LBDAF:	; Ninja standing (redirect)
 LBDB2:
 	;TODO
 
-LBDDD:
+LBDDD:	BIT	#10, R0			; bit 3 - up
+	BNE	LBDE2			; yes =>
+	JMP	LBFBA
+; UP pressed
+LBDE2:	MOV	L9C42, R2		; get Ninja position in tilemap
+	MOV	#<L6590+30.>, R3	; Tile screen 0 + 1 row
+	ADD	R2, R3
+	CMPB	#332, (R3)		; = $DA ?
+	BEQ	LBDF0
+	JMP	LBF7B
+LBDF0:	MOVB	#11., L7343		; set counter = 11.
 	;TODO
 
 	MOV	#LBE0D, R3		; Movement handler
@@ -1578,22 +1667,128 @@ LBF35:	.ASCII	/    TIME OUT   /
 LBF58:	.ASCII	/ SABOTEUR DEAD /
 	.ASCII	/  MISSION FAILURE   /
 
+; UP pressed (continued, see BDE2)
+LBF7B:	MOV	#<L6590+2>, R3		; Tile screen 0 + 2
+	ADD	R2, R3
+	CMPB	#144, (R3)
+	BHIS	LBF85
+	JMP	LC16E			; => Update Ninja on tilemap
+LBF85:	INC	R3
+	CMPB	#144, (R3)
+	BHIS	LBF8A
+	JMP	LC16E			; => Update Ninja on tilemap
+LBF8A:	MOVB	#3, L7343		; set counter = 3
+	MOVB	L7232, R0		; get Input bits
+	TSTB	L7239			; check Ninja direction
+	BEQ	LBFA0			; left =>
+	BIT	#1, R0			; check RIGHT bit
+	BEQ	LBF9E
+	CALL	LC4E8
+LBF9E:	BR	LBFA5
+LBFA0:	BIT	#2, R0			; check LEFT bit
+	BEQ	LBFA5
+	CALL	LC4E8
+LBFA5:	MOV	#LC339, R3		; Movement handler: Ninja jumping
+	MOVB	#2, L7343		; set counter = 2
+	MOV	#LD4B0, R2		; Sprite Ninja/Guard jumping
+
 ; Set movement handler = R3, set Ninja sprite = R2
-LBFB0:
-	MOV	R3, LB8CE		; set movement handler
+LBFB0:	MOV	R3, LB8CE		; set movement handler
 	MOV	R2, L7186		; set Ninja sprite address
 	JMP	LB8D0			; => Update Ninja on tilemap
+
+LBFBA:	BIT	#4, R0			; bit 2 - down
+	BNE	LBFBF			; yes =>
+	JMP	LC13D
+; DOWN pressed
+LBFBF:	MOV	L9C42, R3		; get Ninja position in tilemap
+	ADD	#<L6590+212.>, R3	;
+	CALL	LC392			; Check if tile is a ladder
+	BNE	LBFCC
+	JMP	LC12E			; => Ninja on ladder
+
+; Switch Ninja to sitting
+LBFCC:	MOV	#LC22F, R3		; Movement handler: Ninja sitting
+	MOV	#LD558, R2		; Sprite Ninja sitting
+	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
 
 ; ?? Movement handler (helicopter?)
 LC094:
 	;TODO
 	JMP	LB8D0			; => Update Ninja on tilemap
 
+; Ninja on ladder
+LC12E:	MOV	#LC3D9, LB8CE		; Movement handler for Ninja on ladder
+	MOV	#LD52E, L7186		; Sprite Ninja on ladder
+	JMP	LC498			; => Move down one tile
+
+LC13D:	BIT	#2, R0			; bit 1 - left
+	BEQ	LC154			; no =>
+; LEFT pressed
+	MOV	#L7239, R3		; Ninja direction address
+	TSTB	(R3)			; left?
+	BEQ	LC14B
+	CLRB	(R3)			; change direction to left
+	BR	LC16E			; => Update Ninja on tilemap
+LC14B:	MOV	#LC24B, R3		; Movement handler address
+	MOV	#LD3DE, R2		; Sprite Ninja/Guard walking 1
+	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+
+LC154:	BIT	#1, R0			; bit 0 - right
+	BEQ	LC16E			; no =>
+; RIGHT pressed
+	MOV	#L7239, R3		; Ninja direction address
+	TSTB	(R3)			; left?
+	BNE	LC162			; no =>
+	INCB	(R3)			; change direction to right
+	BR	LC16E			; => Update Ninja on tilemap
+LC162:	MOV	#LC1B6, LB8CE		; set Movement handler address
+	MOV	#LD3DE, L7186		; Sprite Ninja/Guard walking 1
 LC16E:	JMP	LB8D0			; => Update Ninja on tilemap
 
+; Movement handler - Ninja walking ??
+LC1B6:	MOVB	L9C41, R0		; get Ninja X
+	CMPB	#24., R0		; near right edge?
+	BNE	LC1BE
+	JMP	LC2FA			; => Going to room at Right
+LC1BE:	MOV	L9C42, R3		; get Ninja position in tilemap
+	ADD	#<L6590+184.>, R3	; + Tile screen 0 + 6 rows + 4
+	CMPB	#144, (R3)
+	BHIS	LC1DA
+	DECB	L9C40			; decrement Ninja Y
+	ADD	#-30., L9C42		; Ninja position in tilemap -30.
+	BR	LC20D
+LC1DA:	ADD	#-29., R3
+	CMPB	#144, (R3)
+	BHIS	LC1EE
+	CALL	LBBDF			; Read Input
+	BIT	#1, R0			; check RIGHT bit
+	BEQ	LC226			; => Ninja standing
+	JMP	LB8D0			; => Update Ninja on tilemap
+LC1EE:	ADD	#59., R3
+	CMPB	#144, (R3)
+	BLO	LC20D
+	DEC	R3
+	CMPB	#144, (R3)
+	BLO	LC20D
+	ADD	#30., L9C42		; Ninja position in tilemap +30.
+	MOV	#L9C40, R3		; Ninja Y address
+	INCB	(R3)			; one row down
+	CMPB	#10., (R3)		; at the room bottom?
+	BNE	LC20D			; no =>
+	JMP	LC604			; => Going to room Down from current
+LC20D:	INCB	L9C41			; move one tile to right
+	INC	L9C42			; increment Ninja position in tilemap
+	CALL	LC5A3			; Check for falling
+	BNE	LC21E			; not falling =>
+	JMP	LC643			; => Ninja falling
+LC21E:	CALL	LBBDF			; Read Input
+	BIT	#1, R0			; check RIGHT bit
+	BEQ	LC226
+	JMP	LC2BB			; =>
+
 ; Ninja standing
-LC226:
-	MOV	#LBC55, R3		; Movement handler: Ninja standing
+LC226:	MOV	#LBC55, R3		; Movement handler: Ninja standing
 	MOV	#LD486, R2		; Sprite Ninja/Guard standing
 	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
@@ -1603,76 +1798,346 @@ LC22F:	CALL	LBBDF			; Read input
 	BNE	LC239			; still pressed =>
 	JMP	LC226			; DOWN key released => stand up
 LC239:	MOV	L9C42, R3		; get Ninja position in tilemap
-	;TODO
-	JMP	LC16E			; => Object procedure
+	ADD	#<L6F86+182.>, R3	; Tile screen 5 + 182.
+	CMPB	#014, (R3)
+	BNE	LC248
+	MOV	#2, R1
+	CALL	L9DD9			; => Decrease Energy by B
+LC248:	JMP	LC16E			; => Object procedure
 
 ; Movement handler (B8CE handler): Ninja walking
-LC24B:
-	HALT
+LC24B:	TSTB	L9C41			; Ninja X at very left?
+	BNE	LC253			; no =>
+	JMP	LC319			; => Going to room at Left
+LC253:	MOV	L9C42, R3		; get Ninja position in tilemap
+	ADD	#<L6590+181.>, R3
+	CMPB	#144, (R3)
+	BHIS	LC26F
+	DECB	L9C40			; moving one row up
+	ADD	#-30., L9C42		; Ninja position in tilemap -30.
+	BR	LC2A2
+LC26F:	ADD	#-31., R3
+	CMPB	#144, (R3)
+	BHIS	LC283
+	CALL	LBBDF			; Read Input
+	BIT	#2, R0			; check LEFT bit
+	BEQ	LC226			; => Ninja standing
+	JMP	LB8D0			; => Update Ninja on tilemap
+LC283:	ADD	#61., R3
+	CMPB	#144, (R3)
+	BLO	LC2A2
+	INC	R3
+	CMPB	#144, (R3)
+	BLO	LC2A2
+	ADD	#30., L9C42		; Ninja position in tilemap +30.
+	MOV	#L9C40, R3		; Ninja Y address
+	INCB	(R3)			; one row down
+	CMPB	#10., (R3)		; at the room bottom?
+	BNE	LC2A2			; no =>
+	JMP	LC604			; => Going to room Down from current
+LC2A2:	DECB	L9C41			; move one tile to left
+	DEC	L9C42			; decrement Ninja position in tilemap
+	CALL	LC5A3			; Check for falling
+	BNE	LC2B3			; not falling =>
+	JMP	LC643			; => Ninja falling
+LC2B3:	CALL	LBBDF			; Read Input
+	BIT	#2, R0			; check LEFT bit
+	BEQ	LC226			; => Ninja standing
+
+; LEFT or RIGHT key pressed
+LC2BB:
 	;TODO
+	HALT
 
 ; Going to room at Right
-LC2FA:
-	CLR	L9C41			; set Ninja X = 0
+LC2FA:	CLRB	L9C41			; set Ninja X = 0
 	ADD	#-24., L9C42		; update Ninja position in tilemap
 	MOV	L7184, R3		; get Current Room address
 	MOV	6(R3), R3		; get Room Right address
 	MOV	R3, L7184		; set Current Room address
 	JMP	LB66A			; => Current Room changed
 
-; Movement handler (used in initial room)
-LC4F6:
+; Going to room at Left
+LC319:
 	;TODO
-;	MOV	#3, R1
-;	CALL	L9DD9			; Decrease Energy by B
-;	JMP	LC226			; => Ninja standing
+	HALT
+
+; Movement handler (B8CE handler): Ninja jumping
+LC339:	DECB	L7343			; decrease counter
+	BEQ	LC340
+	JMP	LB8D0			; => Update Ninja on tilemap
+LC340:	MOV	L9C42, R3		; get Ninja position in tilemap
+	ADD	#<L6590+2>, R3		; Tile screen 0 + 2
+	TSTB	L7239			; check Ninja direction
+	BNE	LC361
+	MOVB	(R3), R0
+	;TODO
+	BR	LC368
+LC361:	INC	R3
+	CALL	LC392
+	BEQ	LC3CF
+	DEC	R3
+LC368:	CALL	LC392
+	BEQ	LC3C6			; => Ninja on ladder
+
+	;TODO
+	HALT
+
+; Check if tile is a ladder
+LC392:	MOVB	(R3), R0		; get the tile
+	MOV	#1, R1
+	CMPB	#005, R0		; $05
+	BEQ	LC3B7
+	CMPB	#006, R0		; $06
+	BEQ	LC3B7
+	CMPB	#007, R0		; $07
+	BEQ	LC3B7
+	CMPB	#366, R0		; $F6
+	BEQ	LC3B7
+	CMPB	#361, R0		; $F1
+	BEQ	LC3B7
+	CMPB	#357, R0		; #EF
+	BEQ	LC3B7
+	CMPB	#355, R0		; $ED
+	BEQ	LC3B7
+	CMPB	#014, R0		; #0C
+	BEQ	LC3B7
+	CLR	R1
+LC3B7:	CMP	#1, R1			; Z = ladder
+	RETURN
+
+; Move LEFT one tile
+LC3BB:
+	;TODO
+	HALT
+
+; Ninja on ladder now
+LC3C6:	MOV	#LC3D9, R3		; Movement handler for Ninja on ladder
+	MOV	#LD52E, R2		; Sprite Ninja on ladder
+	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+
+; Move RIGHT one tile
+LC3CF:
+	;TODO
+	HALT
+
+; Movement handler (B8CE handler): Ninja on ladder
+LC3D9:	MOV	L9C42, R3		; get Ninja position in tilemap
+	ADD	#<L6590+183.>, R3	; Tile screen 0 + 6 rows + 3
+	CMPB	#014, (R3)		; ladder?
+	BEQ	LC3EC			; yes => Read and process Input
+	DEC	R3
+	CALL	LC392
+	BEQ	LC3EC			; yes => Read and process Input
+	JMP	LC226			; => Ninja standing
+; Read and process Input
+LC3EC:	CALL	LBBDF			; Read Input
+	BIT	#1, R0			; check RIGHT bit
+	BEQ	LC40E
+; Pressed RIGHT
+	;TODO
+	HALT
+; Check if LEFT pressed
+LC40E:	BIT	#2, R0			; check LEFT bit
+	BEQ	LC42C
+; Pressed LEFT
+	;TODO
+	HALT
+; Check if UP pressed
+LC42C:	MOVB	L7232, R0		; get Input bits
+	BIT	#10, R0			; check UP bit
+	BEQ	LC477
+; Pressed UP
+	;TODO
+	HALT
+;
+LC467:
+	;TODO
+	HALT
+; Check if DOWN pressed
+LC477:	BIT	#4, R0			; check DOWN bit
+	BEQ	LC495
+; Pressed DOWN
+	;TODO
+	HALT
+LC495:	JMP	LB8D0			; => Update Ninja on tilemap
+
+; Move DOWN one tile
+LC498:
+	;TODO
+	HALT
+
+; ?? Movement handler
+LC4DE:
+	HALT
+
+LC4E8:
+	HALT
+
+; Movement handler (used in initial room)
+LC4F6:	CALL	LC57B			; Check for ??
+	BEQ	LC504
+	MOV	#3, R1
+	CALL	L9DD9			; Decrease Energy by B
+	JMP	LC226			; => Ninja standing
 LC504:	MOV	#LC50D, R3		; Movement handler address
 	MOV	#LD5D6, R2		; Sprite Ninja jumping 4
 	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
 
 ; Movement handler ??
 LC50D:	MOV	#L9C41, R3		; Ninja X address
-	MOVB	(R3), R0		; get Ninja X
-	BR	LC56C ;DEBUG
-	;TODO
-LC525:
-	JMP	LC16E ;DEBUG
-	;TODO
+	TSTB	L7239			; Ninja direction = left ?
+	BNE	LC56C			; no =>
+	TSTB	(R3)			; Ninja X = 0 ?
+	BEQ	LC319			; yes => Going to room at Left
+	DECB	(R3)			; decrease Ninja X
+	DEC	L9C42			; decrease Ninja position in tilemap
+LC525:	CALL	LC57B			; Check for ??
+	BNE	LC533			; falling =>
+	DECB	L7343			; decrease counter
+	BEQ	LC538
+	JMP	LC16E			; => Update Ninja on tilemap
+;LC531:	BR	LC538
+LC533:	MOV	#4, R1
+	CALL	L9DD9			; Decrease Energy by B
+LC538:	MOV	#<L678E-388.>, R2
+	MOV	#3, R1
+LC53D:	MOV	L9C42, R3		; get Ninja position in tilemap
+	ADD	R2, R3
+	CMPB	#144, (R3)		; $64 ?
+	BHIS	LC558
+LC546:	DECB	L9C40			; decrease Ninja Y
+	ADD	#-30., L9C42		; Ninja position in tilemap -30
+	BR	LC53D
+LC558:	INC	R3
+	CMPB	#144, (R3)		; $64 ?
+	BLO	LC546
+	ADD	#30., R3
+	MOV	R2, R0			; EX DE,HL
+	MOV	R3, R2
+	MOV	R0, R3
+	SOB	R1, LC53D
 	MOV	#LC5A0, R3		; Movement handler: switch Ninja to standing
 	MOV	#LD5AC, R2		; Sprite Ninja jumping 3
 	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
-LC56C:	CMPB	#24., R0
+; Ninja direction = right
+LC56C:	CMPB	#24., (R3)		; Ninja X = 24. ?
 	BNE	LC571
 	JMP	LC2FA			; => Going to room at Right
 LC571:	INCB	(R3)			; increase Ninja X
 	INC	L9C42			; increase Ninja position in tilemap
 	BR	LC525
 
-; Switch Ninja to standing (redirect)
-LC5A0:	JMP	LC226			; => Ninja standing
+; Check for ??
+LC57B:	MOVB	L7239, R0		; get Ninja direction: 0/1
+	MOV	R0, R3
+	ADD	R3, R3
+	ADD	R3, R3
+	ADD	R3, R0			; * 5
+	ADD	L9C42, R3		; + Ninja position in tilemap
+	ADD	#L6590, R3		; + Tile screen 0 start address
+	CLR	R2
+	MOV	#4, R1			; counter
+LC596:	CMPB	#144, (R3)
+	BHIS	LC59A
+	INC	R2
+LC59A:	ADD	#30., R3		; lower one row
+	SOB	R1, LC596
+	TST	R2			; NZ: falling, Z: not falling
+	RETURN
 
-LC64C:
+; Switch Ninja to standing (redirect)
+;LC5A0:	JMP	LC226			; => Ninja standing
+LC5A0 = LC226
+
+; Check for falling
+LC5A3:	MOV	L9C42, R3		; get Ninja position in tilemap
+	ADD	#211., R3
+	ADD	#L6590, R3		; Tile screen 0 start address
+	MOVB	L7239, R2		; get Ninja direction: 0/1
+	ADD	R2, R2			; * 2
+	ADD	R2, R3
+	MOV	#3, R1
+	CLR	R2
+LC5BB:	CMPB	#144, (R3)
+	BHIS	LC5C0
+	INC	R2
+LC5C0:	INC	R3
+	SOB	R1, LC5BB
+	TST	R2			; Z = falling, NZ = not falling
+	RETURN
+
+; Movement handler: Ninja falling down
+LC5C6:	ADD	#30., L9C42		; Ninja position in tilemap +30.
+	INCB	L755B			; increase falling counter
+	MOV	#L9C40, R3		; Ninja Y address
+	INCB	(R3)			; increase Ninja Y
+	CMPB	#10., (R3)		; at room bottom?
+	BEQ	LC604			; => Going to room Down from current
+	MOV	L9C42, R3		; get Ninja position in tilemap
+	ADD	#<L6590+212.>, R3	; address in Tile screen 0 (background)
+	CMPB	#144, (R3)
+	BLO	LC5EE
+	INC	R3
+	CMPB	#144, (R3)
+	BLO	LC5EE
+	JMP	LB8D0			; => Update Ninja on tilemap
+; Ninja hit somehting after falling
+LC5EE:
 	;TODO
+	MOV	#L755B, R3		; falling counter address
+	MOV	(R3), R1		; get counter value
+	CLR	(R3)
+	CALL	L9DD9			; Decrease Energy by B
+	;TODO
+	JMP	LBFCC			; => Ninja sitting now
+
+; Going to room Down from current
+LC604:
+	;TODO
+	HALT
+
+; Ninja falling
+LC643:	MOV	#LC5C6, R3		; Movement handler address: Ninja falling
+	MOV	#LD582, R2		; Sprite Ninja falling
+	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+
+; Room 791E (room with pier) initialization
+LC64C:	MOV	LC65A, R3
+	MOV	#<L6590+220.>, R2	; = $6590 (Tile screen 0) + 220.
+	MOV	#17., R1
+LC655:	MOVB	(R3)+, (R2)+		; copy bytes to Background
+	SOB	R1, LC655
+	JMP	LB724			; => Finish room initialization
+LC65A:	.BYTE	343,343,343,366,366,343,343,343
+	.BYTE	366,366,343,343,343,343,343,343
+	.BYTE	343
+	.EVEN
 
 LC66B:	; Guard data for rooms 7C9C/92EF
 	;TODO
 
 ; Room 93DF/947C (room right from Train) initialization
 LC671:
+	HALT
 	;TODO
 ; Room 982B initialization
 LC681:
+	HALT
 	;TODO
 ; Room 7C9C procedure (tunnel Train)
 LC6A5:
+	HALT
 	;TODO
 
 ; Movement handler (B8CE handler): Train moving left
 LC6E2:
+	HALT
 	;TODO
 
 ; Movement handler (B8CE handler): Train moving right
 LC70C:
+	HALT
 	;TODO
 
 ; Table of 35 records, 2 bytes each, see LB851
