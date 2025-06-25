@@ -434,7 +434,31 @@ L749E:
 	RETURN ;STUB
 
 ; Draw NEAR/HELD item
-L74CD:	MOVB	#000, R0		; !!MUT-ARG!! item number
+; R3 = address on the screen
+L74CD:	MOV	#002, R0		; !!MUT-ARG!! item number 0..9
+L74CE = L74CD + 2
+	ASL	R0
+	MOV	LB5B0(R0), R2		; get item address from the table
+	MOV	#176640, R5
+	MOV	R3, (R5)		; косвенный адрес УКНЦ
+	MOV	#24., R1
+L74E4:	CLR	R3			; <
+	BISB	(R2)+, R3
+	MOV	R3, @#176642		; | copy pixels
+	INC	(R5)
+	CLR	R3
+	BISB	(R2)+, R3
+	MOV	R3, @#176642		; | copy pixels
+	INC	(R5)
+	CLR	R3
+	BISB	(R2)+, R3
+	MOV	R3, @#176642		; | copy pixels
+	INC	(R5)
+	CLR	R3
+	BISB	(R2)+, R3
+	MOV	R3, @#176642		; | copy pixels
+	ADD	#<120-3>, (R5)		; |  next line
+	SOB	R1, L74E4		; repeat
 	;TODO
 	RETURN ;STUB
 
@@ -794,6 +818,10 @@ LA75B:	MOV	L71C3, R3		; get Current Guard position in tilemap
 ; Reset Guard data and Dog data
 LAC44:
 	RETURN	;STUB
+
+; LA7AD:
+.INCLUDE /S1ITEM.MAC/
+	.EVEN
 
 ; Draw game screen frames and indicator text
 LACCA:
@@ -1235,6 +1263,18 @@ LB596:
 	HALT
 	RETURN
 
+; Table of items: addresses for NEAR/HELD items
+LB5B0:	.WORD	LA7AD	; #0 Nothing
+	.WORD	LA819	; #1 Shuriken
+	.WORD	LA885	; #2 Knife
+	.WORD	LA8F1	; #3 ??
+	.WORD	LA95D	; #4 Brick
+	.WORD	LA9C9	; #5 Pipe
+	.WORD	LAA35	; #6 Granade
+	.WORD	LAAA1	; #7 Disk
+	.WORD	LAB0D	; #8 Bomb
+	.WORD	LAB79	; #9 Console
+
 LB5C4:	.BYTE	25	; Time fast counter 50..0
 LB5C5:	.BYTE	1	; Ninja standing counter
 LB5C6:	.BYTE	0	; Time mode: 0 = time ticking; 1 = Time stopped; 2 = BOMB ticking mode
@@ -1254,6 +1294,7 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	CLR	<LB673+2>		; set current Dog data address = no dog
 	CLR	<LB695+2>		; set current Guard data address = no guard
 	;TODO
+	MOVB	#310, LBD7A		; $C8
 	CALL	L7472
 	;TODO	DI
 	MOV	#LB513, L7184		; set Current Room = Initial room
@@ -1380,6 +1421,7 @@ LB7ED:	MOV	#L678E, R3		; Tile screen 1 start address
 LB814:
 	;TODO
 
+	MOV	#0, R1 ;STUB
 	JMP	LB891
 
 ; Increase Energy a bit
@@ -1418,12 +1460,28 @@ LB889:
 	INC	R2
 	DEC	R1
 	BNE	LB814			; continue the loop through the table
-LB891:
+LB891:	MOV	#LB84F, R3		; NEAR item address
+	CMPB	R1, (R3)
+	BEQ	LB8B0
+	MOVB	R1, (R3)
+	MOVB	R1, L74CE		; set item to draw
 	;TODO
-
+	MOV	#<SCREEN+4+<120*152.>+27.>, R3
 	CALL	L74CD			; Draw NEAR/HELD item
-	;TODO	DI
-	CLRB	LA39E
+	;TODO
+LB8B0:	MOV	#LB850, R3		; HELD tile address
+	MOVB	LBD7A, R0
+	CMPB	R0, (R3)		; HELD changing?
+	BEQ	LB8C9
+	MOVB	R0, (R3)
+	BEQ	LB8C2
+	SUB	#302, R0
+	ASR	R0
+LB8C2:	MOVB	R0, L74CE		; set item to draw
+	;MOV	#<SCREEN+4+<120*152.>+1>, R3
+	;CALL	L74CD			; Draw NEAR/HELD item
+	;DI
+LB8C9:	CLRB	LA39E
 LB8CD:	JMP	@#LBEB3			; !!MUT-ARG!! => run handler
 LB8CE = LB8CD + 2
 
