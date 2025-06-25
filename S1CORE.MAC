@@ -740,8 +740,19 @@ LA38E:	; Room 80F6 initialization
 	MOV	LA2C1, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
 
-LA39E:	.BYTE	000
+LA39E:	.BYTE	0
 	.EVEN
+LA39F:	.BYTE	0
+	.EVEN
+LA3A0:	.BYTE	304			; $C4
+	.EVEN
+LA3A2:	.BYTE	0
+	.EVEN
+LA3A3:	.BYTE	3
+	.EVEN
+LA3A4:	.BYTE	6
+	.EVEN
+LA3A5:	.WORD	10.
 LA3B3:	.BYTE	15.
 LA3B4:	.BYTE	1			; ?? Guard counter
 
@@ -1216,6 +1227,9 @@ LB577:	INCB	L9C41			; increrase Ninja X
 	MOVB	#4, L7343		; set counter = 4
 	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
+LB595:	.BYTE	0			; action cooldown counter
+	.EVEN
+
 LB596:
 	;TODO
 	HALT
@@ -1574,10 +1588,50 @@ LBCBC:
 
 LBCC4:	CALL	LBBDF			; Read Input
 	BIT	#20, R0			; check FIRE bit
-	BEQ	LBDDD
-;FIRE pressed, ninja standing
-	HALT
-	;TODO
+	BNE	LBCCC			; FIRE =>
+	JMP	LBDDD
+; FIRE pressed, ninja standing
+LBCCC:	MOV	#LB595, R3		; action cooldown counter
+	TSTB	(R3)			; check if counter is 0
+	BEQ	LBCD4
+	JMP	LBDB2			; not zero =>
+LBCD4:	MOVB	#5, (R3)		; reset cooldown (5 ticks until next action)
+	MOVB	LB84C, R1		; get Object tile
+	CMPB	#143, R1		; Object tile = $63 ?
+	BEQ	LBD33			; => execute the object procedure
+	ADD	#<L6590+217>, R3	; Tile screen 0) + 7 row + 7
+	CMPB	#234, (R3)		; $9C ?
+	BNE	LBCF3
+	CMPB	#2, LB5C6		; Time mode = BOMB ticking mode?
+	BEQ	LBD37
+	BR	LBCF7
+LBCF3:	TSTB	R1			; Object tile = nothing?
+	BEQ	LBD37			; nothing =>
+LBCF7:	MOVB	LB850, R0		; get HELD tile
+	MOV	LB84A, R2		; get Object address + 4
+	MOVB	R0, (R2)		; set Object tile
+	DEC	R2			; Object address + 3
+	TSTB	R0			; held nothing?
+	BEQ	LBD08			; nothing =>
+	SUB	#306, R0		; $C6
+	ASR	R0
+LBD08:	MOVB	R0, (R2)
+	MOVB	#9., <LD256+<7*8.>+3>	; set ?? in Object #7 in Table of objects D256
+	MOV	R1, R0
+	MOVB	R0, LBD7A
+	CMPB	#324, R0		; $D4 ?
+	BEQ	LBD17
+	JMP	LB8D0			; => Update Ninja on tilemap
+LBD17:	MOV	#LB5C6, R3		; Time mode address
+	TSTB	(R3)			; 0 = time ticking ?
+	BEQ	LBD1F
+	JMP	LB8D0			; => Update Ninja on tilemap
+LBD1F:	MOVB	#1, (R3)		; set Time mode = time stopped
+	MOV	#400., R3
+	CALL	LB371			; Play melody
+	MOV	#50., R1
+	CALL	LB4DE			; Increase PAY value by 5000
+	JMP	LB8D0			; => Update Ninja on tilemap
 
 ; "BOMB" message
 LBD2F:	.ASCII	/BOMB/
@@ -1586,12 +1640,49 @@ LBD33:
 	;TODO
 	JMP	LBDDD ;DEBUG
 ; Fire pressed, Ninja standing, no object nearby
-LBD37:
-	;TODO
-
-;	MOV	#LD504, R2
-;	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
-
+LBD37:	MOV	#LA39F, R3
+	TSTB	(R3)
+	BNE	LBDB2
+	MOVB	LB850, R0		; get HELD tile
+	BEQ	LBDB2			; nothing =>
+	CMPB	#324, R0		; $D4 ?
+	BEQ	LBDB2
+	CMPB	#326, R0		; $D6 ?
+	BEQ	LBDB2
+	MOVB	R0, (R3)
+	MOV	L9C42, R3		; get Ninja position in tilemap
+	ADD	#61., R3
+	MOVB	L9C41, R1		; get Ninja X
+	INC	R1
+	TSTB	L7239			; check Ninja direction
+	BEQ	LBD6A
+	ADD	#3, R1
+	ADD	#3, R3
+LBD6A:	MOVB	R1, LA3A5
+	MOV	R3, LA3A0
+	MOVB	L9C41, R0		; get Ninja X
+	ADD	#2, R0
+	MOVB	R0, LA3A4
+LBD79:	MOV	#310, R0		; !!MUT-ARG!! $C8
+LBD7A = LBD79 + 2
+	MOVB	R0, LA39F
+	CLRB	LBD7A
+	MOV	#3, R1
+	TSTB	L7239			; check Ninja direction
+	BEQ	LBD8D			; left =>
+	ADD	#2, R1
+LBD8D:	MOVB	R1, LA3A3
+	MOVB	L7232, R0		; get Input bits
+	BIT	#10, R0			; check UP bit
+	BEQ	LBD9B
+	ADD	#-3, R1
+LBD9B:	BIT	#4, R0			; check DOWN bit
+	BEQ	LBDA2
+	ADD	#3, R1
+LBDA2:	MOVB	R1, LA3A2
+	CALL	LF9F9
+	MOV	#LD504, R2		; Sprite Ninja/Guard punching
+	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
 
 LBDAF:	; Ninja standing (redirect)
 	JMP	LC226			; => Ninja standing
@@ -2297,6 +2388,16 @@ LF973:
 
 ; Pause, then wait for any key pressed
 LF9B9:
+	;TODO
+	RETURN	;STUB
+
+LF9F9:	MOV	#264, R3		; $00B4
+	MOV	#1, R1
+	CALL	LFA11
+	MOV	#LBDAF, R3		; Ninja standing
+	RETURN
+
+LFA11:
 	;TODO
 	RETURN	;STUB
 
