@@ -226,6 +226,24 @@ L7232:	.BYTE	0	; Input bits: 000FUDLR
 L7239:	.BYTE	0	; Ninja direction: 0 = left, 1 = right
 	.EVEN
 
+; Mirror table
+L723A:	.BYTE	001,201,101,301,041,241,141,341,021,221,121,321,061,261,161,361
+	.BYTE	011,211,111,311,051,251,151,351,031,231,131,331,071,271,171,371
+	.BYTE	005,205,105,305,045,245,145,345,025,225,125,325,065,265,165,365
+	.BYTE	015,215,115,315,055,255,155,355,035,235,135,335,075,275,175,375
+	.BYTE	003,203,103,303,043,243,143,343,023,223,123,323,063,263,163,363
+	.BYTE	013,213,113,313,053,253,153,353,033,233,133,333,073,273,173,373
+	.BYTE	007,207,107,307,047,247,147,347,027,227,127,327,067,267,167,367
+	.BYTE	017,217,117,317,057,257,157,357,037,237,137,337,077,277,177,377
+L72BA:	.BYTE	000,200,100,300,040,240,140,340,020,220,120,320,060,260,160,360
+	.BYTE	010,210,110,310,050,250,150,350,030,230,130,330,070,270,170,370
+	.BYTE	004,204,104,304,044,244,144,344,024,224,124,324,064,264,164,364
+	.BYTE	014,214,114,314,054,254,154,354,034,234,134,334,074,274,174,374
+	.BYTE	002,202,102,302,042,242,142,342,022,222,122,322,062,262,162,362
+	.BYTE	012,212,112,312,052,252,152,352,032,232,132,332,072,272,172,372
+	.BYTE	006,206,106,306,046,246,146,346,026,226,126,326,066,266,166,366
+	.BYTE	016,216,116,316,056,256,156,356,036,236,136,336,076,276,176,376
+
 L733A:	.BYTE	0	; Ninja walking phase
 	.EVEN
 L733B:	; Table of four addresses of Ninja/Guard walking sprites
@@ -1039,10 +1057,18 @@ LB1A3:	MOV	L7231, R3		; get address in Tile scrren 2
 	MOV	#8., R1			; 8 bytes
 	MOV	#LB13E, R2		; tile buffer address
 LB1E4:	MOVB	(R2), R0		; get byte from the buffer
-	;TODO: Mirror byte if needed
-	BICB	(R3)+, R0		; apply the mask
-	;TODO: Mirror byte if needed
-	BISB	(R3)+, R0		; apply the pixels
+	MOVB	(R3)+, R5		; get mask byte
+	;CALL	LB2E8			; Mirror byte if needed
+	TSTB	L7239			; check direction
+	BNE	10$			; right => return
+	MOVB	L72BA(R5), R5		; byte mirroring
+10$:	BICB	R5, R0			; apply the mask
+	MOVB	(R3)+, R5		; get pixels byte
+	;CALL	LB2E8			; Mirror byte if needed
+	TSTB	L7239			; check direction
+	BNE	20$			; right => return
+	MOVB	L72BA(R5), R5		; byte mirroring
+20$:	BISB	R5, R0			; apply the pixels
 	MOVB	R0, (R2)+		; store byte back to the buffer
 	SOB	R1, LB1E4
 ; Process Tile screen 3 tile - Dog
@@ -1101,6 +1127,12 @@ LB29B:	CLR	R0
 ;
 	ADD	#<1-1200>, @#176640	; screen address +1
 	JMP	LB2A9			; continue the loop
+
+; Mirror byte if needed
+;LB2E8:	TSTB	L7239			; check direction
+;	BNE	LB2FC			; right => return
+;	MOVB	L72BA(R5), R5		; byte mirroring
+;LB2FC:	RETURN
 
 ;------------------------------------------------------------------------------
 
@@ -1285,7 +1317,9 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	CALL	LACCA			; Draw game screen frames and indicator text
 	CLR	LB5C6			; set Time mode = time ticking
 	CLR	LB850			; clear HELD tile
+	CLRB	<LD486+8.>		; set head tile in Ninja/Guard standing sprite
 	;TODO
+	MOVB	#1, <LD486+9.>		; set head tile for Ninja/Guard standing sprite
 	MOVB	#1, L7239		; set Ninja direction = 1 = right
 	MOVB	#1, LB84F		; set NEAR item = 1
 	MOV	#<L6F86+330.>, @#<LB53D+2>	; set initial position for boat
@@ -1493,11 +1527,11 @@ LB8D0:	CALL	LBBBB			; Set update flags for Ninja, 6x7 tiles
 	SOB	R1, 10$
 ; Draw Ninja on tilemap
 LB8E0:	MOV	L9C42, R3		; get Ninja position in tilemap
+	MOV	L7186, R2		; get Ninja sprite address
+	MOV	#7, R1			; 7 rows
 	TSTB	L7239			; get Ninja direction
 	BNE	LB907			; right =>
 	ADD	#<L698C+6>, R3		; Tile screen 2 start address + 6
-	MOV	L7186, R2		; get Ninja sprite address
-	MOV	#7, R1
 10$:	MOVB	(R2)+, -(R3)
 	MOVB	(R2)+, -(R3)
 	MOVB	(R2)+, -(R3)
@@ -1508,16 +1542,14 @@ LB8E0:	MOV	L9C42, R3		; get Ninja position in tilemap
 	SOB	R1, 10$
 	BR	LB922
 LB907:	ADD	#L698C, R3		; Tile screen 2 start address
-	MOV	L7186, R2		; get Ninja sprite address
-	MOV	#7, R1
-10$:	MOVB	(R2)+, (R3)+
+20$:	MOVB	(R2)+, (R3)+
 	MOVB	(R2)+, (R3)+
 	MOVB	(R2)+, (R3)+
 	MOVB	(R2)+, (R3)+
 	MOVB	(R2)+, (R3)+
 	MOVB	(R2)+, (R3)
 	ADD	#<30.-5>, R3
-	SOB	R1, 10$
+	SOB	R1, 20$
 LB922:
 	;TODO
 	MOV	L7184, R3		; get Current Room address
@@ -1939,7 +1971,7 @@ LC20D:	INCB	L9C41			; move one tile to right
 LC21E:	CALL	LBBDF			; Read Input
 	BIT	#1, R0			; check RIGHT bit
 	BEQ	LC226
-	JMP	LC2BB			; =>
+	JMP	LC2BB			; RIGHT pressed =>
 
 ; Ninja standing
 LC226:	MOV	#LBC55, R3		; Movement handler: Ninja standing
@@ -2000,15 +2032,19 @@ LC2B3:	CALL	LBBDF			; Read Input
 
 ; LEFT or RIGHT key pressed
 LC2BB:	MOVB	#7, L7343		; set counter = 7
-	BIT	#10, R0
+	BIT	#10, R0			; check for UP bit
 	BEQ	LC2C5
 	CALL	LC4E8
 LC2C5:	MOVB	L733A, R0
 	INC	R0			; next walking phase
 	BIC	#177774, R0		; 0..3
 	MOVB	R0, L733A
+	ADD	R0, R0			; * 2
+	MOV	R0, R3
+	CLRB	LA39E
 	;TODO
 
+LC2E8:	MOV	L733B(R3), L7186	; sprite address from table -> Ninja sprite address
 	JMP	LC16E			; => Update Ninja on tilemap
 
 ; Going to room at Right
@@ -2036,7 +2072,14 @@ LC340:	MOV	L9C42, R3		; get Ninja position in tilemap
 	TSTB	L7239			; check Ninja direction
 	BNE	LC361
 	MOVB	(R3), R0
-	;TODO
+	CMPB	#014, R0		; $0C
+	BEQ	LC3BB
+	CMPB	#012, R0		; $0A
+	BEQ	LC3BB
+	CMPB	#010, R0		; $08
+	BEQ	LC3BB
+	CMPB	#011, R0		; $09
+	BEQ	LC3BB
 	BR	LC368
 LC361:	INC	R3
 	CALL	LC392
@@ -2081,9 +2124,8 @@ LC3B7:	CMP	#1, R1			; Z = ladder
 	RETURN
 
 ; Move LEFT one tile
-LC3BB:
-	;TODO
-	HALT
+LC3BB:	DECB	L9C41			; decrease Ninja X
+	DEC	L9C42			; move one tile left
 
 ; Ninja on ladder now
 LC3C6:	MOV	#LC3D9, R3		; Movement handler for Ninja on ladder
@@ -2093,7 +2135,7 @@ LC3C6:	MOV	#LC3D9, R3		; Movement handler for Ninja on ladder
 ; Move RIGHT one tile
 LC3CF:	INCB	L9C41			; increase Ninja X
 	INC	L9C42			; increase Ninja position in tilemap
-	BR	LC3C6
+	BR	LC3C6			; => Ninja on ladder
 
 ; Movement handler (B8CE handler): Ninja on ladder
 LC3D9:	MOV	L9C42, R3		; get Ninja position in tilemap
@@ -2367,17 +2409,37 @@ LC66B:	; Guard data for rooms 7C9C/92EF
 	;TODO
 
 ; Room 93DF/947C (room right from Train) initialization
-LC671:
-	HALT
-	;TODO
+LC671:	MOV	#L947C, <L7C9C+4>	; set "room to left" for room 7C9C
+	MOV	#L93DF, <L7C9C+6>	; set "room to right" for room 7C9C
+	MOV	#154, R0		; $6C tile for "1" sign
+	BR	LC68F
+
 ; Room 982B initialization
-LC681:
-	HALT
-	;TODO
+LC681:	MOV	#L9A1E, <L7C9C+4>	; set "room to left" for room 7C9C
+	MOV	#L982B, <L7C9C+6>	; set "room to right" for room 7C9C
+	MOV	#165, R0		; $75 tile for "2" sign
+; Fill 3x3 block with tile for "1"/"2" sign
+LC68F:	MOV	#<L7D0D+19.>, R3	; address in 7D0D sprite
+	MOV	#3, R1			; 3 rows
+LC697:	MOVB	R0, (R3)+
+	MOVB	R0, (R3)+
+	MOVB	R0, (R3)
+	ADD	#4, R3
+	SOB	R1, LC697
+	JMP	LB724			; => Finish room initialization
+
 ; Room 7C9C procedure (tunnel Train)
-LC6A5:
-	HALT
+LC6A5:	CMPB	#12., L9C41		; Ninja X = 12 ?
+	BNE	LC6DF			; => Standard room procedure
+	MOVB	#75., L7343		; set counter = 75.
+
 	;TODO
+	MOV	#LC6E2, R3		; Movement handler: Train moving left
+	;TODO
+
+	MOV	#LD486, L7186		; Sprite Ninja/Guard standing
+	MOV	R3, LB8CE		; set Movement handler
+LC6DF:	JMP	LB937			; => Standard room procedure
 
 ; Movement handler (B8CE handler): Train moving left
 LC6E2:
