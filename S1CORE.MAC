@@ -551,9 +551,12 @@ L9D5C:	MOV	L71CB, R3
 
 ; Initialize a dog
 ; Input: R3 = dog data address
-L9DCD:
-	;TODO
-	RETURN ;STUB
+L9DCD:	MOV	#L71CB, R2		; current dog data address
+	MOV	R3, LB674		; save current Dog data address
+	MOV	#9., R1			; 9 = size of Dog data
+10$:	MOVB	(R3)+, (R2)+		; Copy Dog data
+	SOB	R1, 10$
+	RETURN
 
 ; Decrease Energy by B
 L9DD9:	RETURN				; !!MUT-CMD!! "PUSH R1" or "RETURN"
@@ -827,9 +830,16 @@ LA3A3:	.BYTE	3
 	.EVEN
 LA3A4:	.BYTE	6
 	.EVEN
-LA3A5:	.WORD	10.
-LA3B3:	.BYTE	15.
+LA3A5:	.WORD	4
+LA3AD:	.BYTE	0
+	.EVEN
+LA3AE:	.WORD	105.			; Turret offset in tilemap
+LA3B0:	.BYTE	6
+LA3B1:	.BYTE	6
+LA3B2:	.BYTE	3			; Turret Y
+LA3B3:	.BYTE	15.			; Turret X
 LA3B4:	.BYTE	1			; ?? Guard counter
+	.EVEN
 
 ; ?? something about Ninja and Guard
 LA3B5:
@@ -867,8 +877,48 @@ LA75B:	MOV	L71C3, R3		; get Current Guard position in tilemap
 	RETURN
 
 ; Reset Guard data and Dog data
-LAC44:
-	RETURN	;STUB
+LAC44:	MOV	#LAC72, R3		; address for Table of Guard data addresses
+	MOV	#23., R1		; 23. Guard records
+LAC49:	CLR	R2
+	BISB	(R3)+, R2
+	SWAB	R2
+	BISB	(R3)+, R2
+	SWAB	R2			; now R2 = Guard data address
+	MOVB	#10., 4(R2)		; set initial Guard energy = 10
+	SOB	R1, LAC49
+; Now prepare Dogs
+	MOV	#LACA2, R3
+	MOV	#20., R1		; 23. Dog records
+LAC5C:	CLR	R2
+	BISB	(R3)+, R2
+	SWAB	R2
+	BISB	(R3)+, R2
+	SWAB	R2			; now R2 = Dog data address
+	ADD	#4, R2
+	CMPB	#101, (R2)
+	BHIS	LAC6E
+	MOVB	(R2), R0
+	SUB	#102, R0
+	MOVB	R0, (R2)
+LAC6E:	SOB	R1, LAC5C
+	RETURN
+
+; Table of Guard data addresses, 23 records
+LAC72:	.WORD	LA26B,LA265,LA25F,LA259
+	.WORD	LA253
+	;.WORD	LA217	;UNUSED
+	.WORD	LA24D,LA247
+	.WORD	LA241,LA23B,LA235,LA22F
+	.WORD	LA229,LA223,LA21D,LA211
+	.WORD	LA20B,LA205,LA1FF,LA1F9
+	.WORD	LA1F3,LA1ED,LA1E7,LA1E1
+
+; Table of Dog data addresses, 20 records
+LACA2:	.WORD	LA31B,LA311,LA307,LA2FD
+	.WORD	LA2F3,LA2DF,LA2D5,LA2CB
+	.WORD	LA2C1,LA2B7,LA2A3,LA285
+	.WORD	LA325,LA2AD,LA28F,LA27B
+	.WORD	LA271,LA2E9,LA299,L71D6
 
 ; LA7AD:
 .INCLUDE /S1ITEM.MAC/
@@ -1261,8 +1311,17 @@ LB458:	CALL	L9C44			; Process a dog
 	JMP	LB937			; Standard room procedure
 
 ; Turret initialization
-LB461:
-	RETURN ;STUB
+LB461:	CLR	R2
+	BISB	(R3)+, R2
+	SWAB	R2
+	BISB	(R3)+, R2
+	SWAB	R2			; now R2 = Turret offset
+	ADD	#L678E, R2		; + Tile screen 1 start address
+	MOV	R2, LB4CC		; set Turret address on Tile Screen 1
+	ADD	#2040., R2
+	MOV	R2, LB48E		; set Turret address on Tile Screen 5
+	MOVB	(R3), LB4D4
+	RETURN
 
 ; Room procedure (for 2 rooms with a turret and a dog)
 LB47A:	CALL	L9C44			; Process a dog
@@ -1274,9 +1333,44 @@ LB483:	CALL	LB489			; Process turret
 	JMP	LB937			; Standard room procedure
 
 ; Process turret
-LB489:
-	;TODO
-	RETURN
+LB489:	MOVB	LB4DD, R0		; get Turret counter
+LB48D:	MOV	#<L6F86+47.>, R3	; !!MUT-ARG!! Turret address on Tile Screen 5
+LB48E = LB48D + 2	; Turret address on Tile Screen 5
+	DEC	R0
+	BNE	LB4C6
+	MOVB	(R3), R0
+	PUSH	R3
+	SUB	#L6F86, R3		; now R3 = Turret offset in tilemap
+	SUB	#046, R0
+	MOVB	R0, LA3B0
+	MOVB	R0, <LA3B0+1>
+	MOV	R3, LA3AE
+	MOVB	#332, LA3AD		; $DA
+	MOV	#30., R2
+	CLR	R1
+LB4B4:	SUB	R2, R3			; -30.
+	INC	R1
+	CMPB	R2, R3			; >= 30. ?
+	BHIS	LB4B4			; yes =>
+	MOVB	R3, LA3B3		; Turret X
+	MOVB	R1, LA3B2		; Turret Y
+LB4C3:	MOV	#50., R0		; !!MUT-ARG!! ??
+	POP	R3
+LB4C6:	MOVB	R0, LB4DD		; update Turret counter
+LB4CB:	MOVB	#1, <L678E+47.>		; !!MUT-ARG!! set "need update" mark for Turret on Tile Screen 1
+LB4CC = LB4CB + 4	; Turret address on Tile Screen 1
+	MOVB	#055, (R3)		; $2D = Turret looking down
+	MOVB	L9C41, R0		; get Ninja X
+LB4D3:	MOV	#15., R1		; !!MUT-ARG!! Turret X value
+LB4D4 = LB4D3 + 1	; Turret X value
+	CMPB	R1, R0
+	BEQ	LB4DC
+	DECB	(R3)
+	CMPB	R1, R0
+	BPL	LB4DC
+	INCB	(R3)
+	INCB	(R3)
+LB4DC:	RETURN
 
 LB4DD:	.BYTE	50.	; Turret counter 50..0
 	.EVEN
@@ -1332,10 +1426,8 @@ LB577:	INCB	L9C41			; increrase Ninja X
 LB595:	.BYTE	0			; action cooldown counter
 	.EVEN
 
-LB596:
-	;TODO
-	HALT
-	RETURN
+LB596:	MOV	20., R1
+LB598:	JMP	LF9A1
 
 LB59E:
 	;TODO
@@ -1392,6 +1484,7 @@ LB66A:
 	;TODO
 
 LB673:	MOV	#000000, R2		; !!MUT-ARG!! current Dog data address
+LB674 = LB673 + 2
 	;TODO
 
 LB695:	MOV	#000000, R2		; !!MUT-ARG!! current Guard data address
@@ -2298,9 +2391,13 @@ LC4DE:	DECB	L7343			; decrease counter
 	JMP	LB8D0			; => Update Ninja on tilemap
 LC4E5:	JMP	LC226			; => Ninja standing
 
-LC4E8:
-	;TODO
-	HALT
+LC4E8:	CALL	LC57B			; Check for ??
+	BEQ	LC4EC
+	RETURN
+LC4EC:	POP	R3
+	MOV	#LC4F6, R3		; Movement handler address
+	MOV	#LD5AC, R2		; Sprite Ninja jumping 3
+	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
 
 ; Movement handler (used in initial room)
 LC4F6:	CALL	LC57B			; Check for ??
@@ -2411,6 +2508,7 @@ LC5C6:	ADD	#30., L9C42		; Ninja position in tilemap +30.
 	CMPB	#144, (R3)
 	BLO	LC5EE
 	JMP	LB8D0			; => Update Ninja on tilemap
+
 ; Ninja hit somehting after falling
 LC5EE:	MOVB	#1, LA39E
 	MOV	#L755B, R3		; falling counter address
@@ -2585,6 +2683,11 @@ LF913:
 LF973:
 ;NOTE: Crane sprite copying moved into room sequence
 	JMP	LB422
+
+; Sound ??
+LF9A1:
+	;TODO
+	RETURN
 
 ; Pause, then wait for any key pressed
 LF9B9:
