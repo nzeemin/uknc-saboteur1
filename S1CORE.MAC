@@ -253,6 +253,7 @@ L733B:	; Table of four addresses of Ninja/Guard walking sprites
 	.WORD	LD45C			; Sprite Ninja/Guard walking 4
 
 L7343:	.BYTE	7	; Counter used in movement handlers
+	.EVEN
 L7344:	.BYTE	0	; Dog's flag: 1 = ignore left/right limit
 L7345:	.BYTE	20.	; Dog ??
 L7346:	.BYTE	10.	; Guard walking phase $00..$03 or other state: $09 = Guard dead; ...
@@ -439,17 +440,46 @@ L7465:	MOVB	R0, (R2)+
 	SOB	R1, L7463
 	JMP	LB702			; => Proceed to the next room token
 
+; Initial Energy fill
 L7472:
-	;TODO
-	RETURN	;STUB
+	MOV	#<SCREEN+4+<1200*21.>+6>, R2	; screen address
+	MOV	#15., R1
+10$:	MOV	R2, @#176640
+	MOV	#16., R4
+20$:	MOV	#377, @#176642
+	ADD	#120, @#176640		; next line
+	SOB	R4, 20$
+	INC	R2
+	SOB	R1, 10$
+	MOVB	#19., L749C		; set Energy = MAX
+	CLRB	L749D
+	RETURN
 
 L749C:	.BYTE	19.			; Energy $04..$13
 L749D:	.BYTE	1			; Energy lower, running bit
 
 ; Decreasing Energy
-L749E:
-	;TODO
-	RETURN ;STUB
+L749E:	TSTB	L749D
+	BNE	10$
+	DECB	L749C
+	MOVB	#377, L749D
+	BR	20$
+10$:	CLC
+	RORB	L749D
+20$:	CALL	L74CC			; Draw Energy column
+	RETURN
+
+; Draw Energy column
+L74CC:	MOVB	L749C, R2		; $04..$13
+	ADD	#<SCREEN+4+<1200*21.>+1>, R2	; screen address
+	CLR	R1
+	BISB	L749D, R1
+	MOV	#16., R4
+	MOV	R2, @#176640
+10$:	MOV	R1, @#176642
+	ADD	#120, @#176640		; next line
+	SOB	R4, 10$
+	RETURN
 
 ; Draw NEAR/HELD item
 ; R3 = address on the screen
@@ -529,7 +559,10 @@ L9DCD:
 L9DD9:	RETURN				; !!MUT-CMD!! "PUSH R1" or "RETURN"
 	CALL	L749E			; Decrease Energy
 	POP	R1
-	;TODO
+	CMPB	#4, L749C		; Energy = MIN ?
+	BNE	L9DF1
+	CMPB	#1, L749D		; check Energy low
+	BNE	L9DF1
 	JMP	LBEAA			; Energy is out => Saboteur dead
 L9DF1:	SOB	R1, L9DD9
 	;TODO	DI
@@ -1249,9 +1282,18 @@ LB4DD:	.BYTE	50.	; Turret counter 50..0
 	.EVEN
 
 ; Increase PAY value by B * 100.
-LB4DE:
-	;TODO
-	RETURN ;STUB
+LB4DE:	MOV	#<LAD52+2>, R3		; PAY value 3rd digit address
+LB4E3:	INCB	(R3)
+	CMPB	#072, (R3)		; ':' = '9' + 1
+	BNE	LB4ED
+	MOVB	#060, (R3)		; '0'
+	DEC	R3			; previous digit
+	BR	LB4E3
+LB4ED:	SOB	R1, LB4DE
+	MOV	#LAD52, R3		; Pay value text address
+	MOV	#5, R1			; five digits
+	MOV	#<SCREEN+4+<1200*19.>+15.>, R2	; Screen address
+	JMP	LAED1			; => Print string, and RET
 
 ; Processing in initial room - the boat moving
 LB4FA:
@@ -1295,6 +1337,10 @@ LB596:
 	HALT
 	RETURN
 
+LB59E:
+	;TODO
+	RETURN
+
 ; Table of items: addresses for NEAR/HELD items
 LB5B0:	.WORD	LA7AD	; #0 Nothing
 	.WORD	LA819	; #1 Shuriken
@@ -1313,6 +1359,8 @@ LB5C6:	.BYTE	0	; Time mode: 0 = time ticking; 1 = Time stopped; 2 = BOMB ticking
 	.EVEN
 
 LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
+	;TODO
+	MOV	#010146, L9DD9		; set command = PUSH R1 = enable Energy decrease
 	;TODO
 	CALL	LACCA			; Draw game screen frames and indicator text
 	CLR	LB5C6			; set Time mode = time ticking
@@ -1459,9 +1507,17 @@ LB814:
 	JMP	LB891
 
 ; Increase Energy a bit
-LB83C:
-	;TODO
-	RETURN	;STUB
+LB83C:	CMPB	#377, L749D
+	BNE	10$
+	CMPB	#19., L749C		; Energy at MAX?
+	BEQ	99$			; yes => return
+	CLRB	L749D
+	INCB	L749C
+	BR	20$
+10$:	SEC
+	ROLB	L749D
+20$:	CALL	L74CC			; Draw Energy column
+99$:	RETURN
 
 LB84A:	.WORD	0			; Object address + 4, in table LD256
 LB84C:	.BYTE	0			; Object tile
@@ -1655,13 +1711,6 @@ LBC55:
 	DECB	(R3)			; decrease counter
 	BNE	LBC76
 	MOVB	#2, (R3)		; reload the counter
-	CMPB	#19., L749C		; Energy at MAX?
-	BNE	LBC6B
-	CMPB	#1, L749D		; check Energy lower
-	BEQ	LBC76
-LBC6B:	CALL	LB83C			; Increase Energy a bit
-	MOV	#1, R1
-	CALL	L9DD9			; Decrease Energy by R1
 	CALL	LB83C			; Increase Energy a bit
 ; Move the head (idle animation)
 LBC76:
@@ -2363,13 +2412,13 @@ LC5C6:	ADD	#30., L9C42		; Ninja position in tilemap +30.
 	BLO	LC5EE
 	JMP	LB8D0			; => Update Ninja on tilemap
 ; Ninja hit somehting after falling
-LC5EE:
-	;TODO
+LC5EE:	MOVB	#1, LA39E
 	MOV	#L755B, R3		; falling counter address
 	MOV	(R3), R1		; get counter value
 	CLR	(R3)
 	CALL	L9DD9			; Decrease Energy by B
-	;TODO
+	MOV	#50., R1
+	CALL	LB59E
 	JMP	LBFCC			; => Ninja sitting now
 
 ; Going to room Down from current
@@ -2432,24 +2481,55 @@ LC697:	MOVB	R0, (R3)+
 LC6A5:	CMPB	#12., L9C41		; Ninja X = 12 ?
 	BNE	LC6DF			; => Standard room procedure
 	MOVB	#75., L7343		; set counter = 75.
-
-	;TODO
+	MOV	L9C42, R2		; get Ninja position in tilemap
+	MOVB	L9C41, R1		; get Ninja X
+	INC	R1
+	INC	R2
+	MOV	#LC70C, R3		; Movement handler: Train moving right
+	TSTB	L7239			; check Ninja direction
+	BNE	LC6CD			; right =>
 	MOV	#LC6E2, R3		; Movement handler: Train moving left
-	;TODO
-
+	DEC	R1
+	DEC	R1
+	DEC	R2
+	DEC	R2
+LC6CD:	MOVB	R1, L9C41		; set Ninja X
+	MOV	R2, L9C42		; set Ninja position in tilemap
 	MOV	#LD486, L7186		; Sprite Ninja/Guard standing
 	MOV	R3, LB8CE		; set Movement handler
 LC6DF:	JMP	LB937			; => Standard room procedure
 
 ; Movement handler (B8CE handler): Train moving left
-LC6E2:
-	HALT
-	;TODO
+LC6E2:	MOV	#2, R4
+10$:	MOV	#<L6590+480.>, R2
+	MOV	#<L6590+479.>, R3
+	MOV	#29., R1
+	MOVB	(R3), R0		; store tile from right
+20$:	MOVB	-(R3), -(R2)
+	SOB	R1, 20$
+	MOVB	R0, (R3)		; put the tile at left
+	SOB	R4, 10$
+
+LC6F5:	MOV	#<L678E+450.>, R3
+	MOV	#15., R1
+30$:	MOV	#000401, (R3)+		; two bytes 001
+	SOB	R1, 30$
+	DECB	L7343			; decrease counter
+	BNE	LC709
+	JMP	LC226			; => Ninja standing
+LC709:	JMP	LB8D0			; => Update Ninja on tilemap
 
 ; Movement handler (B8CE handler): Train moving right
-LC70C:
-	HALT
-	;TODO
+LC70C:	MOV	#2, R4
+10$:	MOV	#<L6590+450.>, R2
+	MOV	#<L6590+451.>, R3
+	MOV	#29., R1
+	MOVB	(R2), R0		; store tile from left
+20$:	MOVB	(R3)+, (R2)+
+	SOB	R1, 20$
+	MOVB	R0, (R2)		; put the tile at right
+	SOB	R4, 10$
+	BR	LC6F5
 
 ; Table of 35 records, 2 bytes each, see LB851
 LD210:
