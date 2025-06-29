@@ -442,8 +442,7 @@ L7465:	MOVB	R0, (R2)+
 	JMP	LB702			; => Proceed to the next room token
 
 ; Initial Energy fill
-L7472:
-	MOV	#<SCREEN+4+<1200*21.>+6>, R2	; screen address
+L7472:	MOV	#<SCREEN+4+<1200*21.>+6>, R2	; screen address
 	MOV	#15., R1
 10$:	MOV	R2, @#176640
 	MOV	#16., R4
@@ -487,7 +486,10 @@ L74CC:	MOVB	L749C, R2		; $04..$13
 L74CD:	MOV	#002, R0		; !!MUT-ARG!! item number 0..9
 L74CE = L74CD + 2
 	ASL	R0
-	MOV	LB5B0(R0), R2		; get item address from the table
+L74D3:	MOV	#LB5B0, R2		; !!MUT-ARG!! address for Table of items
+L74D4 = L74D3 + 2	; address for Table of items
+	ADD	R0, R2
+	MOV	(R2), R2		; get item address from the table
 	MOV	#176640, R5
 	MOV	R3, (R5)		; косвенный адрес УКНЦ
 	MOV	#24., R1
@@ -508,8 +510,7 @@ L74E4:	CLR	R3			; <
 	MOV	R3, @#176642		; | copy pixels
 	ADD	#<120-3>, (R5)		; |  next line
 	SOB	R1, L74E4		; repeat
-	;TODO
-	RETURN ;STUB
+	RETURN
 
 L755B:	.BYTE	0			; Ninja falling count, to decrease Energy on hit
 	.EVEN
@@ -542,18 +543,18 @@ L9C5A:	DECB	(R3)
 	BNE	L9C80
 	TSTB	L71CD			; check Dog direction
 	BNE	L9C71			; right =>
-	MOVB	L9C41,	R0		; get Ninja X
+	MOVB	L9C41, R0		; get Ninja X
 	INC	R0
-	CMPB	L71CE, R0		; Dog X position address
+	CMPB	R0, L71CE		; Dog X position address
 	BLO	L9C80
 	BR	L9C7B
-L9C71:	MOVB	L9C41,	R0		; get Ninja X
+L9C71:	MOVB	L9C41, R0		; get Ninja X
 	INC	R0
-	CMPB	L71CE, R0		; Dog X position address
+	CMPB	R0, L71CE		; Dog X position address
 	BHIS	L9C80
 L9C7B:	MOVB	#1, L7344		; set "Dog ignore left/right limit" flag
 L9C80:	MOVB	L71CD, R0		; !!MUT-ARG!! get Dog direction
-L9C81 = L9C80 + 2	; Dog direction
+L9C81 = L9C80 + 2	; Dog direction address
 	MOVB	R0, L71CD
 	MOV	#L71CD, L9C81
 	CALL	L9D5C			; Set update flags for Dog
@@ -565,17 +566,62 @@ L9C81 = L9C80 + 2	; Dog direction
 
 ; Part of Dog processing
 L9CA8:	TSTB	R0
-	BNE	L9D8B
-
-	;HALT
-	;TODO
+	BEQ	L9CAD
+L9CAD:	JMP	L9D8B
+	MOV	L71CB, R3		; get Dog position in tilemap
+	MOV	#<L698C+33.>, R2	; Tile screen 2 + 33: for right direction
+	TSTB	L71CD			; check Dog direction
+	BNE	L9CBD			; right =>
+	MOV	#<L698C+30.>, R2	; Tile screen 2 + 30: for left direction
+L9CBD:	ADD	R2, R3			; now R3 = Dog position in Ninja tile screen
+	CMPB	#377, (R3)		; tile on Ninja screen = $FF ?
+	BEQ	L9CC5			; not $FF =>
+	MOV	#5, R1
+	CALL	L9DD9			; Dog bites, decrease Energy by 5
+L9CC5:	TSTB	L71CD			; check Dog direction
+	BEQ	L9CF1			; left =>
+; Dog runs right
+L9CCC:	INC	L71CB			; increment Dog position in tilemap
+	MOV	#L71CE, R3		; Dog X position address
+	INC	(R3)			; one tile right
+	CMPB	#1, L7344
+	BEQ	L9CE4
+	CMPB	L71D1, (R3)		; compare to Dog's right limit
+	BNE	L9D14
+L9CE4:	CLRB	L7344
+	CLRB	L71D2
+	MOVB	#1, L71CF
+	BR	L9D14
+; Dog runs left
+L9CF1:	DEC	L71CB			; decrement Dog position in tilemap
+	MOV	#L71CE, R3		; Dog X position address
+	DEC	(R3)			; one tile left
+	CMPB	#1, L7344
+	BEQ	L9D09
+	CMPB	L71D0, (R3)		; compare to Dog's left limit
+	BNE	L9D14
+L9D09:	CLRB	L7344
+	MOVB	#1, L71D2
+	MOVB	#1, L71CF
+;
+L9D14:	MOV	#L71D5, R3
+	INC	(R3)
+	CMPB	#3, (R3)
+	BNE	L9D1F
+	CLRB	(R3)
+L9D1F:	MOV	#L71F2, R3		; Sprite Dog 1
+	MOVB	(R3), R0
+	BEQ	L9D31			; => Set Dog sprite = HL, Draw Dog in tilemap
+	MOV	#L71FE, R3		; Sprite Dog 2
+	CMPB	#1, R0
+	BEQ	L9D31			; => Set Dog sprite = HL, Draw Dog in tilemap
 	MOV	#L720A, R3		; Sprite Dog 3
-
+;
 ; Set Dog sprite = HL, Draw Dog in tilemap
 L9D31:	MOV	R3, L9D3C		; set Dog sprite = HL
-
+;
 ; Draw Dog in tilemap
-L9D34:	MOV	L71CB, R3
+L9D34:	MOV	L71CB, R3		; get Dog position in tilemap
 	ADD	#L6B8A, R3		; + Tile screen 3 start address
 L9D3B:	MOV	#L71FE, R2		; !!MUT-ARG!! current Dog sprite address
 L9D3C = L9D3B + 2	; current Dog sprite address
@@ -596,7 +642,7 @@ L9D58:	CALL	L9D5C			; Set update flags for Dog, 4x3 tiles
 	RETURN
 
 ; Set update flags for Dog, 4x3 tiles
-L9D5C:	MOV	L71CB, R3
+L9D5C:	MOV	L71CB, R3		; get Dog position in tilemap
 	ADD	#L678E, R3		; Tile screen 1 start address
 	MOV	#3, R1			; 3 rows
 	MOV	#001, R0		; "need to update" flag
@@ -620,10 +666,23 @@ L9D78:	MOVB	(R2)+, -(R3)
 	BR	L9D58			; => Set update flags for Dog, and RET
 
 ; ?? something about Dog
-L9D8B:
-	HALT
-	;TODO
-	JMP	L9D34
+L9D8B:	MOV	#L7216, L9D3C		; set Sprite Dog 4
+	TSTB	L71D2
+	BEQ	L9DB3
+	TSTB	L71CD			; check Dog direction
+	BEQ	L9DA6			; left =>
+	CLRB	L71CF
+	JMP	L9D34			; => Draw Dog in tilemap
+L9DA6:	MOVB	#1, L71D4
+	MOV	#L71D4, L9C81
+	JMP	L9D34			; => Draw Dog in tilemap
+L9DB3:	TSTB	L71CD			; check Dog direction
+	BEQ	L9DC7			; left =>
+	CLRB	L71D4
+	MOV	#L71D4, L9C81
+	JMP	L9D34			; => Draw Dog in tilemap
+L9DC7:	CLRB	L71CF
+	JMP	L9D34			; => Draw Dog in tilemap
 
 ; Initialize a dog
 ; Input: R3 = dog data address
@@ -819,8 +878,10 @@ LA26B:	.BYTE	060,000,022,001,012,001	; Room 9B9D guard
 ; +$00/$01: Dog position in tilemap
 ; +$02: Dog direction
 ; +$03: Dog X position
+; +$04: ??
 ; +$05: Dog left limit
 ; +$06: Dog right limit
+; +$07: ??
 ; +$08: Dog Y position
 LA271:	.BYTE	074,001,000,020,000,003,026,000,003,001	; Room 7C2E dog
 LA27B:	.BYTE	136,001,001,024,000,003,026,001,004,001	; Room 7F9C dog
@@ -842,19 +903,20 @@ LA311:	.BYTE	215,001,001,007,000,003,025,001,006,001	; Room 9739 dog
 LA31B:	.BYTE	366,000,000,006,000,002,017,000,001,001	; Room 9A5A dog
 LA325:	.BYTE	214,001,001,006,000,004,030,001,006,001	; Room 9B9D dog
 
-; Turrets data, 12 records, 3 bytes each
+; Turrets data, 11 records, 3 bytes each
 LA32F:	.BYTE	304,000,016	; Room 7A17 turret
 LA332:	.BYTE	047,000,007	; Room 7F48/9A9A turret
 LA335:	.BYTE	021,000,017	; Room 8FBD turret
 LA338:	.BYTE	053,000,012	; Room 7EF2/909F/92A7 turret
 LA33B:	.BYTE	113,000,015	; Room 8B25/8D5C turret
 LA33E:	.BYTE	057,000,017	; Room 7A17/8526 turret
-LA341:	.BYTE	062,000,022	; UNUSED, see A17E
+;LA341:	.BYTE	062,000,022	; UNUSED, see A17E
 LA344:	.BYTE	235,000,005	; Room 95D6 turret
 LA347:	.BYTE	246,000,016	; Room 968A turret
 LA34A:	.BYTE	012,001,030	; Room 968A turret
 LA34D:	.BYTE	077,000,001	; Room 9552 turret
 LA350:	.BYTE	243,000,013	; Room 9BE7 turret
+	.EVEN
 
 LA353:	; Room 81E5 initialization
 	MOV	#LA285, R3		; Dog data address
@@ -1011,7 +1073,7 @@ LA614:
 	JMP	LA6FF			; => Draw Guard on tilemap
 
 ; Draw Guard on tilemap
-LA6FF:	MOV	L71C3, R3
+LA6FF:	MOV	L71C3, R3		; get Current Guard position in tilemap
 	TSTB	L7347			; check Guard direction
 	BNE	LA728			; right =>
 	ADD	#<L6D88+6>, R3		; Tile screen 4 start address + 6
@@ -1088,7 +1150,7 @@ LA775:	CMPB	#377, R0
 	CMPB	#377, (R4)
 	BNE	10$
 	RETURN
-20$:	MOV	(R4), R0
+20$:	MOVB	(R4), R0
 99$:	RETURN
 
 ; Table used to translate Ninja tiles to Guard tiles, 19 records
@@ -1100,21 +1162,13 @@ LA787:	.BYTE	120,307,121,334,124,335,352,336,023,337,025,340,026,341,000,342
 ; Reset Guard data and Dog data
 LAC44:	MOV	#LAC72, R3		; address for Table of Guard data addresses
 	MOV	#23., R1		; 23. Guard records
-LAC49:	CLR	R2
-	BISB	(R3)+, R2
-	SWAB	R2
-	BISB	(R3)+, R2
-	SWAB	R2			; now R2 = Guard data address
-	MOVB	#10., 4(R2)		; set initial Guard energy = 10
+LAC49:	MOV	(R3)+, R2		; now R2 = Guard data address
+	MOVB	#10., 4(R2)		; set initial Guard state = $0A
 	SOB	R1, LAC49
 ; Now prepare Dogs
 	MOV	#LACA2, R3
 	MOV	#20., R1		; 23. Dog records
-LAC5C:	CLR	R2
-	BISB	(R3)+, R2
-	SWAB	R2
-	BISB	(R3)+, R2
-	SWAB	R2			; now R2 = Dog data address
+LAC5C:	MOV	(R3)+, R2		; now R2 = Dog data address
 	ADD	#4, R2
 	CMPB	#101, (R2)
 	BHIS	LAC6E
@@ -1124,7 +1178,7 @@ LAC5C:	CLR	R2
 LAC6E:	SOB	R1, LAC5C
 	RETURN
 
-; Table of Guard data addresses, 23 records
+; Table of Guard data addresses, 23. records
 LAC72:	.WORD	LA26B,LA265,LA25F,LA259
 	.WORD	LA253
 	;.WORD	LA217	;UNUSED
@@ -1134,7 +1188,7 @@ LAC72:	.WORD	LA26B,LA265,LA25F,LA259
 	.WORD	LA20B,LA205,LA1FF,LA1F9
 	.WORD	LA1F3,LA1ED,LA1E7,LA1E1
 
-; Table of Dog data addresses, 20 records
+; Table of Dog data addresses, 20. records
 LACA2:	.WORD	LA31B,LA311,LA307,LA2FD
 	.WORD	LA2F3,LA2DF,LA2D5,LA2CB
 	.WORD	LA2C1,LA2B7,LA2A3,LA285
@@ -1391,12 +1445,12 @@ LB1FC:	MOV	L7233, R3		; get address in Tile scrren 3
 	MOV	#LB13E, R2		; tile buffer address
 LB218:	MOVB	(R2), R0		; get byte from the buffer
 	MOVB	(R3)+, R5		; get mask byte
-	TSTB	L71CD			; check direction
+	TSTB	L71CD			; check Dog direction
 	BNE	10$			; right =>
 	MOVB	L72BA(R5), R5		; byte mirroring
 10$:	BICB	R5, R0			; apply the mask
 	MOVB	(R3)+, R5		; get pixels byte
-	TSTB	L71CD			; check direction
+	TSTB	L71CD			; check Dog direction
 	BNE	20$			; right =>
 	MOVB	L72BA(R5), R5		; byte mirroring
 20$:	BISB	R5, R0			; apply the pixels
@@ -1523,10 +1577,10 @@ LB3B0:
 	;TODO
 	JMP	LB5C7
 
-; Initialize a guard
+; Initialize a Guard
 ; Input: R3 = Guard data address, see A1E1
 LB40A:	MOV	#L71C3, R2		; address to store guard data
-	MOV	R3, <LB695+2>		; Save Guard data address
+	MOV	R3, LB696		; Save Guard data address
 	MOV	(R3)+, (R2)+		; copy Guard data - position in tilemap
 	MOV	(R3)+, (R2)		; copy Guard data - X/Y position
 	MOVB	(R3)+, L7346		; set Guard state
@@ -1612,7 +1666,7 @@ LB4CC = LB4CB + 4	; Turret address on Tile Screen 1
 	MOVB	#055, (R3)		; $2D = Turret looking down
 	MOVB	L9C41, R0		; get Ninja X
 LB4D3:	MOV	#15., R1		; !!MUT-ARG!! Turret X value
-LB4D4 = LB4D3 + 1	; Turret X value
+LB4D4 = LB4D3 + 2	; Turret X value
 	CMPB	R1, R0
 	BEQ	LB4DC
 	DECB	(R3)
@@ -1652,6 +1706,7 @@ LB4FA:
 LB532:	INC	L9C42			; increase Ninja position in tilemap
 	INCB	L9C41			; increase Ninja X
 LB53D:	MOV	#<L6F86+349.>, R2	; !!MUT-ARG!! address in Tile screen 5 (front)
+LB53E = LB53D + 2	; Boat position
 	MOV	#LB5A7, R3		; Boat sprite address
 	MOV	#9., R1
 10$:	MOVB	(R3)+, (R2)+
@@ -1660,7 +1715,7 @@ LB53D:	MOV	#<L6F86+349.>, R2	; !!MUT-ARG!! address in Tile screen 5 (front)
 	MOVB	#1, (R2)		; put "need update" flag
 	ADD	#-8., R2
 	MOVB	#1, (R2)		; put "need update" flag
-	INC	@#<LB53D+2>		; increase boat position
+	INC	@#LB53E			; increase boat position
 	;TODO
 	DECB	L7343			; decrease counter
 	BEQ	LB577
@@ -1705,18 +1760,19 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	MOV	#010146, L9DD9		; set command = PUSH R1 = enable Energy decrease
 	;TODO
 	CALL	LACCA			; Draw game screen frames and indicator text
+	;NOP				; set BORDCR = 0
 	CLR	LB5C6			; set Time mode = time ticking
 	CLR	LB850			; clear HELD tile
 	CLRB	<LD486+8.>		; set head tile in Ninja/Guard standing sprite
-	;TODO
+	;TODO: Sound off
 	MOVB	#1, <LD486+9.>		; set head tile for Ninja/Guard standing sprite
 	MOVB	#1, L7239		; set Ninja direction = 1 = right
 	MOVB	#1, LB84F		; set NEAR item = 1
-	MOV	#<L6F86+330.>, @#<LB53D+2>	; set initial position for boat
-
+	MOV	#<L6F86+330.>, @#LB53E	; set initial position for boat
+	MOV	#LB5B0, L74D4
 	CALL	LB851			; Set initial data in Table of Objects
-	CLR	<LB673+2>		; set current Dog data address = no dog
-	CLR	<LB695+2>		; set current Guard data address = no guard
+	CLR	LB674			; set current Dog data address = no dog
+	CLR	LB696			; set current Guard data address = no guard
 	;TODO
 	MOVB	#310, LBD7A		; $C8
 	CALL	L7472
@@ -1738,6 +1794,7 @@ LB674 = LB673 + 2
 	;TODO
 
 LB695:	MOV	#000000, R2		; !!MUT-ARG!! current Guard data address
+LB696 = LB695 + 2
 
 	MOV	#L6590, R3		; Tile screen 0 start address
 	MOV	#<510./2>, R1
@@ -1749,14 +1806,14 @@ LB6CD:	CLR	(R3)+			; clear two bytes
 LB6DA:	MOV	#177777, (R3)+		; put two bytes $FF = transparent tile
 	SOB	R1, LB6DA
 	MOV	L7184, R3		; get Current Room address
-	MOV	2(R3), R0		; get Room init address
-	;TODO	; set Room init address
+	MOV	2(R3), LB6F2		; set Room init address
 	ADD	#12., R3		; now R3 = room sequence start address
 LB6EE:	CLR	R0
 	BISB	(R3), R0		; get next token
 	CMPB	R0, #377		; End of sequence?
 	BNE	LB6F4			; no =>
 LB6F1:	JMP	@#LB724			; !!MUT-ARG!! => run Room initialization code
+LB6F2 = LB6F1 + 2	; Room initialization address
 LB6F4:	PUSH	R3			; Save address in the room sequence
 	ASL	R0			; * 2
 	ADD	#<LB706>, R0		; Table of Room tokens
@@ -2814,7 +2871,7 @@ LC643:	MOV	#LC5C6, R3		; Movement handler address: Ninja falling
 	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
 
 ; Room 791E (room with pier) initialization
-LC64C:	MOV	LC65A, R3
+LC64C:	MOV	#LC65A, R3
 	MOV	#<L6590+220.>, R2	; = $6590 (Tile screen 0) + 220.
 	MOV	#17., R1
 LC655:	MOVB	(R3)+, (R2)+		; copy bytes to Background
