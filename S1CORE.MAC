@@ -218,7 +218,7 @@ L71D3:	.BYTE	6	; Dog Y position
 
 L71D4:	.BYTE
 L71D5:	.BYTE	1
-L71D6:	;TODO		; Room 79C6 dog data
+L71D6:	.BYTE	172,000,000,002,000,001,026,000,375	; Room 79C6 dog data
 
 L7232:	.BYTE	0	; Input bits: 000FUDLR
 	.EVEN
@@ -256,6 +256,7 @@ L7343:	.BYTE	7	; Counter used in movement handlers
 	.EVEN
 L7344:	.BYTE	0	; Dog's flag: 1 = ignore left/right limit
 L7345:	.BYTE	20.	; Dog ??
+	.EVEN
 L7346:	.BYTE	10.	; Guard walking phase $00..$03 or other state: $09 = Guard dead; ...
 L7347:	.BYTE	1	; Guard direction
 	.EVEN
@@ -525,13 +526,71 @@ L9C41:	.BYTE	6			; Ninja X within the room
 L9C42:	.WORD	246.			; Ninja position in tilemap: Y * 30. + X
 
 ; Process a dog
-L9C44:
-	;TODO
-	RETURN	;STUB
+L9C44:	MOV	#L71D3, R3		; dog Y position address
+	MOVB	L9C40, R0		; get Ninja Y
+	MOVB	(R3), R1
+	SUB	R1, R0
+	CMPB	#7, R0
+	BHIS	L9C80
+	MOV	#L7345, R3
+	TSTB	(R3)
+	BNE	L9C5A
+L9C56:	MOVB	#031, (R3)		; !!MUT-ARG!! ??
+L9C57 = L9C56 + 2	; Dog counter value
+	BR	L9C80
+L9C5A:	DECB	(R3)
+	BNE	L9C80
+	TSTB	L71CD			; check Dog direction
+	BNE	L9C71			; right =>
+	MOVB	L9C41,	R0		; get Ninja X
+	INC	R0
+	CMPB	L71CE, R0		; Dog X position address
+	BLO	L9C80
+	BR	L9C7B
+L9C71:	MOVB	L9C41,	R0		; get Ninja X
+	INC	R0
+	CMPB	L71CE, R0		; Dog X position address
+	BHIS	L9C80
+L9C7B:	MOVB	#1, L7344		; set "Dog ignore left/right limit" flag
+L9C80:	MOVB	L71CD, R0		; !!MUT-ARG!! get Dog direction
+L9C81 = L9C80 + 2	; Dog direction
+	MOVB	R0, L71CD
+	MOV	#L71CD, L9C81
+	CALL	L9D5C			; Set update flags for Dog
+	MOVB	L71CF, R0
+	CMPB	R0, #102		; $42
+	BLO	L9CA8
+	MOV	#L9C9C, R3		; Sprite Dog dead
+	JMP	L9D31			; => Set Dog sprite = HL, Draw Dog in tilemap
 
 ; Part of Dog processing
-L9CA8:
+L9CA8:	TSTB	R0
+	BNE	L9D8B
+
+	;HALT
 	;TODO
+	MOV	#L720A, R3		; Sprite Dog 3
+
+; Set Dog sprite = HL, Draw Dog in tilemap
+L9D31:	MOV	R3, L9D3C		; set Dog sprite = HL
+
+; Draw Dog in tilemap
+L9D34:	MOV	L71CB, R3
+	ADD	#L6B8A, R3		; + Tile screen 3 start address
+L9D3B:	MOV	#L71FE, R2		; !!MUT-ARG!! current Dog sprite address
+L9D3C = L9D3B + 2	; current Dog sprite address
+	MOV	#3, R1			; 3 rows
+	TSTB	L71CD			; check Dog direction
+	BEQ	L9D75			; left => draw Dog facing left
+
+; Draw Dog facing right in tilemap
+; R1 = 3
+L9D47:	MOVB	(R2)+, (R3)+
+	MOVB	(R2)+, (R3)+
+	MOVB	(R2)+, (R3)+
+	MOVB	(R2)+, (R3)
+	ADD	#27., R3
+	SOB	R1, L9D47
 
 L9D58:	CALL	L9D5C			; Set update flags for Dog, 4x3 tiles
 	RETURN
@@ -548,6 +607,23 @@ L9D5C:	MOV	L71CB, R3
 	ADD	#<30.-3>, R3		; next row
 	SOB	R1, 10$			; continue loop by rows
 	RETURN
+
+; Draw Dog facing left in tilemap
+; R1 = 3
+L9D75:	ADD	#4, R3
+L9D78:	MOVB	(R2)+, -(R3)
+	MOVB	(R2)+, -(R3)
+	MOVB	(R2)+, -(R3)
+	MOVB	(R2)+, -(R3)
+	ADD	#34., R3
+	SOB	R1, L9D78
+	BR	L9D58			; => Set update flags for Dog, and RET
+
+; ?? something about Dog
+L9D8B:
+	HALT
+	;TODO
+	JMP	L9D34
 
 ; Initialize a dog
 ; Input: R3 = dog data address
@@ -572,147 +648,148 @@ L9DF1:	SOB	R1, L9DD9
 	RETURN
 
 LA0DF:	; Room 94AB initialization
-	MOV	LA1E1, R3		; Guard data address
+	MOV	#LA1E1, R3		; Guard data address
 ; Initialize a guard, then Standard room initialization
 LA0E2:	CALL	LB40A			; Initialize a guard
 LA0E5:	JMP	LB422			; Standard room initialization
 LA0E8:	; Room 7DA9 initialization
-	MOV	LA1E7, R3		; Guard data address
+	MOV	#LA1E7, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA0ED:	; Room 7E8C initialization
-	MOV	LA1ED, R3		; Guard data address
+	MOV	#LA1ED, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA0F2:	; Room 920A initialization
-	MOV	LA1F3, R3		; Guard data address
+	MOV	#LA1F3, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA0F7:	; Room 8F84 initialization
-	MOV	LA1F9, R3		; Guard data address
+	MOV	#LA1F9, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA0FC:	; Room 8B71 initialization
-	MOV	LA1FF, R3		; Guard data address
+	MOV	#LA1FF, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA101:	; Room 8739 initialization
-	MOV	LA205, R3		; Guard data address
+	MOV	#LA205, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA106:	; Room 858F initialization
-	MOV	LA20B, R3		; Guard data address
+	MOV	#LA20B, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA10B:	; Room 84EE initialization
-	MOV	LA211, R3		; Guard data address
+	MOV	#LA211, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA110:	; Room 99A6 initialization
-	MOV	LA21D, R3		; Guard data address
+	MOV	#LA21D, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA115:	; Room 97F8 initialization
-	MOV	LA223, R3		; Guard data address
+	MOV	#LA223, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA11A:	; Room 94CF initialization
-	MOV	LA229, R3		; Guard data address
+	MOV	#LA229, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA11F:	; Room 9B51 initialization
-	MOV	LA22F, R3		; Guard data address
+	MOV	#LA22F, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA124:	; Room 9F3A initialization
-	MOV	LA235, R3		; Guard data address
+	MOV	#LA235, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA129:	; Room 9F7E initialization
-	MOV	LA23B, R3		; Guard data address
+	MOV	#LA23B, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA12E:	; Room 9EB8 initialization
-	MOV	LA241, R3		; Guard data address
+	MOV	#LA241, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA133:	; Room 9B19 initialization
-	MOV	LA247, R3		; Guard data address
+	MOV	#LA247, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 LA138:	; Room 9DF5 initialization
-	MOV	LA24D, R3		; Guard data address
+	MOV	#LA24D, R3		; Guard data address
 	BR	LA0E2			; Initialize a guard, then Standard room initialization
 
 LA142:	; Room 7A17 initialization
-	MOV	LA33E, R3		; Turret data address
+	MOV	#LA33E, R3		; Turret data address
 ; Initialize a turret, then Standard room initialization
 LA145:	CALL	LB461			; Initialize a turret
 	BR	LA0E5			; Standard room initialization
 LA14A:	; Room 7D5A initialization
-	MOV	LA32F, R3		; Turret data address
+	MOV	#LA32F, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 LA14F:	; Room 7F48 initialization
-	MOV	LA332, R3		; Turret data address
+	MOV	#LA332, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 LA154:	; Room 7EF2 initialization
-	MOV	LA299, R3		; Dog data address
+	MOV	#LA299, R3		; Dog data address
 	CALL	L9DCD			; Initialize a dog
-	MOV	LA338, R3		; Turret data address
+	MOV	#LA338, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 LA15F:	; Room 909F initialization
-	MOV	LA2E9, R3		; Dog data address
+	MOV	#LA2E9, R3		; Dog data address
 	CALL	L9DCD			; Initialize a dog
-	MOV	LA338, R3		; Turret data address
+	MOV	#LA338, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 LA16A:	; Room 8FBD initialization
-	MOV	LA335, R3		; Turret data address
+	MOV	#LA335, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 LA16F:	; Room 92A7 initialization
-	MOV	LA338, R3		; Turret data address
+	MOV	#LA338, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 LA174:	; Room 8B25 initialization
-	MOV	LA33B, R3		; Turret data address
+	MOV	#LA33B, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 LA179:	; Room 8526 initialization
-	MOV	LA33E, R3		; Turret data address
+	MOV	#LA33E, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 
 LA183:	; Room 95D6 initialization
-	MOV	LA344, R3		; Turret data address
+	MOV	#LA344, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 LA188:	; Room 968A initialization
-	MOV	LA347, R3		; Turret data address
+	MOV	#LA347, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 LA18D:	; Finish Room 97A6 initialization
-	MOV	LA34A, R3		; Turret data address
+	MOV	#LA34A, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 LA192:	; Room 9A9A initialization
-	MOV	LA332, R3		; Turret data address
+	MOV	#LA332, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 LA197:	; Room 9552 initialization
-	MOV	LA34D, R3		; Turret data address
+	MOV	#LA34D, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 LA19C:	; Room 9BE7 initialization
-	MOV	LA350, R3		; Turret data address
+	MOV	#LA350, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 LA1A1:	; Room 8D5C initialization
-	MOV	LA33B, R3		; Turret data address
+	MOV	#LA33B, R3		; Turret data address
 	BR	LA145			; Initialize a turret, then Standard room initialization
 LA1A6:	; Room 7C2E initialization
-	MOV	LA271, R3		; Dog data address
+	MOV	#LA271, R3		; Dog data address
 	CALL	L9DCD			; Initialize a dog
-	MOV	LA253, R3		; Guard data address
+	MOV	#LA253, R3		; Guard data address
 LA1AF:	; Finish room initialization
 	CALL	LB40A			; Initialize a guard
 	JMP	LB422			; Standard room initialization
 LA1B5:	; Room 7F9C initialization
-	MOV	LA27B, R3		; Dog data address
+	MOV	#LA27B, R3		; Dog data address
 	CALL	L9DCD			; Initialize a dog
-	MOV	LA259, R3		; Guard data address
+	MOV	#LA259, R3		; Guard data address
 	BR	LA1AF			; Initialize a guard, then Standard room initialization
 LA1C0:	; Room 8162 initialization
-	MOV	LA28F, R3		; Dog data address
+	MOV	#LA28F, R3		; Dog data address
 	CALL	L9DCD			; Initialize a dog
-	MOV	LA265, R3		; Guard data address
+	MOV	#LA265, R3		; Guard data address
 	BR	LA1AF			; Initialize a guard, then Standard room initialization
 LA1CB:	; Room 80A7 initialization
-	MOV	LA2AD, R3		; Dog data address
+	MOV	#LA2AD, R3		; Dog data address
 	CALL	L9DCD			; Initialize a dog
-	MOV	LA265, R3		; Guard data address
+	MOV	#LA265, R3		; Guard data address
 	BR	LA1AF			; Initialize a guard, then Standard room initialization
 LA1D6:	; Room 9B9D initialization
-	MOV	LA325, R3		; Dog data address
+	MOV	#LA325, R3		; Dog data address
 	CALL	L9DCD			; Initialize a dog
-	MOV	LA26B, R3		; Guard data address
+	MOV	#LA26B, R3		; Guard data address
 	BR	LA1AF			; Initialize a guard, then Standard room initialization
 
-; Guards data, 24 records, 6 bytes each
-; +$04: Guard energy, initially 10
+; Guards data, 23 records, 6 bytes each
+; +$04: Guard state, initially $0A
+; +$05: Guard direction
 LA1E1:	.BYTE	235,000,007,005,012,001	; Room 94AB guard
 LA1E7:	.BYTE	030,001,012,011,012,000	; Room 7DA9 guard
 LA1ED:	.BYTE	024,001,006,011,012,000	; Room 7E8C guard
@@ -780,42 +857,42 @@ LA34D:	.BYTE	077,000,001	; Room 9552 turret
 LA350:	.BYTE	243,000,013	; Room 9BE7 turret
 
 LA353:	; Room 81E5 initialization
-	MOV	LA285, R3		; Dog data address
+	MOV	#LA285, R3		; Dog data address
 ; Initialize a dog, then Standard room initialization
 LA356:	CALL	L9DCD			; Initialize a dog
 	JMP	LB422			; Standard room initialization
 LA35C:	; Room 7E05 initialization
-	MOV	LA2A3, R3		; Dog data address
+	MOV	#LA2A3, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
 LA361:	; Room 83ED initialization
-	MOV	LA2B7, R3		; Dog data address
+	MOV	#LA2B7, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
 LA366:	; Room 924E initialization
-	MOV	LA2CB, R3		; Dog data address
+	MOV	#LA2CB, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
 LA36B:	; Room 91BA initialization
-	MOV	LA2D5, R3		; Dog data address
+	MOV	#LA2D5, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
 LA370:	; Room 90DB initialization
-	MOV	LA2DF, R3		; Dog data address
+	MOV	#LA2DF, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
 LA375:	; Room 8802 initialization
-	MOV	LA2F3, R3		; Dog data address
+	MOV	#LA2F3, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
 LA37A:	; Room 8608 initialization
-	MOV	LA2FD, R3		; Dog data address
+	MOV	#LA2FD, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
 LA37F:	; Room 844E initialization
-	MOV	LA307, R3		; Dog data address
+	MOV	#LA307, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
 LA384:	; Room 9739 initialization
-	MOV	LA311, R3		; Dog data address
+	MOV	#LA311, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
 LA389:	; Room 9A5A initialization
-	MOV	LA31B, R3		; Dog data address
+	MOV	#LA31B, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
 LA38E:	; Room 80F6 initialization
-	MOV	LA2C1, R3		; Dog data address
+	MOV	#LA2C1, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
 
 LA39E:	.BYTE	0
@@ -857,9 +934,135 @@ LA3EE:
 LA418:
 	;TODO
 
-; ?? something about Guard
-LA434:
+; Process a Guard
+LA434:	CALL	LA75B			; Set update flags for Guard, 6x7 tiles
+	MOV	#L7346, R3		; Guard state address
+	MOVB	(R3), R0		; get Guard state
+; Guard state = $0B ?
+	CMPB	#11., R0
+	BNE	LA4E7
 	;TODO
+	HALT
+
+	JMP	LA6FF			; => Draw Guard on tilemap
+; Guard state = $14 ?
+LA4E7:	CMPB	#20., R0
+	BNE	LA52F
+	;TODO
+	HALT
+
+	JMP	LA6FF			; => Draw Guard on tilemap
+; Guard state = $0A ? - Standing
+LA52F:	CMPB	#10., R0
+	BNE	LA56D
+	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
+	MOV	#L9C40, R3		; Ninja Y address
+	MOVB	L71C6, R0		; get Guard Y
+	ADD	#3, R0			; Guard Y + 3
+	CMPB	(R3), R0		; compare with Ninja Y
+	BLO	LA6FF			; Guard above Ninja => Draw Guard on tilemap
+	MOVB	LA39E, R0
+	DEC	R0
+	BEQ	LA565
+	MOVB	L71C5, R0		; get Guard X
+	TSTB	L7347			; check Guard direction
+	BEQ	LA55F			; right =>
+	ADD	#2, R0			; for left, Guard X + 2
+	CMPB	(R3), R0		; compare with Ninja X
+	BHIS	LA6FF			; Guard still behind Ninja => Draw Guard on tilemap
+	BR	LA565
+LA55F:	SUB	#3, R0			; for right, Guard X - 3
+	CMPB	(R3), R0		; compare with Ninja X
+	BHIS	LA6FF			; Guard not reached Ninja => Draw Guard on tilemap
+LA565:	MOVB	#4, L7346		; set Guard state = $04
+	JMP	LA6FF			; => Draw Guard on tilemap
+; Guard state = $09 ? - Guard is dead
+LA56D:	CMPB	#9., R0
+	BNE	LA57A
+	MOV	#LA0B5, LA70F		; set Sprite Ninja/Guard dead
+	JMP	LA6FF			; => Draw Guard on tilemap
+; Guard state = $08 ?
+LA57A:	CMPB	#8., R0
+	BNE	LA5AA
+	;TODO
+	HALT
+
+	JMP	LA6FF			; => Draw Guard on tilemap
+; Guard state = $05 ? - Preparing for jump-kick
+LA5AA:	CMPB	#5., R0
+	BNE	LA5C7
+	;TODO
+	HALT
+
+	JMP	LA6FF			; => Draw Guard on tilemap
+; Guard state = $06 ?
+LA5C7:	CMPB	#6., R0
+	BNE	LA614
+	;TODO
+	HALT
+
+	JMP	LA6FF			; => Draw Guard on tilemap
+; Guard state is none of the above
+LA614:
+	;TODO
+	HALT
+
+	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
+	JMP	LA6FF			; => Draw Guard on tilemap
+
+; Draw Guard on tilemap
+LA6FF:	MOV	L71C3, R3
+	TSTB	L7347			; check Guard direction
+	BNE	LA728			; right =>
+	ADD	#<L6D88+6>, R3		; Tile screen 4 start address + 6
+LA70E:	MOV	#LD432, R2		; !!MUT-ARG!! current Ninja/Guard sprite address
+LA70F = LA70E + 2
+	MOV	#7, R1			; 7 rows
+LA713:	MOVB	(R2)+, R0		; get tile
+	CALL	LA775			; Translate Ninja tile A into Guard tile
+	MOVB	R0, -(R3)
+	MOVB	(R2)+, R0
+	CALL	LA775
+	MOVB	R0, -(R3)
+	MOVB	(R2)+, R0
+	CALL	LA775
+	MOVB	R0, -(R3)
+	MOVB	(R2)+, R0
+	CALL	LA775
+	MOVB	R0, -(R3)
+	MOVB	(R2)+, R0
+	CALL	LA775
+	MOVB	R0, -(R3)
+	MOVB	(R2)+, R0
+	CALL	LA775
+	MOVB	R0, -(R3)
+	ADD	#36., R3		; next row
+	SOB	R1, LA713
+	RETURN
+LA728:	ADD	#L6D88, R3		; Tile screen 4 start address
+	MOV	LA70F, R2		; get Guard sprite address
+	MOV	#7, R1			; 7 rows
+LA732:	MOVB	(R2)+, R0		; get tile
+	CALL	LA775			; Translate Ninja tile A into Guard tile
+	MOVB	R0, (R3)+
+	MOVB	(R2)+, R0
+	CALL	LA775
+	MOVB	R0, (R3)+
+	MOVB	(R2)+, R0
+	CALL	LA775
+	MOVB	R0, (R3)+
+	MOVB	(R2)+, R0
+	CALL	LA775
+	MOVB	R0, (R3)+
+	MOVB	(R2)+, R0
+	CALL	LA775
+	MOVB	R0, (R3)+
+	MOVB	(R2)+, R0
+	CALL	LA775
+	MOVB	R0, (R3)
+	ADD	#25., R3		; next row
+	SOB	R1, LA732
+	RETURN
 
 ; Set update flags for Guard, 6x7 tiles
 LA75B:	MOV	L71C3, R3		; get Current Guard position in tilemap
@@ -875,6 +1078,24 @@ LA75B:	MOV	L71C3, R3		; get Current Guard position in tilemap
 	ADD	#<30.-5>, R3		; next row
 	SOB	R1, 10$			; continue loop by rows
 	RETURN
+
+; Translate Ninja tile R0 into Guard tile, using LA787 table
+LA775:	CMPB	#377, R0
+	BEQ	99$
+	MOV	#LA787, R4		; Translate table address
+10$:	CMPB	(R4)+, R0
+	BEQ	20$
+	CMPB	#377, (R4)
+	BNE	10$
+	RETURN
+20$:	MOV	(R4), R0
+99$:	RETURN
+
+; Table used to translate Ninja tiles to Guard tiles, 19 records
+LA787:	.BYTE	120,307,121,334,124,335,352,336,023,337,025,340,026,341,000,342
+	.BYTE	001,343,003,344,004,345,115,346,042,347,057,350,060,351,364,342
+	.BYTE	365,343,344,344,366,345
+	.BYTE	377,377
 
 ; Reset Guard data and Dog data
 LAC44:	MOV	#LAC72, R3		; address for Table of Guard data addresses
@@ -1143,13 +1364,13 @@ LB1E4:	MOVB	(R2), R0		; get byte from the buffer
 	MOVB	(R3)+, R5		; get mask byte
 	;CALL	LB2E8			; Mirror byte if needed
 	TSTB	L7239			; check direction
-	BNE	10$			; right => return
+	BNE	10$			; right =>
 	MOVB	L72BA(R5), R5		; byte mirroring
 10$:	BICB	R5, R0			; apply the mask
 	MOVB	(R3)+, R5		; get pixels byte
 	;CALL	LB2E8			; Mirror byte if needed
 	TSTB	L7239			; check direction
-	BNE	20$			; right => return
+	BNE	20$			; right =>
 	MOVB	L72BA(R5), R5		; byte mirroring
 20$:	BISB	R5, R0			; apply the pixels
 	MOVB	R0, (R2)+		; store byte back to the buffer
@@ -1165,8 +1386,22 @@ LB1FC:	MOV	L7233, R3		; get address in Tile scrren 3
 	ASL	R0
 	ASL	R0			; * 16.
 	ADD	#LF0F0, R0		; + Dog tiles base address
+	MOV	R0, R3			; now HL = tile data address
 	MOV	#8., R1
-	;TODO
+	MOV	#LB13E, R2		; tile buffer address
+LB218:	MOVB	(R2), R0		; get byte from the buffer
+	MOVB	(R3)+, R5		; get mask byte
+	TSTB	L71CD			; check direction
+	BNE	10$			; right =>
+	MOVB	L72BA(R5), R5		; byte mirroring
+10$:	BICB	R5, R0			; apply the mask
+	MOVB	(R3)+, R5		; get pixels byte
+	TSTB	L71CD			; check direction
+	BNE	20$			; right =>
+	MOVB	L72BA(R5), R5		; byte mirroring
+20$:	BISB	R5, R0			; apply the pixels
+	MOVB	R0, (R2)+		; store byte back to the buffer
+	SOB	R1, LB218
 ; Process Tile screen 4 tile - Guard
 LB230:	MOV	L7235, R3		; get address in Tile scrren 4
 	MOVB	(R3), R0		; get tile from Tile screen 4
@@ -1178,8 +1413,22 @@ LB230:	MOV	L7235, R3		; get address in Tile scrren 4
 	ASL	R0
 	ASL	R0			; * 16.
 	ADD	#LE700, R0		; + Guard tiles base address
+	MOV	R0, R3			; now HL = tile data address
 	MOV	#8., R1
-	;TODO
+	MOV	#LB13E, R2		; tile buffer address
+LB24B:	MOVB	(R2), R0		; get byte from the buffer
+	MOVB	(R3)+, R5		; get mask byte
+	TSTB	L7347			; check direction
+	BNE	10$			; right =>
+	MOVB	L72BA(R5), R5		; byte mirroring
+10$:	BICB	R5, R0			; apply the mask
+	MOVB	(R3)+, R5		; get pixels byte
+	TSTB	L7347			; check direction
+	BNE	20$			; right =>
+	MOVB	L72BA(R5), R5		; byte mirroring
+20$:	BISB	R5, R0			; apply the pixels
+	MOVB	R0, (R2)+		; store byte back to the buffer
+	SOB	R1, LB24B
 ; Process Tile screen 5 tile - front
 LB263:	MOV	L7237, R3		; get address in Tile scrren 5
 	MOVB	(R3), R0		; get tile from Tile screen 5
@@ -1276,8 +1525,8 @@ LB3B0:
 
 ; Initialize a guard
 ; Input: R3 = Guard data address, see A1E1
-LB40A:	MOV	L71C3, R2		; address to store guard data
-	MOV	R3, @#<LB695+2>		; Save Guard data address
+LB40A:	MOV	#L71C3, R2		; address to store guard data
+	MOV	R3, <LB695+2>		; Save Guard data address
 	MOV	(R3)+, (R2)+		; copy Guard data - position in tilemap
 	MOV	(R3)+, (R2)		; copy Guard data - X/Y position
 	MOVB	(R3)+, L7346		; set Guard state
@@ -1311,6 +1560,7 @@ LB458:	CALL	L9C44			; Process a dog
 	JMP	LB937			; Standard room procedure
 
 ; Turret initialization
+; R3 = Turret data address
 LB461:	CLR	R2
 	BISB	(R3)+, R2
 	SWAB	R2
@@ -1357,7 +1607,7 @@ LB4B4:	SUB	R2, R3			; -30.
 LB4C3:	MOV	#50., R0		; !!MUT-ARG!! ??
 	POP	R3
 LB4C6:	MOVB	R0, LB4DD		; update Turret counter
-LB4CB:	MOVB	#1, <L678E+47.>		; !!MUT-ARG!! set "need update" mark for Turret on Tile Screen 1
+LB4CB:	MOVB	#1, @#<L678E+47.>	; !!MUT-ARG!! set "need update" mark for Turret on Tile Screen 1
 LB4CC = LB4CB + 4	; Turret address on Tile Screen 1
 	MOVB	#055, (R3)		; $2D = Turret looking down
 	MOVB	L9C41, R0		; get Ninja X
@@ -1919,8 +2169,22 @@ LBDA2:	MOVB	R1, LA3A2
 LBDAF:	; Ninja standing (redirect)
 	JMP	LC226			; => Ninja standing
 
-LBDB2:
-	;TODO
+; ?? Ninja action?
+LBDB2:	MOV	L9C42, R3		; get Ninja position in tilemap
+	MOV	#<L6D88+34.>, R2	; Tile screen 4 + 34, for right
+	TSTB	L7239			; check Ninja direction
+	BNE	LBDC2			; right =>
+	MOV	#<L6D88+31.>, R2	; Tile screen 4 + 31, for left
+LBDC2:	ADD	R2, R3			; now R3 = address in Guard tilemap
+	CMPB	#377, (R3)		; tile = $FF ?
+	BEQ	LBDD4			; yes =>
+	MOVB	#9., L7346		; set Guard state = $09
+	CALL	LB596
+	MOV	#5, R1			; 5 hundreds
+	CALL	LB4DE			; Increase PAY value by 500 - Guard killed
+LBDD4:	MOV	#LBBD4, R3		; Movement handler address
+	MOV	#LD504, R2		; Sprite Ninja/Guard punching
+	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
 
 LBDDD:	BIT	#10, R0			; bit 3 - up
 	BNE	LBDE2			; yes =>
@@ -1934,6 +2198,7 @@ LBDE2:	MOV	L9C42, R2		; get Ninja position in tilemap
 	JMP	LBF7B
 LBDF0:	MOVB	#11., L7343		; set counter = 11.
 	;TODO
+	HALT
 
 	MOV	#LBE0D, R3		; Movement handler
 	MOV	#LD486, R2		; Sprite Ninja/Guard standing
@@ -1941,6 +2206,7 @@ LBDF0:	MOVB	#11., L7343		; set counter = 11.
 
 ; ?? Movement handler
 LBE0D:
+	HALT
 	;TODO
 
 	MOV	#LC094, R3		; Movement handler (helicopter?)
@@ -1961,19 +2227,21 @@ LBE63:	MOV	#000207, L9DD9		; set instruction = RETURN
 ; Time is out
 LBE71:	CMP	LB5C6, #2		; Time mode = BOMB ticking mode?
 	BEQ	LBE80			; yes =>
-	MOV	#LBF35, <LBEB3+2>	; set wo-line Game Over message = "TIME OUT" / "MISSION TERMINATED"
+	MOV	#LBF35, LBEB4		; set wo-line Game Over message = "TIME OUT" / "MISSION TERMINATED"
 	BR	LBE63			; => Ninja dead
 ; BOMB time is out, BOMB explodes
 LBE80:
+	HALT
 	;TODO
 	PUSH	R3
 ; Saboteur is dead
 LBEAA:	POP	R3
-	MOV	#LBF58, <LBEB3+2>	; set two-line Game Over message = "SABOTEUR DEAD" / "MISSION FAILURE"
+	MOV	#LBF58, LBEB4		; set two-line Game Over message = "SABOTEUR DEAD" / "MISSION FAILURE"
 	BR	LBE63			; => Ninja dead
 
 ; Movement handler: Game Over
 LBEB3:	MOV	#LBEEF, R3		; !!MUT-ARG!! two-line message address
+LBEB4 = LBEB3 + 2
 	MOV	#<SCREEN+<1200*3.>+12.>, R2
 	MOV	#15., R1
 	CALL	LAED1			; Print string 1st line
@@ -2042,6 +2310,7 @@ LBFCC:	MOV	#LC22F, R3		; Movement handler: Ninja sitting
 
 ; ?? Movement handler (helicopter?)
 LC094:
+	HALT
 	;TODO
 	JMP	LB8D0			; => Update Ninja on tilemap
 
@@ -2184,9 +2453,13 @@ LC2C5:	MOVB	L733A, R0
 	ADD	R0, R0			; * 2
 	MOV	R0, R3
 	CLRB	LA39E
-	;TODO
+	TSTB	R0
+	BNE	LC2E8
+	INC	R0
+	MOVB	R0, LA39E
+	;TODO: Sound?
 
-LC2E8:	MOV	L733B(R3), L7186	; sprite address from table -> Ninja sprite address
+LC2E8:	MOV	L733B(R3), L7186	; sprite address from table -> Ninja sprite
 	JMP	LC16E			; => Update Ninja on tilemap
 
 ; Going to room at Right
@@ -2553,7 +2826,7 @@ LC65A:	.BYTE	343,343,343,366,366,343,343,343
 	.EVEN
 
 LC66B:	; Guard data for rooms 7C9C/92EF
-	;TODO
+	.BYTE	016,000,016,000,004,000
 
 ; Room 93DF/947C (room right from Train) initialization
 LC671:	MOV	#L947C, <L7C9C+4>	; set "room to left" for room 7C9C
