@@ -980,21 +980,39 @@ LA3B3:	.BYTE	15.			; Turret X
 LA3B4:	.BYTE	1			; ?? Guard counter
 	.EVEN
 
-; ?? something about Ninja and Guard
-LA3B5:
+; Ninja and Guard in 12. tiles by X
+LA3B5:	CMPB	L9C40, L71C6		; compare Ninja Y to Guard Y
+	BEQ	LA3BD			; same Y =>
+	RETURN
+LA3BD:
 	;TODO
+	HALT
 
-; ?? something about Ninja and Guard
-LA3D1:
+; Ninja and Guard in 9. tiles by X
+LA3D1:	CMPB	L9C40, L71C6		; compare Ninja Y to Guard Y
+	BEQ	LA3D9			; same Y =>
+	RETURN
+LA3D9:
 	;TODO
+	HALT
 
-; ?? something about Ninja and Guard
-LA3EE:
+; Ninja and Guard in 3 tiles by X
+LA3EE:	CMPB	L9C40, L71C6		; compare Ninja Y to Guard Y
+	BEQ	LA3F6			; same Y =>
+	RETURN
+LA3F6:
 	;TODO
+	HALT
 
-; ?? something about Ninja and Guard
-LA418:
-	;TODO
+; Ninja and Guard are very close by X
+LA418:	CMPB	L9C40, L71C6		; compare Ninja Y to Guard Y
+	BEQ	LA420			; same Y =>
+	RETURN
+LA420:	POP	R3
+	MOVB	#8., L7346		; set Guard state = $08
+	MOVB	#3, LA3B4		; set Guard counter = 3
+	MOV	#LD504, LA70F		; set Sprite Ninja/Guard punching
+	JMP	LA6FF			; => Draw Guard on tilemap
 
 ; Process a Guard
 LA434:	CALL	LA75B			; Set update flags for Guard, 6x7 tiles
@@ -1022,8 +1040,9 @@ LA52F:	CMPB	#10., R0
 	MOVB	L71C6, R0		; get Guard Y
 	ADD	#3, R0			; Guard Y + 3
 	CMPB	(R3), R0		; compare with Ninja Y
-	BLO	LA6FF			; Guard above Ninja => Draw Guard on tilemap
-	MOVB	LA39E, R0
+	BHIS	LA545
+	JMP	LA6FF			; Guard above Ninja => Draw Guard on tilemap
+LA545:	MOVB	LA39E, R0
 	DEC	R0
 	BEQ	LA565
 	MOVB	L71C5, R0		; get Guard X
@@ -1031,11 +1050,13 @@ LA52F:	CMPB	#10., R0
 	BEQ	LA55F			; right =>
 	ADD	#2, R0			; for left, Guard X + 2
 	CMPB	(R3), R0		; compare with Ninja X
-	BHIS	LA6FF			; Guard still behind Ninja => Draw Guard on tilemap
-	BR	LA565
+	BHIS	LA55D
+	JMP	LA6FF			; Guard still behind Ninja => Draw Guard on tilemap
+LA55D:	BR	LA565
 LA55F:	SUB	#3, R0			; for right, Guard X - 3
 	CMPB	(R3), R0		; compare with Ninja X
-	BHIS	LA6FF			; Guard not reached Ninja => Draw Guard on tilemap
+	BLO	LA565
+	JMP	LA6FF			; Guard not reached Ninja => Draw Guard on tilemap
 LA565:	MOVB	#4, L7346		; set Guard state = $04
 	JMP	LA6FF			; => Draw Guard on tilemap
 ; Guard state = $09 ? - Guard is dead
@@ -1043,9 +1064,14 @@ LA56D:	CMPB	#9., R0
 	BNE	LA57A
 	MOV	#LA0B5, LA70F		; set Sprite Ninja/Guard dead
 	JMP	LA6FF			; => Draw Guard on tilemap
-; Guard state = $08 ?
+; Guard state = $08 ? - Punching ?
 LA57A:	CMPB	#8., R0
 	BNE	LA5AA
+	DECB	LA3B4			; decrease Guard counter
+	BEQ	LA587
+	JMP	LA6FF			; => Draw Guard on tilemap
+LA587:	MOVB	#3, (R3)		; set Guard state = walking state 3
+
 	;TODO
 	HALT
 
@@ -1060,18 +1086,99 @@ LA5AA:	CMPB	#5., R0
 ; Guard state = $06 ?
 LA5C7:	CMPB	#6., R0
 	BNE	LA614
+
 	;TODO
 	HALT
 
 	JMP	LA6FF			; => Draw Guard on tilemap
 ; Guard state is none of the above
-LA614:
-	;TODO
-	HALT
-
+LA614:	MOVB	L9C41, R1		; get Ninja X
+	MOVB	L71C5, R0		; get Guard X
+	SUB	R1, R0			; now R0 = Guard X - Ninja X
+	BNE	LA635
+	CALL	LA418
+	MOV	#L7346, R3		; Guard state address
+	CMPB	(R3), #10.		; Guard state = $0A ?
+	BNE	LA629
+	JMP	LA6FF			; yes => Draw Guard on tilemap
+LA629:	MOVB	#4, (R3)		; set Guard state = $04
 	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
 	JMP	LA6FF			; => Draw Guard on tilemap
-
+; Guard X != Ninja X
+LA635:	BLO	LA68C			; Guard X < Ninja X =>
+; Ninja X < Guard X
+	MOV	R0, R1			; save value "Guard X - Ninja X"
+	TSTB	L7347			; check Guard direction
+	BEQ	LA65B			; left =>
+	CMPB	#4, L7346		; Guard state = $04 ?
+	BEQ	LA654			; yes =>
+	MOVB	#4, L7346		; set Guard state = $04
+	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
+	JMP	LA6FF			; => Draw Guard on tilemap
+LA654:	CLRB	L7347			; set Guard direction = left
+	JMP	LA6FF			; => Draw Guard on tilemap
+LA65B:	MOV	R1, R0			; restore value "Guard X - Ninja X"
+	CMPB	#3, R0
+	BNE	LA661
+	CALL	LA3EE
+LA661:	CMPB	#1, R0
+	BNE	LA666
+	CALL	LA418
+LA666:	CMPB	#9., R0
+	BNE	LA66B
+	CALL	LA3D1
+LA66B:	CMPB	#12., R0
+	BNE	LA670
+	CALL	LA3B5
+LA670:	CMPB	#4, L7346		; Guard state = $04 ?
+	BNE	LA67F			; no =>
+	MOVB	#3, L7346		; set Guard state = walking phase 3
+	JMP	LA6FF			; => Draw Guard on tilemap
+LA67F:	DEC	L71C5			; decrement Guard X - move one tile left
+	CLRB	L7347			; set Guard direction = left
+	MOV	#-1, R2
+	BR	LA6DE
+;
+; Guard X < Ninja X
+LA68C:	MOV	R0, R1			; save value "Guard X - Ninja X"
+	TSTB	L7347			; check Guard direction
+	BNE	LA6AF			; right =>
+	CMPB	#4, L7346		; Guard state = $04 ?
+	BEQ	LA6A8			; yes =>
+	MOVB	#4, L7346		; set Guard state = $04
+	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
+	JMP	LA6FF			; => Draw Guard on tilemap
+LA6A8:	MOVB	#1, L7347		; set Guard direction = right
+	JMP	LA6FF			; => Draw Guard on tilemap
+LA6AF:	MOV	R1, R0			; restore value "Guard X - Ninja X"
+	CMPB	#-3, R0
+	BNE	LA6B5
+	CALL	LA3EE
+LA6B5:	CMPB	#-1, R0
+	BNE	LA6BA
+	CALL	LA418
+LA6BA:	CMPB	#-9., R0
+	BNE	LA6BF
+	CALL	LA3D1
+LA6BF:	CMPB	#-12., R0
+	BNE	LA6C4
+	CALL	LA3B5
+LA6C4:	CMPB	#4, L7346		; Guard state = $04 ?
+	BNE	LA6D2
+	MOVB	#3, L7346		; set Guard state = walking phase 3
+	BR	LA6FF			; => Draw Guard on tilemap
+LA6D2:	INC	L71C5			; increment Guard X - move one tile right
+	MOVB	#1, L7347		; set Guard direction = right
+	MOV	#1, R2
+;
+LA6DE:	ADD	R2, L71C3		; Guard position in tilemap +1 / -1
+	MOVB	L7346, R0		; get Guard state
+	INC	R0
+	BIC	#177774, R0			; 0..3
+	MOVB	R0, L7346		; set Guard state
+	ADD	R0, R0			; * 2
+	MOV	L733B(R0), LA70F	; sprite from table -> set Guard sprite
+;
 ; Draw Guard on tilemap
 LA6FF:	MOV	L71C3, R3		; get Current Guard position in tilemap
 	TSTB	L7347			; check Guard direction
