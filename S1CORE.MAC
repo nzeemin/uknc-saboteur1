@@ -969,7 +969,8 @@ LA3A3:	.BYTE	3
 	.EVEN
 LA3A4:	.BYTE	6
 	.EVEN
-LA3A5:	.WORD	4
+LA3A5:	.BYTE	4
+LA3A6:	.BYTE	0
 LA3AD:	.BYTE	0
 	.EVEN
 LA3AE:	.WORD	105.			; Turret offset in tilemap
@@ -982,33 +983,50 @@ LA3B4:	.BYTE	1			; ?? Guard counter
 
 ; Ninja and Guard in 12. tiles by X
 LA3B5:	CMPB	L9C40, L71C6		; compare Ninja Y to Guard Y
-	BEQ	LA3BD			; same Y =>
+	BEQ	10$			; same Y =>
 	RETURN
-LA3BD:
-	;TODO
-	HALT
+10$:	POP	R3
+LA3BE:	MOV	#20., R0
+LA3BF = LA3BE + 2
+	MOVB	R0, LA3B4
+	MOVB	#11., L7346		; set Guard state = $0B
+	MOV	#LD504, LA70F		; set Sprite Ninja/Guard punching
+	JMP	LA6FF			; => Draw Guard on tilemap
 
 ; Ninja and Guard in 9. tiles by X
 LA3D1:	CMPB	L9C40, L71C6		; compare Ninja Y to Guard Y
-	BEQ	LA3D9			; same Y =>
-	RETURN
-LA3D9:
-	;TODO
-	HALT
+	BEQ	10$			; same Y =>
+99$:	RETURN
+10$:	TSTB	LA3A6
+	BNE	99$
+	POP	R3
+	MOVB	20., L7346		; set Guard state = $14
+	MOV	#LD504, LA70F		; set Sprite Ninja/Guard punching
+	JMP	LA6FF			; => Draw Guard on tilemap
 
 ; Ninja and Guard in 3 tiles by X
 LA3EE:	CMPB	L9C40, L71C6		; compare Ninja Y to Guard Y
-	BEQ	LA3F6			; same Y =>
-	RETURN
-LA3F6:
-	;TODO
-	HALT
+	BEQ	10$			; same Y =>
+99$:	RETURN
+10$:	MOV	L71C3, R3		; get Guard position in tilemap
+	ADD	#<L6590+2>, R3		; now R3 in Back tile screen
+	MOV	#144, R0		; $64
+	CMPB	R0, (R3)
+	BLO	99$
+	INC	R3
+	CMPB	R0, (R3)
+	BLO	99$
+	POP	R3
+	MOVB	#5, L7346		; set Guard state = $05
+	MOVB	#2, LA3B4
+	MOV	#LD4B0, LA70F		; set Sprite Ninja/Guard jumping
+	JMP	LA6FF			; => Draw Guard on tilemap
 
 ; Ninja and Guard are very close by X
 LA418:	CMPB	L9C40, L71C6		; compare Ninja Y to Guard Y
-	BEQ	LA420			; same Y =>
+	BEQ	10$			; same Y =>
 	RETURN
-LA420:	POP	R3
+10$:	POP	R3
 	MOVB	#8., L7346		; set Guard state = $08
 	MOVB	#3, LA3B4		; set Guard counter = 3
 	MOV	#LD504, LA70F		; set Sprite Ninja/Guard punching
@@ -1019,27 +1037,43 @@ LA434:	CALL	LA75B			; Set update flags for Guard, 6x7 tiles
 	MOV	#L7346, R3		; Guard state address
 	MOVB	(R3), R0		; get Guard state
 ; Guard state = $0B ?
-	CMPB	#11., R0
+	CMPB	R0, #11.
 	BNE	LA4E7
-	;TODO
-	HALT
-
+	MOV	#LA3B4, R3		; Guard counter address
+	DECB	(R3)			; decrease Guard counter
+	CMPB	(R3), #6
+	BLO	LA44A
 	JMP	LA6FF			; => Draw Guard on tilemap
+LA44A:
+	;TODO
+	MOVB	L71C6, R0		; get Guard Y
+	ADD	R0, R0			; Guard Y * 2
+
+	;TODO
+	;HALT
+
+	;XOR A
+	;OUT ($FE),A
+	TSTB	LA3B4			; check Guard counter
+	BNE	90$			; => Draw Guard on tilemap
+	MOVB	#4., L7346		; set Guard state = $04
+90$:	JMP	LA6FF			; => Draw Guard on tilemap
 ; Guard state = $14 ?
-LA4E7:	CMPB	#20., R0
+LA4E7:	CMPB	R0, #20.
 	BNE	LA52F
+
 	;TODO
 	HALT
 
 	JMP	LA6FF			; => Draw Guard on tilemap
 ; Guard state = $0A ? - Standing
-LA52F:	CMPB	#10., R0
+LA52F:	CMPB	R0, #10.
 	BNE	LA56D
 	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
 	MOV	#L9C40, R3		; Ninja Y address
 	MOVB	L71C6, R0		; get Guard Y
 	ADD	#3, R0			; Guard Y + 3
-	CMPB	(R3), R0		; compare with Ninja Y
+	CMPB	R0, (R3)		; compare with Ninja Y
 	BHIS	LA545
 	JMP	LA6FF			; Guard above Ninja => Draw Guard on tilemap
 LA545:	MOVB	LA39E, R0
@@ -1049,13 +1083,13 @@ LA545:	MOVB	LA39E, R0
 	TSTB	L7347			; check Guard direction
 	BEQ	LA55F			; right =>
 	ADD	#2, R0			; for left, Guard X + 2
-	CMPB	(R3), R0		; compare with Ninja X
-	BHIS	LA55D
+	CMPB	R0, (R3)		; compare with Ninja X
+	BLO	LA55D
 	JMP	LA6FF			; Guard still behind Ninja => Draw Guard on tilemap
 LA55D:	BR	LA565
 LA55F:	SUB	#3, R0			; for right, Guard X - 3
-	CMPB	(R3), R0		; compare with Ninja X
-	BLO	LA565
+	CMPB	R0, (R3)		; compare with Ninja X
+	BHIS	LA565
 	JMP	LA6FF			; Guard not reached Ninja => Draw Guard on tilemap
 LA565:	MOVB	#4, L7346		; set Guard state = $04
 	JMP	LA6FF			; => Draw Guard on tilemap
@@ -1071,26 +1105,46 @@ LA57A:	CMPB	#8., R0
 	BEQ	LA587
 	JMP	LA6FF			; => Draw Guard on tilemap
 LA587:	MOVB	#3, (R3)		; set Guard state = walking state 3
-
-	;TODO
-	HALT
-
+	MOV	L71C3, R3		; get Guard position in tilemap
+	MOV	#<L698C+64.>, R2	; Tile screen 2 + 2 rows + 4
+	TSTB	L7347			; check Guard direction
+	BNE	LA599
+	MOV	#<L698C+61.>, R2	; Tile screen 2 + 2 rows + 1
+LA599:	ADD	R2, R3
+	CMPB	#377, (R3)
+	BEQ	LA5A1
+	MOV	#6, R1
+	CALL	LFA31			; => Decrease Energy by B + Sound
+LA5A1:	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
 	JMP	LA6FF			; => Draw Guard on tilemap
-; Guard state = $05 ? - Preparing for jump-kick
+; Guard state = $05 ? - Jump
 LA5AA:	CMPB	#5., R0
 	BNE	LA5C7
-	;TODO
-	HALT
-
-	JMP	LA6FF			; => Draw Guard on tilemap
-; Guard state = $06 ?
+	DECB	LA3B4			; decrement Guard counter
+	BNE	90$
+	MOVB	#3, LA3B4		; set Guard counter = 3
+	MOVB	#6, (R3)		; set Guard state = $06: jump-kick
+	MOV	#LD4DA, LA70F		; set Sprite Ninja/Guard jump-kick
+90$:	JMP	LA6FF			; => Draw Guard on tilemap
+; Guard state = $06 ? Jump-kick
 LA5C7:	CMPB	#6., R0
 	BNE	LA614
-
-	;TODO
-	HALT
-
-	JMP	LA6FF			; => Draw Guard on tilemap
+	DECB	LA3B4			; decrement Guard counter
+	BNE	90$
+	MOVB	#1, LA3B4		; set Guard counter = 1
+	MOVB	#7, (R3)		; set Guard state = $07: back to standing
+	MOV	#LD4B0, LA70F		; set Sprite Ninja/Guard jumping
+	MOV	L71C3, R3		; get Guard position in tilemap
+	MOV	#<L698C+65.>, R2	; Tile screen 2 + 65.
+	TSTB	L7347			; check Guard direction
+	BNE	10$			; right =>
+	MOV	#<L698C+60.>, R2	; Tile screen 2 + 60.
+10$:	ADD	R2, R3
+	CMPB	#377, (R3)
+	BEQ	90$
+	MOV	#10., R1		; 10. damage
+	CALL	LFA31			; Decrease Energy + Sound
+90$:	JMP	LA6FF			; => Draw Guard on tilemap
 ; Guard state is none of the above
 LA614:	MOVB	L9C41, R1		; get Ninja X
 	MOVB	L71C5, R0		; get Guard X
@@ -2389,7 +2443,7 @@ LBE63:	MOV	#000207, L9DD9		; set instruction = RETURN
 	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 ; Time is out
-LBE71:	CMP	LB5C6, #2		; Time mode = BOMB ticking mode?
+LBE71:	CMPB	LB5C6, #2		; Time mode = BOMB ticking mode?
 	BEQ	LBE80			; yes =>
 	MOV	#LBF35, LBEB4		; set wo-line Game Over message = "TIME OUT" / "MISSION TERMINATED"
 	BR	LBE63			; => Ninja dead
@@ -2699,7 +2753,7 @@ LC392:	MOVB	(R3), R0		; get the tile
 	CMPB	#014, R0		; #0C
 	BEQ	LC3B7
 	CLR	R1
-LC3B7:	CMP	#1, R1			; Z = ladder
+LC3B7:	CMPB	#1, R1			; Z = ladder
 	RETURN
 
 ; Move LEFT one tile
@@ -3140,6 +3194,11 @@ LF9F9:	MOV	#264, R3		; $00B4
 LFA11:
 	;TODO
 	RETURN	;STUB
+
+LFA31:	CALL	L9DD9			; Decrease Energy by B
+	MOV	#1, R0
+	CALL	LF9A1			; Sound
+	RETURN
 
 ;------------------------------------------------------------------------------
 
