@@ -257,7 +257,7 @@ L7343:	.BYTE	7	; Counter used in movement handlers
 L7344:	.BYTE	0	; Dog's flag: 1 = ignore left/right limit
 L7345:	.BYTE	20.	; Dog ??
 	.EVEN
-L7346:	.BYTE	10.	; Guard walking phase $00..$03 or other state: $09 = Guard dead; ...
+L7346:	.BYTE	10.	; Guard walking phase $00..$03 or other state: $09 = dead; $0A = standing; ...
 L7347:	.BYTE	1	; Guard direction
 	.EVEN
 
@@ -326,7 +326,7 @@ L73BA:	MOVB	R0, (R2)		; put tile into tilemap
 	POP	R2
 	ADD	#30., R2		; next row
 	SOB	R1, L73B8		; continue loop by rows
-L734A:	JMP	LB702			; => B702 Proceed to the next room token
+L734A:	JMP	@#LB702			; => B702 Proceed to the next room token
 ; Room token #07: Fill triangle from wide bottom; params: 4 bytes (filler, count, offset)
 L73C5:	MOV	#1, R4			; shift = 1
 L73C7:	POP	R3			; Restore token sequence address
@@ -531,7 +531,7 @@ L9C44:	MOV	#L71D3, R3		; dog Y position address
 	MOVB	L9C40, R0		; get Ninja Y
 	MOVB	(R3), R1
 	SUB	R1, R0
-	CMPB	#7, R0
+	CMPB	R0, #7
 	BHIS	L9C80
 	MOV	#L7345, R3
 	TSTB	(R3)
@@ -687,7 +687,7 @@ L9DC7:	CLRB	L71CF
 ; Initialize a dog
 ; Input: R3 = dog data address
 L9DCD:	MOV	#L71CB, R2		; current dog data address
-	MOV	R3, LB674		; save current Dog data address
+L9DD0:	MOV	R3, @#LB674		; save current Dog data address
 	MOV	#9., R1			; 9 = size of Dog data
 10$:	MOVB	(R3)+, (R2)+		; Copy Dog data
 	SOB	R1, 10$
@@ -1152,7 +1152,7 @@ LA614:	MOVB	L9C41, R1		; get Ninja X
 	BNE	LA635
 	CALL	LA418
 	MOV	#L7346, R3		; Guard state address
-	CMPB	(R3), #10.		; Guard state = $0A ?
+	CMPB	#10., (R3)		; Guard state = $0A ?
 	BNE	LA629
 	JMP	LA6FF			; yes => Draw Guard on tilemap
 LA629:	MOVB	#4, (R3)		; set Guard state = $04
@@ -1331,10 +1331,10 @@ LAC49:	MOV	(R3)+, R2		; now R2 = Guard data address
 	MOV	#20., R1		; 23. Dog records
 LAC5C:	MOV	(R3)+, R2		; now R2 = Dog data address
 	ADD	#4, R2
-	CMPB	#101, (R2)
+	CMPB	#101, (R2)		; $41 ?
 	BHIS	LAC6E
 	MOVB	(R2), R0
-	SUB	#102, R0
+	SUB	#102, R0		; $42
 	MOVB	R0, (R2)
 LAC6E:	SOB	R1, LAC5C
 	RETURN
@@ -1367,11 +1367,11 @@ LACCA:
 	CLR	R5			; счётчик до 32.
 10$:	CLR	R0
 	BISB	(R2)+, R0
-	CMPB	R0, #377
+	CMPB	#377, R0
 	BEQ	LAD1D
 	PUSH	R2
 	MOV	#1, R1
-	CMPB	R0, #23.
+	CMPB	R0, #23.		; $17 ?
 	BLO	20$
 	SUB	#20., R0
 	MOV	R0, R1
@@ -1547,7 +1547,7 @@ LB2A9:	MOV	#L722F, R3
 LB177:	CLRB	(R3)			; clear "need to update" flag
 ; Process Tile screen 0 - background tile
 	MOVB	@L722F, R0		; get tile from Tile screen 0
-	CMPB	R0, #377		; $FF - "earth" background?
+	CMPB	#377, R0		; $FF - "earth" background?
 	;TODO
 	BIC	#17400, R0
 	ASL	R0
@@ -1564,7 +1564,7 @@ LB177:	CLRB	(R3)			; clear "need to update" flag
 ; Process Tile screen 2 tile - Ninja
 LB1A3:	MOV	L7231, R3		; get address in Tile scrren 2
 	MOVB	(R3), R0		; get tile from Tile screen 2
-	CMPB	R0, #377		; $FF ?
+	CMPB	#377, R0		; $FF ?
 	BEQ	LB1FC			; $FF => skip Ninja tile drawing
 	BIC	#17400, R0
 	ASL	R0
@@ -1593,7 +1593,7 @@ LB1E4:	MOVB	(R2), R0		; get byte from the buffer
 ; Process Tile screen 3 tile - Dog
 LB1FC:	MOV	L7233, R3		; get address in Tile scrren 3
 	MOVB	(R3), R0		; get tile from Tile screen 3
-	CMPB	R0, #377		; $FF ?
+	CMPB	#377, R0		; $FF ?
 	BEQ	LB230			; $FF => skip Dog tile drawing
 	BIC	#17400, R0
 	ASL	R0
@@ -1620,7 +1620,7 @@ LB218:	MOVB	(R2), R0		; get byte from the buffer
 ; Process Tile screen 4 tile - Guard
 LB230:	MOV	L7235, R3		; get address in Tile scrren 4
 	MOVB	(R3), R0		; get tile from Tile screen 4
-	CMPB	R0, #377		; $FF ?
+	CMPB	#377, R0		; $FF ?
 	BEQ	LB263			; $FF => skip Guard tile drawing
 	BIC	#17400, R0
 	ASL	R0
@@ -1647,7 +1647,7 @@ LB24B:	MOVB	(R2), R0		; get byte from the buffer
 ; Process Tile screen 5 tile - front
 LB263:	MOV	L7237, R3		; get address in Tile scrren 5
 	MOVB	(R3), R0		; get tile from Tile screen 5
-	CMPB	R0, #377		; $FF - transparent?
+	CMPB	#377, R0		; $FF - transparent?
 	BEQ	LB293			; $FF => skip front tile drawing
 	BIC	#17400, R0
 	ASL	R0
@@ -1680,6 +1680,9 @@ LB29B:	CLR	R0
 ;	BNE	LB2FC			; right => return
 ;	MOVB	L72BA(R5), R5		; byte mirroring
 ;LB2FC:	RETURN
+
+LB2FD:	.BYTE	195.			; Counter for Ninja/Guard head tile change
+	.EVEN
 
 ;------------------------------------------------------------------------------
 
@@ -1734,8 +1737,17 @@ LB39B:	MOVB	(R3)+, (R2)+
 	SOB	R1, LB39B
 	JMP	LB702			; => Proceed to the next room token
 
-LB3B0:
+LB3B0:	MOV	#LC681, <L982B+2>
+	MOV	#LB674, <L9DD0+2>	; current dog data address
+	MOV	#LC6A5, L7C9C
+	MOV	#LC671, R3
+	MOV	R3, <L947C+2>
+	MOV	R3, <L93DF+2>
+	MOV	#LB422, <L7BD2+2>
+	MOV	#LC64C, <L791E+2>
+	MOV	#LB702, <L734A+2>
 	;TODO
+	;NOTE: Mirror table preparation was here
 	JMP	LB5C7
 
 ; Initialize a Guard
@@ -1815,7 +1827,7 @@ LB48E = LB48D + 2	; Turret address on Tile Screen 5
 	CLR	R1
 LB4B4:	SUB	R2, R3			; -30.
 	INC	R1
-	CMPB	R2, R3			; >= 30. ?
+	CMPB	R3, R2			; >= 30. ?
 	BHIS	LB4B4			; yes =>
 	MOVB	R3, LA3B3		; Turret X
 	MOVB	R1, LA3B2		; Turret Y
@@ -1828,14 +1840,14 @@ LB4CC = LB4CB + 4	; Turret address on Tile Screen 1
 	MOVB	L9C41, R0		; get Ninja X
 LB4D3:	MOV	#15., R1		; !!MUT-ARG!! Turret X value
 LB4D4 = LB4D3 + 2	; Turret X value
-	CMPB	R1, R0
-	BEQ	LB4DC
+	CMPB	R0, R1
+	BEQ	99$
 	DECB	(R3)
-	CMPB	R1, R0
-	BPL	LB4DC
+	CMPB	R0, R1
+	BMI	99$
 	INCB	(R3)
 	INCB	(R3)
-LB4DC:	RETURN
+99$:	RETURN
 
 LB4DD:	.BYTE	50.	; Turret counter 50..0
 	.EVEN
@@ -1935,7 +1947,8 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	CLR	LB674			; set current Dog data address = no dog
 	CLR	LB696			; set current Guard data address = no guard
 	;TODO
-	MOVB	#310, LBD7A		; $C8
+	MOVB	#250., LB2FD		; $FA set counter for head animation
+	MOVB	#200., LBD7A		; $C8
 	CALL	L7472
 	;TODO	DI
 	MOV	#LB513, L7184		; set Current Room = Initial room
@@ -1971,7 +1984,7 @@ LB6DA:	MOV	#177777, (R3)+		; put two bytes $FF = transparent tile
 	ADD	#12., R3		; now R3 = room sequence start address
 LB6EE:	CLR	R0
 	BISB	(R3), R0		; get next token
-	CMPB	R0, #377		; End of sequence?
+	CMPB	#377, R0		; End of sequence?
 	BNE	LB6F4			; no =>
 LB6F1:	JMP	@#LB724			; !!MUT-ARG!! => run Room initialization code
 LB6F2 = LB6F1 + 2	; Room initialization address
@@ -2178,6 +2191,10 @@ LB937:
 	;TODO
 
 LBA20:
+
+LBA2A:	MOV	#<L678E+165.>, R3	; !!MUT-ARG!! Tile screen 1 + 5 rows + 15.
+LBA2B = LBA2A + 2
+
 	;TODO
 	CALL	LB148			; Draw tile map on the screen
 	;TODO
@@ -2274,9 +2291,21 @@ LBC55:
 	MOVB	#2, (R3)		; reload the counter
 	CALL	LB83C			; Increase Energy a bit
 ; Move the head (idle animation)
-LBC76:
+LBC76:	MOV	#LB2FD, R3		; address for head movement counter
+	INCB	(R3)			; increase counter
+	BNE	LBC98			; not zero => skip head animation
+	MOVB	#190., (R3)		; reset counter (how often head moves)
+	MOV	#<LD486+8.>, R2
+	MOV	#364, R5
+	MOVB	(R2), R0
+	XOR	R5, R0			; toggle tile with $F4
+	MOVB	R0, (R2)+		; set head tile
+	MOVB	(R2), R0
+	XOR	R5, R0			; toggle tile with $F4
+	MOVB	R0, (R2)		; set head tile
 	;TODO
-
+LBC98:
+	;TODO
 ; Check for suicide key combination
 LBC9D:
 	;TODO
@@ -2394,9 +2423,9 @@ LBDB2:	MOV	L9C42, R3		; get Ninja position in tilemap
 	BNE	LBDC2			; right =>
 	MOV	#<L6D88+31.>, R2	; Tile screen 4 + 31, for left
 LBDC2:	ADD	R2, R3			; now R3 = address in Guard tilemap
-	CMPB	#377, (R3)		; tile = $FF ?
+	CMPB	#377, (R3)		; empty tile?
 	BEQ	LBDD4			; yes =>
-	MOVB	#9., L7346		; set Guard state = $09
+	MOVB	#9., L7346		; set Guard state = $09 dead
 	CALL	LB596
 	MOV	#5, R1			; 5 hundreds
 	CALL	LB4DE			; Increase PAY value by 500 - Guard killed
@@ -2415,15 +2444,21 @@ LBDE2:	MOV	L9C42, R2		; get Ninja position in tilemap
 	BEQ	LBDF0
 	JMP	LBF7B
 LBDF0:	MOVB	#11., L7343		; set counter = 11.
-	;TODO
-	HALT
-
+	MOV	#<L6590+44.>, R3
+	MOV	R3, LBE0E
+	MOV	R3, LBE1D
+	MOV	#<L678E+302.>, LBA2B	; Tile screen 1 + 10. rows + 2
 	MOV	#LBE0D, R3		; Movement handler
 	MOV	#LD486, R2		; Sprite Ninja/Guard standing
 	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 ; ?? Movement handler
-LBE0D:
+LBE0D:	MOV	#<L6590+33.>, R3	; !!MUT-ARG!!
+LBE0E = LBE0D + 2
+
+LBE1C:	MOV	#<L6590+55.>, R3
+LBE1D = LBE1C + 2
+
 	HALT
 	;TODO
 
@@ -2866,7 +2901,7 @@ LC4AE:	MOV	L9C42, R3		; get Ninja position in tilemap
 LC4BE:	ADD	R2, R3
 	CMPB	#377, (R3)		; $FF ?
 	BEQ	LC4D0			; yes =>
-	MOVB	#9., L7346		; set Guard state = $09
+	MOVB	#9., L7346		; set Guard state = $09 dead
 	CALL	LB596
 	MOV	#5, R1
 	CALL	LB4DE			; Increase PAY value by 500 - Guard killed by punch/kick
