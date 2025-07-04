@@ -59,6 +59,28 @@ PAUSE:	; Pause to let PPU finish the previous commands
 	SOB	R5, 1$
 RETN:	RETURN
 
+; Подпрограмма: Ожидание символа с клавиатуры: R0 = полученный символ
+WTKEY:	TSTB	@#177560
+	BPL	WTKEY
+	CLR	R0
+	MOVB	@#177562, R0	; символ в R0
+	CMPB	R0, #33
+	BNE	RETN
+ESCKEY:	TSTB	@#177560
+	BPL	ESCKEY
+	MOVB	@#177562, R0	; символ в R0
+	BIS	#15400,R0	; #33 в верхний байт
+	RETURN
+; Подпрограмма: Получение символа с клавиатуры: флаг Z=0 = есть символ, R0 = полученный символ
+GETKEY:	TSTB	@#177560	; есть символ?
+	BPL	10$		; нет символа => выходим
+	MOVB	@#177562, R0	; символ в R0
+	CMPB	R0, #33		; Esc ?
+	BEQ	ESCKEY
+	RETURN
+10$:	CLR	R0		; возвращаем пустой код клавиши
+	RETURN
+
 GAMESC:	; Строка подготовки игрового экрана
 	.BYTE	33,246,62	; Формат экрана 40x24
 	.BYTE	33,240,63	; Цвет символа
@@ -134,9 +156,7 @@ PPSEND:	MOV	#PPBADR, R0
 ;
 START:	CALL	PREPAR
 
-	JMP	LDF60			; Main menu
-
-;	CALL	L6289			; Show Two Ninjas
+	JMP	LBC0D			; Title picture and music, then go to Main menu
 
 ;	CALL	LACCA			; Frames/indicators
 ;	JMP	LB66A			; Current Room changed, entering the new Room
@@ -255,6 +275,7 @@ L733B:	; Table of four addresses of Ninja/Guard walking sprites
 L7343:	.BYTE	7	; Counter used in movement handlers
 	.EVEN
 L7344:	.BYTE	0	; Dog's flag: 1 = ignore left/right limit
+	.EVEN
 L7345:	.BYTE	20.	; Dog ??
 	.EVEN
 L7346:	.BYTE	10.	; Guard walking phase $00..$03 or other state: $09 = dead; $0A = standing; ...
@@ -1907,6 +1928,7 @@ LB595:	.BYTE	0			; action cooldown counter
 LB596:	MOV	20., R1
 LB598:	JMP	LF9A1
 
+; Sound ??
 LB59E:
 	;TODO
 	RETURN
@@ -2268,6 +2290,10 @@ KEYMAP:	.BYTE	070, 010		; '8' - up
 	.EVEN
 
 LBC0D:
+; Clear the screen
+	MOV	#GAMESC, R1
+	CALL	PRINT
+	CALL	PAUSE
 ; Prepare screen background for title picture
 	;TODO
 
@@ -2275,7 +2301,7 @@ LBC13:
 	;TODO
 
 ; Show the title picture
-LBC38:
+LBC38:	CALL	L6289			; Show title picture (two ninjas)
 
 LBC3B:
 	;TODO
@@ -2444,7 +2470,7 @@ LBDE2:	MOV	L9C42, R2		; get Ninja position in tilemap
 	BEQ	LBDF0
 	JMP	LBF7B
 LBDF0:	MOVB	#11., L7343		; set counter = 11.
-	MOV	#<L6590+44.>, R3
+	MOV	#<L6590+44.>, R3	; Tile screen 0 + 1 row + 14.
 	MOV	R3, LBE0E
 	MOV	R3, LBE1D
 	MOV	#<L678E+302.>, LBA2B	; Tile screen 1 + 10. rows + 2
@@ -2452,19 +2478,40 @@ LBDF0:	MOVB	#11., L7343		; set counter = 11.
 	MOV	#LD486, R2		; Sprite Ninja/Guard standing
 	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
-; ?? Movement handler
+; Movement handler: opening the roof in the helicopter room
 LBE0D:	MOV	#<L6590+33.>, R3	; !!MUT-ARG!!
 LBE0E = LBE0D + 2
-
+	MOV	#1, R0			; tile / "need to update" flag
+	MOVB	R0, (R3)		; put background tile
+	DEC	R3
+	MOV	R3, LBE0E
+	ADD	#511., R3		; R3 = address in Tile screen 1
+	MOVB	R0, (R3)		; put "need to update" flag
 LBE1C:	MOV	#<L6590+55.>, R3
 LBE1D = LBE1C + 2
-
-	HALT
-	;TODO
-
+	MOVB	R0, (R3)+		; put background tile
+	MOV	R3, LBE1D
+	ADD	#509., R3		; R3 = address in Tile screen 1
+	MOVB	R0, (R3)		; put "need to update" flag
+	MOV	#L7343, R3		; counter address
+	DECB	(R3)			; decrease counter
+	BEQ	LBE30
+	JMP	LB8D0			; => Update Ninja on tilemap
+LBE30:	MOVB	#20., (R3)		; reset the counter
+	MOV	#<L6590+458.>, R3
+	MOV	#<L678E+458.>, R2
+	MOV	#10., R1
+LBE3A:	MOVB	R0, (R3)+
+	MOVB	R0, (R2)+
+	SOB	R1, LBE3A
+	MOV	#272., L9C42		; set Ninja position in tilemap
+	MOV	#<L678E+210.>, R3	; Tile screen 1 + 7 rows
+	MOV	#210., R1		; 7 rows
+LBE4F:	MOVB	R0, (R3)+
+	SOB	R1, LBE4F
 	MOV	#LC094, R3		; Movement handler (helicopter?)
 	MOV	#LC0E6, R2		; Empty sprite
-	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
+LBE57:	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 ; Ninja sit, and then fall and DIE
 LBE5A:	MOV	#LBE63, R3		; Movement handler: Ninja dead
@@ -2501,7 +2548,7 @@ LBEB4 = LBEB3 + 2
 	MOV	#<SCREEN+<1200*5.>+10.>, R2
 	MOV	#20., R1
 	CALL	LAED1			; Print string 1st line
-	;
+;
 	CALL	LF9B9			; Pause, then wait for any key pressed
 
 	;TODO
@@ -2561,9 +2608,19 @@ LBFCC:	MOV	#LC22F, R3		; Movement handler: Ninja sitting
 	MOV	#LD558, R2		; Sprite Ninja sitting
 	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
 
-; ?? Movement handler (helicopter?)
-LC094:
+; Escaped; clear screen, show final messages, then Game Over
+LBFD5:
+	;TODO
 	HALT
+
+; ?? Movement handler (helicopter?)
+LC094:	DECB	#L7343			; decrease counter
+	BNE	LC09B
+	JMP	LBFD5			; => zero => Escaped; final messages, then Game Over
+LC09B:	;TODO
+
+
+	;HALT
 	;TODO
 	JMP	LB8D0			; => Update Ninja on tilemap
 
@@ -3178,6 +3235,10 @@ LDEC1:
 LDEE6:	.ASCII	/                /	; String 18 spaces
 
 LDF27:	.ASCII	/S  START MISSION/
+TITLE:	.ASCII	/SABOTEUR 1 UKNC/
+VERSIO:
+.INCLUDE /VERSIO.MAC/
+	.EVEN
 
 LDF37:
 	;TODO
@@ -3185,11 +3246,20 @@ LDF37:
 ; Main menu
 LDF60:	CALL	LDEC1			; Clear strings on the screen
 	;TODO
+	MOV	#15., R1
+	MOV	#TITLE, R3
+	MOV	#<SCREEN+4+<1200*0.>+13.>, R2		;TODO
+	CALL	LAED1			; Print string "S START MISSION"
+	MOV	#17., R1
+	MOV	#VERSIO, R3
+	MOV	#<SCREEN+4+<1200*2.>+13.>, R2		;TODO
+	CALL	LAED1			; Print string "S START MISSION"
 	MOV	#16., R1
 	MOV	#LDF27, R3
-	MOV	#<SCREEN+4+<1200*16.>+8.>, R2		;TODO
+	MOV	#<SCREEN+4+<1200*10.>+13.>, R2		;TODO
 	CALL	LAED1			; Print string "S START MISSION"
 	;TODO
+	CALL	WTKEY ;DEBUG
 	JMP	LE2A7 ;DEBUG		; => Start Mission
 
 	JMP	LBC3B
@@ -3218,6 +3288,7 @@ LF9A1:
 ; Pause, then wait for any key pressed
 LF9B9:
 	;TODO
+	CALL	WTKEY ;DEBUG
 	RETURN	;STUB
 
 LF9F9:	MOV	#264, R3		; $00B4
