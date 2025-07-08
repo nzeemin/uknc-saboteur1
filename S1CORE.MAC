@@ -17,6 +17,7 @@
 ;------------------------------------------------------------------------------
 
 SCREEN = 100000		; Начало экрана, косвенный адрес для УКНЦ
+SCRTOP = SCREEN + 4	; Where the game scren starts
 
 ;------------------------------------------------------------------------------
 
@@ -190,7 +191,7 @@ L62A2:	MOVB	R0, (R2)+		; store repeated byte in buffer
 	SOB	R1, L62A2		; repeat
 	BR	L628F
 ; Buffer is ready, copy to screen
-L62A9:	MOV	#<SCREEN+4>, R3		; Screen address
+L62A9:	MOV	#SCRTOP, R3		; Screen start address
 	MOV	#L6590, R2		; Tile screens address, used as a buffer
 	MOV	#12., R4		; Number of columns = 12.
 L62B1:	PUSH	R3			; save screen address
@@ -223,10 +224,10 @@ L71C6:	.BYTE	8.	; Current Guard Y position
 L71CB:	.WORD	398.	; Dog position in tilemap
 L71CD:	.BYTE	0	; Dog direction
 L71CE:	.BYTE	8.	; Dog X position
-L71CF:	.BYTE	0	; Dog ??
+L71CF:	.BYTE	0	; Dog state: 0 = run, 1 = changing direction, >= $42 is dead
 L71D0:	.BYTE	7	; Dog's left limit
 L71D1:	.BYTE	23.	; Dog's right limit
-L71D2:	.BYTE	0	; Dog ??
+L71D2:	.BYTE	0	; Dog chaning direction: 0 = right to left, 1 = left to right
 L71D3:	.BYTE	6	; Dog Y position
 	.EVEN
 
@@ -458,7 +459,7 @@ L7465:	MOVB	R0, (R2)+
 	JMP	LB702			; => Proceed to the next room token
 
 ; Initial Energy fill
-L7472:	MOV	#<SCREEN+4+<1200*21.>+6>, R2	; screen address
+L7472:	MOV	#<SCRTOP+<1200*21.>+6>, R2	; screen address
 	MOV	#15., R1
 10$:	MOV	R2, @#176640
 	MOV	#16., R4
@@ -487,7 +488,7 @@ L749E:	TSTB	L749D
 
 ; Draw Energy column
 L74CC:	MOVB	L749C, R2		; $04..$13
-	ADD	#<SCREEN+4+<1200*21.>+1>, R2	; screen address
+	ADD	#<SCRTOP+<1200*21.>+1>, R2	; screen address
 	CLR	R1
 	BISB	L749D, R1
 	MOV	#16., R4
@@ -569,70 +570,73 @@ L9C71:	MOVB	L9C41, R0		; get Ninja X
 	CMPB	R0, L71CE		; compare to Dog X position
 	BHIS	L9C80			; Ninja X + 1 >= Dog X =>
 L9C7B:	MOVB	#1, L7344		; set "Dog ignore left/right limit" flag
-L9C80:	MOVB	L71CD, R0		; !!MUT-ARG!! get Dog direction
+L9C80:	MOVB	@#L71CD, R0		; !!MUT-ARG!! get Dog direction
 L9C81 = L9C80 + 2	; Dog direction address
 	MOVB	R0, L71CD
 	MOV	#L71CD, L9C81
 	CALL	L9D5C			; Set update flags for Dog
-	MOVB	L71CF, R0
-	CMPB	R0, #102		; $42
+	MOVB	L71CF, R0		; get Dog state
+	CMPB	R0, #102		; $42, dead?
 	BLO	L9CA8
 	MOV	#L9C9C, R3		; Sprite Dog dead
 	JMP	L9D31			; => Set Dog sprite = HL, Draw Dog in tilemap
 
-; Part of Dog processing
-; R0 = byte from L71CF
+; Table for Dog sprites
+L9CA4:	.WORD	L71F2	; Sprite Dog 1
+	.WORD	L71FE	; Sprite Dog 2
+	.WORD	L720A	; Sprite Dog 3
+
+; Part of Dog processing, Dog is alive
+; R0 = Dog state
 L9CA8:	TSTB	R0			; = 0 ?
-	BEQ	L9CAD
-	JMP	L9D8B
+	BEQ	L9CAD			; yes => Dog running
+	JMP	L9D8B			; => Dog changing direction
+; Dog running
 L9CAD:	MOV	L71CB, R3		; get Dog position in tilemap
-	MOV	#<L698C+33.>, R2	; Tile screen 2 + 33: for right direction
+	MOV	#<L698C+33.>, R2	; Tile screen 2 + 33.: for right direction
 	TSTB	L71CD			; check Dog direction
 	BNE	L9CBD			; right =>
-	MOV	#<L698C+30.>, R2	; Tile screen 2 + 30: for left direction
+	MOV	#<L698C+30.>, R2	; Tile screen 2 + 30.: for left direction
 L9CBD:	ADD	R2, R3			; now R3 = Dog position in Ninja tile screen
 	CMPB	#377, (R3)		; tile on Ninja screen = $FF ?
-	BEQ	L9CC5			; not $FF =>
+	BEQ	L9CC5			; $FF =>
 	MOV	#5, R1
 	CALL	L9DD9			; Dog bites, decrease Energy by 5
 L9CC5:	TSTB	L71CD			; check Dog direction
 	BEQ	L9CF1			; left =>
-; Dog runs right
+; Dog running right
 L9CCC:	INC	L71CB			; increment Dog position in tilemap
 	MOV	#L71CE, R3		; Dog X position address
 	INCB	(R3)			; one tile right
 	CMPB	#1, L7344
-	;BEQ	L9CE4
+	BEQ	L9CE4
 	CMPB	L71D1, (R3)		; compare to Dog's right limit
 	BNE	L9D14
 L9CE4:	CLRB	L7344
-	CLRB	L71D2
-	MOVB	#1, L71CF
+	CLRB	L71D2			; chaning direction right to left
+	MOVB	#1, L71CF		; set state = change direction
 	BR	L9D14
-; Dog runs left
+; Dog running left
 L9CF1:	DEC	L71CB			; decrement Dog position in tilemap
 	MOV	#L71CE, R3		; Dog X position address
 	DECB	(R3)			; one tile left
 	CMPB	#1, L7344
-	;BEQ	L9D09
+	BEQ	L9D09
 	CMPB	L71D0, (R3)		; compare to Dog's left limit
 	BNE	L9D14
 L9D09:	CLRB	L7344
-	MOVB	#1, L71D2
-	MOVB	#1, L71CF
+	MOVB	#1, L71D2		; chaning direction left to right
+	MOVB	#1, L71CF		; set state = change direction
 ;
 L9D14:	MOV	#L71D5, R3
-	INCB	(R3)
-	CMPB	#3, (R3)
-	BNE	L9D1F
-	CLRB	(R3)
-L9D1F:	MOV	#L71F2, R3		; Sprite Dog 1
 	MOVB	(R3), R0
-	BEQ	L9D31			; => Set Dog sprite = HL, Draw Dog in tilemap
-	MOV	#L71FE, R3		; Sprite Dog 2
-	CMPB	#1, R0
-	BEQ	L9D31			; => Set Dog sprite = HL, Draw Dog in tilemap
-	MOV	#L720A, R3		; Sprite Dog 3
+	INC	R0			; increase sprite counter
+	CMPB	#3, R0
+	BNE	L9D1F
+	CLR	R0			; reset sprite counter
+L9D1F:	MOVB	R0, (R3)		; save sprite counter
+	ADD	R0, R0			; * 2
+	MOV	L9CA4(R0), R3		; get sprite address from the table
 ;
 ; Set Dog sprite = HL, Draw Dog in tilemap
 L9D31:	MOV	R3, L9D3C		; set Dog sprite = HL
@@ -647,7 +651,7 @@ L9D3C = L9D3B + 2	; current Dog sprite address
 	BEQ	L9D75			; left => draw Dog facing left
 
 ; Draw Dog facing right in tilemap
-; R1 = 3
+; R1 = 3 rows
 L9D47:	MOVB	(R2)+, (R3)+
 	MOVB	(R2)+, (R3)+
 	MOVB	(R2)+, (R3)+
@@ -655,8 +659,8 @@ L9D47:	MOVB	(R2)+, (R3)+
 	ADD	#27., R3		; next row
 	SOB	R1, L9D47
 
-L9D58:	CALL	L9D5C			; Set update flags for Dog, 4x3 tiles
-	RETURN
+L9D58:	;CALL	L9D5C			; Set update flags for Dog, 4x3 tiles
+	;RETURN
 
 ; Set update flags for Dog, 4x3 tiles
 L9D5C:	MOV	L71CB, R3		; get Dog position in tilemap
@@ -672,7 +676,7 @@ L9D5C:	MOV	L71CB, R3		; get Dog position in tilemap
 	RETURN
 
 ; Draw Dog facing left in tilemap
-; R1 = 3
+; R1 = 3 rows
 L9D75:	ADD	#4, R3
 L9D78:	MOVB	(R2)+, -(R3)
 	MOVB	(R2)+, -(R3)
@@ -682,23 +686,25 @@ L9D78:	MOVB	(R2)+, -(R3)
 	SOB	R1, L9D78
 	BR	L9D58			; => Set update flags for Dog, and RET
 
-; ?? something about Dog
-L9D8B:	MOV	#L7216, L9D3C		; set Sprite Dog 4
-	TSTB	L71D2
+; Part of Dog processing, Dog changing direction
+L9D8B:	MOV	#L7216, L9D3C		; set Sprite Dog 4 - changing direction
+	TSTB	L71D2			; check how we change direction
 	BEQ	L9DB3
+; Dog changing direction from left to right
 	TSTB	L71CD			; check Dog direction
 	BEQ	L9DA6			; left =>
-	CLRB	L71CF
+	CLRB	L71CF			; set state = run
 	JMP	L9D34			; => Draw Dog in tilemap
 L9DA6:	MOVB	#1, L71D4
 	MOV	#L71D4, L9C81
 	JMP	L9D34			; => Draw Dog in tilemap
+; Dog changing direction from right to left
 L9DB3:	TSTB	L71CD			; check Dog direction
 	BEQ	L9DC7			; left =>
 	CLRB	L71D4
 	MOV	#L71D4, L9C81
 	JMP	L9D34			; => Draw Dog in tilemap
-L9DC7:	CLRB	L71CF
+L9DC7:	CLRB	L71CF			; set state = run
 	JMP	L9D34			; => Draw Dog in tilemap
 
 ; Initialize a Dog
@@ -1375,7 +1381,7 @@ LACA2:	.WORD	LA31B,LA311,LA307,LA2FD
 
 ; Draw game screen frames and indicator text
 LACCA:
-	MOV	#<SCREEN+4>, @#176640	; Screen start address
+	MOV	#SCRTOP, @#176640	; Screen start address
 	MOV	#LAD65, R2		; Game screen frames/indicators RLE encoded sequence
 	CLR	R5			; счётчик до 32.
 10$:	CLR	R0
@@ -1414,20 +1420,20 @@ LACCA:
 	POP	R2
 	BR	10$
 LAD1D:
-	MOV	#<SCREEN+4+<1200*19.>+7.>, R2
+	MOV	#<SCRTOP+<1200*19.>+7.>, R2
 	MOV	#13., R1
 	MOV	#LAD4A, R3
 	CALL	LAED1			; Print string "PAY : $ 00000"
-	MOV	#<SCREEN+4+<1200*20.>+23.>, R2
+	MOV	#<SCRTOP+<1200*20.>+23.>, R2
 	MOV	#2, R1
 	CALL	LAED1			; Print string "99"
-	MOV	#<SCREEN+4+<1200*22.>+1.>, R2
+	MOV	#<SCRTOP+<1200*22.>+1.>, R2
 	MOV	#4, R1
 	CALL	LAED1			; Print string "HELD"
-	MOV	#<SCREEN+4+<1200*22.>+22.>, R2
+	MOV	#<SCRTOP+<1200*22.>+22.>, R2
 	MOV	#4, R1
 	CALL	LAED1			; Print string "TIME"
-	MOV	#<SCREEN+4+<1200*22.>+27.>, R2
+	MOV	#<SCRTOP+<1200*22.>+27.>, R2
 	MOV	#4, R1
 	CALL	LAED1			; Print string "NEAR"
 	RETURN
@@ -1524,7 +1530,7 @@ LB13E:	.BLKB	8.			; Pixel bytes
 
 ; Draw tile map on the screen
 LB148:	MOV	#17., R1		; 17. rows
-	MOV	#<SCREEN+4+1200+1>, @#176640	; screen address
+	MOV	#<SCRTOP+1200+1>, @#176640	; screen address
 	MOV	#L678E, R3		; start address in Tile screen 1
 	MOV	#L6590, L722F		; start address in Tile screen 0
 	MOV	#L698C, L7231		; start address in Tile screen 2
@@ -1876,7 +1882,7 @@ LB4E3:	INCB	(R3)
 LB4ED:	SOB	R1, LB4DE
 	MOV	#LAD52, R3		; Pay value text address
 	MOV	#5, R1			; five digits
-	MOV	#<SCREEN+4+<1200*19.>+15.>, R2	; Screen address
+	MOV	#<SCRTOP+<1200*19.>+15.>, R2	; Screen address
 	JMP	LAED1			; => Print string, and RET
 
 ; Processing in initial room - the boat moving
@@ -2093,7 +2099,7 @@ LB7B6:	MOV	#LB5C6, R3		; Time mode address
 ; Set up BOMB ticking mode
 	MOVB	#2, (R3)		; set Time mode = BOMB ticking mode
 	MOV	#LBD2F, R3		; "BOMB"
-	MOV	#<SCREEN+4+<1200*22.>+22.>, R2	; screen address under timer value
+	MOV	#<SCRTOP+<1200*22.>+22.>, R2	; screen address under timer value
 	MOV	#4, R1
 	CALL	LAED1			; Print string "BOMB"
 LB7CA:	MOV	#34471, R3		; !!MUT-ARG!! "99" bomb timer initial value
@@ -2171,7 +2177,7 @@ LB891:	MOV	#LB84F, R3		; NEAR item address
 	MOVB	R1, (R3)
 	MOVB	R1, L74CE		; set item to draw
 	;TODO
-	MOV	#<SCREEN+4+<120*152.>+27.>, R3
+	MOV	#<SCRTOP+<120*152.>+27.>, R3
 	CALL	L74CD			; Draw NEAR/HELD item
 	;TODO
 LB8B0:	MOV	#LB850, R3		; HELD tile address
@@ -2183,7 +2189,7 @@ LB8B0:	MOV	#LB850, R3		; HELD tile address
 	SUB	#302, R0
 	ASR	R0
 LB8C2:	MOVB	R0, L74CE		; set item to draw
-	;MOV	#<SCREEN+4+<120*152.>+1>, R3
+	;MOV	#<SCRTOP+<120*152.>+1>, R3
 	;CALL	L74CD			; Draw NEAR/HELD item
 	;DI
 LB8C9:	CLRB	LA39E
@@ -3287,15 +3293,15 @@ LDF60:	CALL	LDEC1			; Clear strings on the screen
 	;TODO
 	MOV	#15., R1
 	MOV	#TITLE, R3
-	MOV	#<SCREEN+4+<1200*0.>+13.>, R2		;TODO
+	MOV	#<SCRTOP+<1200*0.>+13.>, R2		;TODO
 	CALL	LAED1			; Print string "S START MISSION"
 	MOV	#17., R1
 	MOV	#VERSIO, R3
-	MOV	#<SCREEN+4+<1200*2.>+13.>, R2		;TODO
+	MOV	#<SCRTOP+<1200*2.>+13.>, R2		;TODO
 	CALL	LAED1			; Print string "S START MISSION"
 	MOV	#16., R1
 	MOV	#LDF27, R3
-	MOV	#<SCREEN+4+<1200*10.>+13.>, R2		;TODO
+	MOV	#<SCRTOP+<1200*10.>+13.>, R2		;TODO
 	CALL	LAED1			; Print string "S START MISSION"
 	;TODO
 	CALL	WTKEY ;DEBUG
