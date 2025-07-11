@@ -32,7 +32,7 @@ K01000:
 	MOV	#GAMESC, R1		; Строка для подготовки игрового экрана
 	CALL	PRINT
 	CALL	PAUSE			; подождём пока очистится экран
-K01220:	JMP	START
+K01220:	BR	START
 ;
 OSTACK:	.WORD	01000			; Сохраняем начальное значение SP
 ;
@@ -579,7 +579,7 @@ L9C81 = L9C80 + 2	; Dog direction address
 	CMPB	R0, #102		; $42, dead?
 	BLO	L9CA8
 	MOV	#L9C9C, R3		; Sprite Dog dead
-	JMP	L9D31			; => Set Dog sprite = HL, Draw Dog in tilemap
+	BR	L9D31			; => Set Dog sprite = HL, Draw Dog in tilemap
 
 ; Table for Dog sprites
 L9CA4:	.WORD	L71F2	; Sprite Dog 1
@@ -589,8 +589,7 @@ L9CA4:	.WORD	L71F2	; Sprite Dog 1
 ; Part of Dog processing, Dog is alive
 ; R0 = Dog state
 L9CA8:	TSTB	R0			; = 0 ?
-	BEQ	L9CAD			; yes => Dog running
-	JMP	L9D8B			; => Dog changing direction
+	BNE	L9D8B			; no => Dog changing direction
 ; Dog running
 L9CAD:	MOV	L71CB, R3		; get Dog position in tilemap
 	MOV	#<L698C+33.>, R2	; Tile screen 2 + 33.: for right direction
@@ -694,18 +693,18 @@ L9D8B:	MOV	#L7216, L9D3C		; set Sprite Dog 4 - changing direction
 	TSTB	L71CD			; check Dog direction
 	BEQ	L9DA6			; left =>
 	CLRB	L71CF			; set state = run
-	JMP	L9D34			; => Draw Dog in tilemap
+	BR	L9D34			; => Draw Dog in tilemap
 L9DA6:	MOVB	#1, L71D4
 	MOV	#L71D4, L9C81
-	JMP	L9D34			; => Draw Dog in tilemap
+	BR	L9D34			; => Draw Dog in tilemap
 ; Dog changing direction from right to left
 L9DB3:	TSTB	L71CD			; check Dog direction
 	BEQ	L9DC7			; left =>
 	CLRB	L71D4
 	MOV	#L71D4, L9C81
-	JMP	L9D34			; => Draw Dog in tilemap
+	BR	L9D34			; => Draw Dog in tilemap
 L9DC7:	CLRB	L71CF			; set state = run
-	JMP	L9D34			; => Draw Dog in tilemap
+	BR	L9D34			; => Draw Dog in tilemap
 
 ; Initialize a Dog
 ; Input: R3 = Dog data address
@@ -716,7 +715,7 @@ L9DD0:	MOV	R3, @#LB674		; save current Dog data address
 	SOB	R1, 10$
 	RETURN
 
-; Decrease Energy by B
+; Decrease Energy by R1
 L9DD9:	RETURN				; !!MUT-CMD!! "PUSH R1" or "RETURN"
 	CALL	L749E			; Decrease Energy
 	POP	R1
@@ -1176,7 +1175,7 @@ LA614:	MOVB	L9C41, R1		; get Ninja X
 	JMP	LA6FF			; yes => Draw Guard on tilemap
 LA629:	MOVB	#4, (R3)		; set Guard state = $04
 	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
-	JMP	LA6FF			; => Draw Guard on tilemap
+	BR	LA6FF			; => Draw Guard on tilemap
 ; Guard X != Ninja X
 LA635:	BLO	LA68C			; Guard X < Ninja X =>
 ; Ninja X < Guard X
@@ -1187,9 +1186,9 @@ LA635:	BLO	LA68C			; Guard X < Ninja X =>
 	BEQ	LA654			; yes =>
 	MOVB	#4, L7346		; set Guard state = $04
 	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
-	JMP	LA6FF			; => Draw Guard on tilemap
+	BR	LA6FF			; => Draw Guard on tilemap
 LA654:	CLRB	L7347			; set Guard direction = left
-	JMP	LA6FF			; => Draw Guard on tilemap
+	BR	LA6FF			; => Draw Guard on tilemap
 LA65B:	MOV	R1, R0			; restore value "Guard X - Ninja X"
 	CMPB	#3, R0
 	BNE	LA661
@@ -1206,7 +1205,7 @@ LA66B:	CMPB	#12., R0
 LA670:	CMPB	#4, L7346		; Guard state = $04 ?
 	BNE	LA67F			; no =>
 	MOVB	#3, L7346		; set Guard state = walking phase 3
-	JMP	LA6FF			; => Draw Guard on tilemap
+	BR	LA6FF			; => Draw Guard on tilemap
 LA67F:	DEC	L71C5			; decrement Guard X - move one tile left
 	CLRB	L7347			; set Guard direction = left
 	MOV	#-1, R2
@@ -1220,9 +1219,9 @@ LA68C:	MOV	R0, R1			; save value "Guard X - Ninja X"
 	BEQ	LA6A8			; yes =>
 	MOVB	#4, L7346		; set Guard state = $04
 	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
-	JMP	LA6FF			; => Draw Guard on tilemap
+	BR	LA6FF			; => Draw Guard on tilemap
 LA6A8:	MOVB	#1, L7347		; set Guard direction = right
-	JMP	LA6FF			; => Draw Guard on tilemap
+	BR	LA6FF			; => Draw Guard on tilemap
 LA6AF:	MOV	R1, R0			; restore value "Guard X - Ninja X"
 	CMPB	#-3, R0
 	BNE	LA6B5
@@ -1490,7 +1489,7 @@ LB005:
 
 LB040:
 	;TODO
-	JMP	LAFBE
+	BR	LAFBE
 
 LB061:	.ASCII	/00  $/
 
@@ -1708,19 +1707,19 @@ LB2FD:	.BYTE	195.			; Counter for Ninja/Guard head tile change
 ; Object procedure: flip trigger "D": set/remove wall in room 9739
 LB320:	MOV	#6, R0
 	;TODO	XOR	R0, L9756
-	JMP	LB350			; => Change Console color in NEAR
+	BR	LB350			; => Change Console color in NEAR
 ; Object procedure: flip trigger "E": set/remove wall in room 97A6
 LB32A:	MOV	#377, R0
 	;TODO
-	JMP	LB350			; => Change Console color in NEAR
+	BR	LB350			; => Change Console color in NEAR
 ; Object procedure: flip trigger "C": set/remove wall in room 8D5C
 LB334:	MOV	#6, R0
 	;TODO
-	JMP	LB350			; => Change Console color in NEAR
+	BR	LB350			; => Change Console color in NEAR
 ; Object procedure: flip trigger "B": set/remove wall in room 8F20
 LB33E:	MOV	#8., R0
 	;TODO
-	JMP	LB350			; => Change Console color in NEAR
+	BR	LB350			; => Change Console color in NEAR
 ; Object procedure: flip trigger "A": set/remove wall in room 7F48
 LB348:	MOV	#9., R0
 	;TODO
@@ -1954,7 +1953,7 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	;TODO
 	CALL	LACCA			; Draw game screen frames and indicator text
 	;NOP				; set BORDCR = 0
-	CLR	LB5C6			; set Time mode = time ticking
+	CLRB	LB5C6			; set Time mode = time ticking
 	CLR	LB850			; clear HELD tile
 	CLRB	<LD486+8.>		; set head tile in Ninja/Guard standing sprite
 	;TODO: Sound off
@@ -2087,8 +2086,25 @@ LB77B:
 	CMPB	#1, LB5C6		; Time mode = stopped ?
 	BEQ	LB7AF			; yes =>
 ; Decrease Time, check if Time is out
+	MOV	#LB5C4, R3		; address for Time fast counter
+	DECB	(R3)			; decrease the counter
+	BNE	LB7AF			; not zero => skip Time decrease
+	MOVB	#50., (R3)		; reset fast counter
+	MOV	#<LAD57+1>, R3		; address for Time lower digit
+	DECB	(R3)			; Decrease Time lower digit
+	CMPB	#057, (R3)		; $2F = '0' - 1
+	BNE	LB7A4
+	MOVB	#071, (R3)		; '9'
+	DEC	R3			; go to higher digit
+	DECB	(R3)			; decrease Time higher digit
+	CMPB	#057, (R3)		; $2F = '0' - 1
+	BNE	LB7A4
 	;TODO
-
+LB7A4:	MOV	#<SCRTOP+<1200*20.>+23.>, R2	; screen address for timer value
+	MOV	#LAD57, R3		; Indicator Time value address
+	MOV	#2, R1			; Two digits
+	CALL	LAED1			; Print string
+;
 ; Check for BOMB
 LB7AF:	CMPB	#326, @#<LD256+<8.*7>+4>	; check Object #7 in Table of objects D256
 	BNE	LB7ED			; BOMB tile in the place of Diskette? no =>
@@ -2124,8 +2140,8 @@ LB7ED:	MOV	#L678E, R3		; Tile screen 1 start address
 LB814:
 	;TODO
 
-	MOV	#0, R1 ;STUB
-	JMP	LB891
+	CLR	R1 ;STUB
+	BR	LB891
 
 ; Increase Energy a bit
 LB83C:	CMPB	#377, L749D
@@ -2261,7 +2277,7 @@ LBA52:
 
 LBBA7:
 	;TODO
-	JMP	LBA20
+	BR	LBA20
 
 LBBAE:
 	;TODO
@@ -2288,9 +2304,8 @@ LBBBB:	MOV	L9C42, R3		; get Ninja position in tilemap
 ; Movement handler: Ninja punching
 LBBD4:	CALL	LBBDF			; Read input
 	BIT	#20, R0			; check FIRE bit
-	BNE	10$
+	BNE	LB8D0			; => Update Ninja on tilemap
 	JMP	LC226			; => Ninja standing
-10$:	JMP	LB8D0			; => Update Ninja on tilemap
 
 ; Read Input
 LBBDF:	TSTB	@#177560		; do we have an unprocessed key?
@@ -2608,11 +2623,11 @@ LBF7B:	MOV	#<L6590+2>, R3		; Tile screen 0 + 2
 	ADD	R2, R3
 	CMPB	#144, (R3)
 	BHIS	LBF85
-	JMP	LC16E			; => Update Ninja on tilemap
+	BR	LC16E			; => Update Ninja on tilemap
 LBF85:	INC	R3
 	CMPB	#144, (R3)
 	BHIS	LBF8A
-	JMP	LC16E			; => Update Ninja on tilemap
+	BR	LC16E			; => Update Ninja on tilemap
 LBF8A:	MOVB	#3, L7343		; set counter = 3
 	MOVB	L7232, R0		; get Input bits
 	TSTB	L7239			; check Ninja direction
@@ -2634,30 +2649,40 @@ LBFB0:	MOV	R3, LB8CE		; set movement handler
 	JMP	LB8D0			; => Update Ninja on tilemap
 
 LBFBA:	BIT	#4, R0			; bit 2 - down
-	BNE	LBFBF			; yes =>
-	JMP	LC13D
+	BEQ	LC13D			; no =>
 ; DOWN pressed
 LBFBF:	MOV	L9C42, R3		; get Ninja position in tilemap
 	ADD	#<L6590+212.>, R3	;
 	CALL	LC392			; Check if tile is a ladder
 	BNE	LBFCC
-	JMP	LC12E			; => Ninja on ladder
+	BR	LC12E			; => Ninja on ladder
 
 ; Switch Ninja to sitting
 LBFCC:	MOV	#LC22F, R3		; Movement handler: Ninja sitting
 	MOV	#LD558, R2		; Sprite Ninja sitting
-	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+	BR	LBFB0			; Set movement handler = HL, Ninja sprite = DE
 
 ; Escaped; clear screen, show final messages, then Game Over
-LBFD5:
+LBFD5:	MOV	#10., R1
+	CALL	LB4DE			; Increase PAY value by 1000 - Escape by Helicopter
+	CMPB	#324, LBD7A		; $D4
+	BNE	LC04A
 	;TODO
-	HALT
+
+LC04A:	CMPB	#2, LB5C6		; Time mode = BOMB ticking mode ?
+	BNE	LC056			; no =>
+	MOV	#100., R1
+	CALL	LB4DE			; Increase PAY value by 10000 - Escape with Disk and Bomb
+LC056:	MOV	#LBF12, LBEB4		; "ESCAPE" / "MISSION SUCCESSFUL"
+	;NOP
+	;NOP
+	;NOP
+	JMP	LBEB3			; => Game Over
 
 ; ?? Movement handler (helicopter?)
 LC094:	DECB	#L7343			; decrease counter
-	BNE	LC09B
-	JMP	LBFD5			; => zero => Escaped; final messages, then Game Over
-LC09B:	;TODO
+	BEQ	LBFD5			; => zero => Escaped; final messages, then Game Over
+	;TODO
 
 	;HALT
 	;TODO
@@ -2678,7 +2703,7 @@ LC13D:	BIT	#2, R0			; bit 1 - left
 	BR	LC16E			; => Update Ninja on tilemap
 LC14B:	MOV	#LC24B, R3		; Movement handler address
 	MOV	#LD3DE, R2		; Sprite Ninja/Guard walking 1
-	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+	BR	LBFB0			; Set movement handler = HL, Ninja sprite = DE
 
 LC154:	BIT	#1, R0			; bit 0 - right
 	BEQ	LC16E			; no =>
@@ -2730,8 +2755,7 @@ LC20D:	INCB	L9C41			; move one tile to right
 	JMP	LC643			; => Ninja falling
 LC21E:	CALL	LBBDF			; Read Input
 	BIT	#1, R0			; check RIGHT bit
-	BEQ	LC226
-	JMP	LC2BB			; RIGHT pressed =>
+	BNE	LC2BB			; RIGHT pressed =>
 
 ; Ninja standing
 LC226:	MOV	#LBC55, R3		; Movement handler: Ninja standing
@@ -2748,13 +2772,13 @@ LC239:	MOV	L9C42, R3		; get Ninja position in tilemap
 	CMPB	#014, (R3)
 	BNE	LC248
 	MOV	#2, R1
-	CALL	L9DD9			; => Decrease Energy by B
-LC248:	JMP	LC16E			; => Object procedure
+	CALL	L9DD9			; => Decrease Energy by 2
+LC248:	BR	LC16E			; => Object procedure
 
 ; Movement handler - Ninja walking left
 LC24B:	TSTB	L9C41			; Ninja X at very left?
 	BNE	LC253			; no =>
-	JMP	LC319			; => Going to room at Left
+	BR	LC319			; => Going to room at Left
 LC253:	MOV	L9C42, R3		; get Ninja position in tilemap
 	ADD	#<L6590+181.>, R3	; + Tile screen 0 + 6 rows + 1
 	CMPB	#144, (R3)		; $64
@@ -2948,8 +2972,7 @@ LC42C:	MOVB	L7232, R0		; get Input bits
 	BEQ	LC447
 	DEC	R3
 	CALL	LC392
-	BEQ	LC447
-	BR	LC495			; => Update Ninja on tilemap
+	BNE	LC495			; => Update Ninja on tilemap
 LC447:	TSTB	L9C40			; check Ninja Y
 	BNE	LC44F			; top row?
 	JMP	LC623			; => Going to room Up
@@ -3025,7 +3048,7 @@ LC4EC:	POP	R3
 LC4F6:	CALL	LC57B			; Check for ??
 	BEQ	LC504
 	MOV	#3, R1
-	CALL	L9DD9			; Decrease Energy by B
+	CALL	L9DD9			; Decrease Energy by 3
 	JMP	LC226			; => Ninja standing
 LC504:	MOV	#LC50D, R3		; Movement handler address
 	MOV	#LD5D6, R2		; Sprite Ninja jumping 4
@@ -3047,7 +3070,7 @@ LC525:	CALL	LC57B			; Check for ??
 	JMP	LC16E			; => Update Ninja on tilemap
 ;LC531:	BR	LC538
 LC533:	MOV	#4, R1
-	CALL	L9DD9			; Decrease Energy by B
+	CALL	L9DD9			; Decrease Energy by 4
 LC538:	MOV	#<L678E-388.>, R2
 	MOV	#3, R1
 LC53D:	MOV	L9C42, R3		; get Ninja position in tilemap
@@ -3135,7 +3158,7 @@ LC5EE:	MOVB	#1, LA39E
 	MOV	#L755B, R3		; falling counter address
 	MOV	(R3), R1		; get counter value
 	CLR	(R3)
-	CALL	L9DD9			; Decrease Energy by B
+	CALL	L9DD9			; Decrease Energy by R1
 	MOV	#50., R1
 	CALL	LB59E
 	JMP	LBFCC			; => Ninja sitting now
@@ -3305,14 +3328,14 @@ LDF60:	CALL	LDEC1			; Clear strings on the screen
 	CALL	LAED1			; Print string "S START MISSION"
 	;TODO
 	CALL	WTKEY ;DEBUG
-	JMP	LE2A7 ;DEBUG		; => Start Mission
+	BR	LE2A7 ;DEBUG		; => Start Mission
 
 	JMP	LBC3B
 
 ; Start Mission
 LE2A7:
 	;TODO
-	JMP	LF913
+	BR	LF913
 
 
 LF913:
@@ -3346,7 +3369,7 @@ LFA11:
 	;TODO
 	RETURN	;STUB
 
-LFA31:	CALL	L9DD9			; Decrease Energy by B
+LFA31:	CALL	L9DD9			; Decrease Energy by R1
 	MOV	#1, R0
 	CALL	LF9A1			; Sound
 	RETURN
