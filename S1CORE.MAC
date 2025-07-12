@@ -18,6 +18,9 @@
 
 SCREEN = 100000		; Начало экрана, косвенный адрес для УКНЦ
 SCRTOP = SCREEN + 4	; Where the game scren starts
+SCRIND = SCRTOP + <1200*19.>	; Screen address for first indicators line
+
+TIMERI = 200.		; Fast timer reset value, see LB5C4
 
 ;------------------------------------------------------------------------------
 
@@ -1382,7 +1385,7 @@ LACA2:	.WORD	LA31B,LA311,LA307,LA2FD
 LACCA:
 	MOV	#SCRTOP, @#176640	; Screen start address
 	MOV	#LAD65, R2		; Game screen frames/indicators RLE encoded sequence
-	CLR	R5			; счётчик до 32.
+	CLR	R5			; counter up to 32.
 10$:	CLR	R0
 	BISB	(R2)+, R0
 	CMPB	#377, R0
@@ -1419,20 +1422,20 @@ LACCA:
 	POP	R2
 	BR	10$
 LAD1D:
-	MOV	#<SCRTOP+<1200*19.>+7.>, R2
+	MOV	#<SCRIND+7.>, R2
 	MOV	#13., R1
 	MOV	#LAD4A, R3
 	CALL	LAED1			; Print string "PAY : $ 00000"
-	MOV	#<SCRTOP+<1200*20.>+23.>, R2
+	MOV	#<SCRIND+1200+23.>, R2	; screen address for timer value
 	MOV	#2, R1
 	CALL	LAED1			; Print string "99"
-	MOV	#<SCRTOP+<1200*22.>+1.>, R2
+	MOV	#<SCRIND+3600+1.>, R2
 	MOV	#4, R1
 	CALL	LAED1			; Print string "HELD"
-	MOV	#<SCRTOP+<1200*22.>+22.>, R2
+	MOV	#<SCRIND+3600+22.>, R2
 	MOV	#4, R1
 	CALL	LAED1			; Print string "TIME"
-	MOV	#<SCRTOP+<1200*22.>+27.>, R2
+	MOV	#<SCRIND+3600+27.>, R2
 	MOV	#4, R1
 	CALL	LAED1			; Print string "NEAR"
 	RETURN
@@ -1725,7 +1728,7 @@ LB348:	MOV	#9., R0
 	;TODO
 LB350:
 	;TODO
-	JMP	LB8D0			; => Update Ninja on tilemap
+LB365:	JMP	@#LB8D0			; => Update Ninja on tilemap
 
 ; Room 97A6 initialization
 LB368:
@@ -1951,6 +1954,14 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	;TODO
 	MOV	#010146, L9DD9		; set command = PUSH R1 = enable Energy decrease
 	;TODO
+	MOV	#LB8D0, R3		; Object procedure address for "Update Ninja on tilemap"
+	MOV	R3, <LD280+6>		; set Object procedure for object #6 in Table of objects D256
+	MOV	R3, <LB365+2>
+	MOVB	#060, R0		; "0"
+	MOV	#LAD52, R3		; Pay value text address
+	MOVB	R0, (R3)+
+	MOVB	R0, (R3)+
+	MOVB	R0, (R3)
 	CALL	LACCA			; Draw game screen frames and indicator text
 	;NOP				; set BORDCR = 0
 	CLRB	LB5C6			; set Time mode = time ticking
@@ -2073,9 +2084,12 @@ LB724:	MOV	#L678E, R3		; Tile screen 1 start address
 20$:	MOV	#177777, (R3)+		; put two bytes $FF = transparent tile
 	SOB	R1, 20$
 	CALL	LB148			; Draw tile map on the screen
+;
 	MOV	#LD34D, R3		; Table of objects address
 	MOV	#35., R1		; 35 objects
+LB753:
 	;TODO
+
 	CMPB	#9., L7346 		; Guard state = 9. ?
 	BEQ	LB77B
 	MOVB	#10., L7346		; set Guard state = $0A
@@ -2089,7 +2103,7 @@ LB77B:
 	MOV	#LB5C4, R3		; address for Time fast counter
 	DECB	(R3)			; decrease the counter
 	BNE	LB7AF			; not zero => skip Time decrease
-	MOVB	#50., (R3)		; reset fast counter
+	MOVB	#TIMERI, (R3)		; reset fast counter
 	MOV	#<LAD57+1>, R3		; address for Time lower digit
 	DECB	(R3)			; Decrease Time lower digit
 	CMPB	#057, (R3)		; $2F = '0' - 1
@@ -2099,8 +2113,8 @@ LB77B:
 	DECB	(R3)			; decrease Time higher digit
 	CMPB	#057, (R3)		; $2F = '0' - 1
 	BNE	LB7A4
-	;TODO
-LB7A4:	MOV	#<SCRTOP+<1200*20.>+23.>, R2	; screen address for timer value
+	JMP	LBE71
+LB7A4:	MOV	#<SCRIND+1200+23.>, R2	; screen address for timer value
 	MOV	#LAD57, R3		; Indicator Time value address
 	MOV	#2, R1			; Two digits
 	CALL	LAED1			; Print string
@@ -2115,7 +2129,7 @@ LB7B6:	MOV	#LB5C6, R3		; Time mode address
 ; Set up BOMB ticking mode
 	MOVB	#2, (R3)		; set Time mode = BOMB ticking mode
 	MOV	#LBD2F, R3		; "BOMB"
-	MOV	#<SCRTOP+<1200*22.>+22.>, R2	; screen address under timer value
+	MOV	#<SCRIND+3600+22.>, R2	; screen address under timer value
 	MOV	#4, R1
 	CALL	LAED1			; Print string "BOMB"
 LB7CA:	MOV	#34471, R3		; !!MUT-ARG!! "99" bomb timer initial value
@@ -2134,14 +2148,46 @@ LB7ED:	MOV	#L678E, R3		; Tile screen 1 start address
 20$:	MOV	#177777, (R3)+		; put two bytes $FF
 	SOB	R1, 20$
 	CLRB	LB84C			; clear Object tile
-	MOV	#35., R1		; 35 = number of records in LD256
+	MOV	#35., R1		; 35. = number of records in LD256
 	MOV	#LD256, R2		; Table address
 ; Loop through the table
-LB814:
-	;TODO
-
-	CLR	R1 ;STUB
+LB814:	MOV	(R2)+, R3		; get offset
+	ADD	#L6590, R3
+	ADD	L9C42, R3		; add Ninja position in tilemap
+	CMPB	(R2)+, (R3)		; compare to byte +$02
+	BNE	LB889
+	CLR	R1
+	BISB	(R2)+, R1		; get byte +$03
+	MOV	R2, LB84A		; store Object address + 4
+	MOVB	(R2)+, LB84C		; copy byte +$04 - object tile
+	INC	R2			; skip even-filler
+	MOV	(R2), LB84D		; copy object procedure address
 	BR	LB891
+LB889:	ADD	#5, R2
+	SOB	R1, LB814		; continue the loop through the table
+; R1 = tile found, or 0 = not found
+LB891:	MOV	#LB84F, R3		; NEAR item address
+	CMPB	R1, (R3)		; same item?
+	BEQ	LB8B0			; yes => skip
+	MOVB	R1, (R3)		; set NEAR item
+	MOVB	R1, L74CE		; set item to draw
+	MOV	#<SCRIND+27.>, R3	; screen address for NEAR item
+	CALL	L74CD			; Draw NEAR/HELD item
+LB8B0:	MOV	#LB850, R3		; HELD tile address
+	MOVB	LBD7A, R0
+	CMPB	R0, (R3)		; HELD changing?
+	BEQ	LB8C9
+	MOVB	R0, (R3)
+	BEQ	LB8C2
+	SUB	#302, R0
+	ASR	R0
+LB8C2:	MOVB	R0, L74CE		; set item to draw
+	MOV	#<SCRIND+1>, R3		; screen address for HELD item
+	CALL	L74CD			; Draw NEAR/HELD item
+	;DI
+LB8C9:	CLRB	LA39E
+LB8CD:	JMP	@#LBEB3			; !!MUT-ARG!! => run handler
+LB8CE = LB8CD + 2
 
 ; Increase Energy a bit
 LB83C:	CMPB	#377, L749D
@@ -2175,42 +2221,7 @@ LB851:	MOV	#35., R1		; 35 objects
 	SOB	R1, 10$			; continue the loop
 	RETURN
 
-; ?? Adjust table L751B by DE
-LB86C:
-	;TODO
-	RETURN	;STUB
-
-LB889:
-	INC	R2
-	INC	R2
-	INC	R2
-	INC	R2
-	DEC	R1
-	BNE	LB814			; continue the loop through the table
-LB891:	MOV	#LB84F, R3		; NEAR item address
-	CMPB	R1, (R3)
-	BEQ	LB8B0
-	MOVB	R1, (R3)
-	MOVB	R1, L74CE		; set item to draw
-	;TODO
-	MOV	#<SCRTOP+<120*152.>+27.>, R3
-	CALL	L74CD			; Draw NEAR/HELD item
-	;TODO
-LB8B0:	MOV	#LB850, R3		; HELD tile address
-	MOVB	LBD7A, R0
-	CMPB	R0, (R3)		; HELD changing?
-	BEQ	LB8C9
-	MOVB	R0, (R3)
-	BEQ	LB8C2
-	SUB	#302, R0
-	ASR	R0
-LB8C2:	MOVB	R0, L74CE		; set item to draw
-	;MOV	#<SCRTOP+<120*152.>+1>, R3
-	;CALL	L74CD			; Draw NEAR/HELD item
-	;DI
-LB8C9:	CLRB	LA39E
-LB8CD:	JMP	@#LBEB3			; !!MUT-ARG!! => run handler
-LB8CE = LB8CD + 2
+;NOTE: Procedure B86C removed, not used
 
 ; Update Ninja on tilemap
 LB8D0:	CALL	LBBBB			; Set update flags for Ninja, 6x7 tiles
@@ -2267,8 +2278,10 @@ LBA2B = LBA2A + 2
 
 	;TODO
 	CALL	LB148			; Draw tile map on the screen
-	;TODO
-	JMP	LB77B ;DEBUG		; => Game loop start
+	;TODO: Restore drawing of Dog and Guard tiles
+	TSTB	LBAB2
+	BNE	LBA52
+	JMP	LB77B			; => Game loop start
 
 ; Draw Explosion image on the screen and make some noise
 LBA52:
@@ -2407,9 +2420,9 @@ LBCCC:	MOV	#LB595, R3		; action cooldown counter
 	JMP	LBDB2			; not zero =>
 LBCD4:	MOVB	#5, (R3)		; reset cooldown (5 ticks until next action)
 	MOVB	LB84C, R1		; get Object tile
-	CMPB	#143, R1		; Object tile = $63 ?
+	CMPB	#143, R1		; Object tile = $63 Console ?
 	BEQ	LBD33			; => execute the object procedure
-	ADD	#<L6590+217>, R3	; Tile screen 0) + 7 row + 7
+	ADD	#<L6590+217>, R3	; Tile screen 0 + 7 row + 7
 	CMPB	#234, (R3)		; $9C ?
 	BNE	LBCF3
 	CMPB	#2, LB5C6		; Time mode = BOMB ticking mode?
@@ -2446,8 +2459,9 @@ LBD1F:	MOVB	#1, (R3)		; set Time mode = time stopped
 ; "BOMB" message
 LBD2F:	.ASCII	/BOMB/
 
+; FIRE pressed on Console object
 LBD33:	MOV	LB84D, R3		; get object procedure address
-	JMP	(R3)			; execute the object procedure
+	JMP	@R3			; execute the object procedure
 
 ; Fire pressed, Ninja standing, no object nearby
 LBD37:	MOV	#LA39F, R3
@@ -3273,22 +3287,179 @@ LC70C:	MOV	#2, R4
 	SOB	R4, 10$
 	BR	LC6F5
 
-; Table of 35 records, 2 bytes each, see LB851
+; Table of 35. records, 2 bytes each, see LB851
 LD210:	.BYTE	004,316,011,143,011,143,011,143,011,143,011,143,011,143,011,324
 	.BYTE	005,320,005,320,005,320,006,322,010,326,002,312,003,314,005,320
 	.BYTE	005,320,005,320,003,314,002,312,002,312,003,314,002,312,006,322
 	.BYTE	002,312,006,322,002,312,003,314,003,314,003,314,004,316,004,316
 	.BYTE	004,316,004,316,004,316
 
-; Table ?? objects, 35 records, 8 bytes each
-LD256:
-	.BLKB	<35.*8.> ;STUB
-	;TODO
+; Table ?? objects, 35. records, 8. bytes each
+LD256:	.WORD	004562		; Object 00: Brick
+	.BYTE	130,004,316, 0
+	.WORD	0
+LD25D:	.WORD	000324		; Object 01: Console in room 80F6
+	.BYTE	174,011,143, 0
+	.WORD	LB320
+LD264:	.WORD	000324		; Object 02: Console in room 99A6
+	.BYTE	175,011,143, 0
+	.WORD	LB32A
+LD26B:	.WORD	000324		; Object 03: Console in room 92A7
+	.BYTE	176,011,143, 0
+	.WORD	LB348
+LD272:	.WORD	000324		; Object 04: Console in room 92EF
+	.BYTE	177,011,143, 0
+	.WORD	LB334
+LD279:	.WORD	000324		; Object 05: Console in room 9005
+	.BYTE	200,011,143, 0
+	.WORD	LB33E
+LD280:	.WORD	005122		; Object 06
+	.BYTE	037,011,143, 0
+	.WORD	LB8D0
+LD287:	.WORD	000331		; Object 07: Diskette
+	.BYTE	234,011,324, 0
+	.WORD	0
+LD28E:	.WORD	000013		; Object ?? 08
+	.BYTE	232,005,320, 0
+	.WORD	0
+LD295:	.WORD	000700		; Object ?? 09
+	.BYTE	070,005,320, 0
+	.WORD	0
+LD29C:	.WORD	000324		; Object ?? 10
+	.BYTE	201,005,320, 0
+	.WORD	0
+LD2A3:	.WORD	000324		; Object ?? 11
+	.BYTE	145,006,322, 0
+	.WORD	0
+LD2AA:	.WORD	000324		; Object 12: BOMB
+	.BYTE	146,010,326, 0
+	.WORD	0
+LD2B1:	.WORD	000324		; Object ?? 13
+	.BYTE	147,002,312, 0
+	.WORD	0
+LD2B8:	.WORD	000324		; Object ?? 14
+	.BYTE	150,003,314, 0
+	.WORD	0
+LD2BF:	.WORD	000324		; Object ?? 15
+	.BYTE	151,005,320, 0
+	.WORD	0
+LD2C6:	.WORD	000324		; Object ?? 16
+	.BYTE	152,005,320, 0
+	.WORD	0
+LD2CD:	.WORD	000324		; Object ?? 17
+	.BYTE	153,005,320, 0
+	.WORD	0
+LD2D4:	.WORD	000324		; Object ?? 18
+	.BYTE	154,003,314, 0
+	.WORD	0
+LD2DB:	.WORD	000324		; Object ?? 19
+	.BYTE	155,002,312, 0
+	.WORD	0
+LD2E2:	.WORD	000324		; Object ?? 20
+	.BYTE	155,002,312, 0
+	.WORD	0
+LD2E9:	.WORD	000324		; Object ?? 21
+	.BYTE	156,003,314, 0
+	.WORD	0
+LD2F0:	.WORD	000324		; Object ?? 22
+	.BYTE	157,002,312, 0
+	.WORD	0
+LD2F7:	.WORD	000324		; Object ?? 23
+	.BYTE	160,006,322, 0
+	.WORD	0
+LD2FE:	.WORD	000324		; Object ?? 24
+	.BYTE	161,002,312, 0
+	.WORD	0
+LD305:	.WORD	000324		; Object ?? 25
+	.BYTE	162,006,322, 0
+	.WORD	0
+LD30C:	.WORD	000324		; Object ?? 26
+	.BYTE	163,002,312, 0
+	.WORD	0
+LD313:	.WORD	000324		; Object ?? 27
+	.BYTE	164,003,314, 0
+	.WORD	0
+LD31A:	.WORD	000324		; Object ?? 28
+	.BYTE	165,003,314, 0
+	.WORD	0
+LD321:	.WORD	000324		; Object ?? 29
+	.BYTE	166,003,314, 0
+	.WORD	0
+LD328:	.WORD	000324		; Object ?? 30
+	.BYTE	167,004,316, 0
+	.WORD	0
+LD32F:	.WORD	000324		; Object ?? 31
+	.BYTE	170,004,316, 0
+	.WORD	0
+LD336:	.WORD	000324		; Object ?? 32
+	.BYTE	171,004,316, 0
+	.WORD	0
+LD33D:	.WORD	000324		; Object ?? 33
+	.BYTE	172,004,316, 0
+	.WORD	0
+LD344:	.WORD	000324		; Object ?? 34
+	.BYTE	173,004,316, 0
+	.WORD	0
 
 ; Table of objects, 35 records, 6 bytes each
-LD34D:
-	.BLKB	<35.*6.> ;STUB
-	;TODO
+LD34D:	.WORD	L9ED9, 000517		; Object ?? 00
+	.BYTE	201, 0
+LD352:	.WORD	L9E22, 000614		; Object ?? 01
+	.BYTE	145, 0
+LD357:	.WORD	L9E22, 000636		; Object ?? 02
+	.BYTE	146, 0
+LD35C:	.WORD	L990D, 000767		; Object ?? 03
+	.BYTE	147, 0
+LD361:	.WORD	L8D5C, 000727		; Object ?? 04
+	.BYTE	150, 0
+LD366:	.WORD	L8EE1, 000716		; Object ?? 05
+	.BYTE	151, 0
+LD36B:	.WORD	L889F, 000514		; Object ?? 06
+	.BYTE	152, 0
+LD370:	.WORD	L890E, 000411		; Object ?? 07
+	.BYTE	153, 0
+LD375:	.WORD	L8CC8, 000762		; Object ?? 08
+	.BYTE	154, 0
+LD37A:	.WORD	L8739, 000432		; Object ?? 09
+	.BYTE	155, 0
+LD37F:	.WORD	L8799, 000707		; Object ?? 10
+	.BYTE	156, 0
+LD384:	.WORD	L913F, 000762		; Object ?? 11
+	.BYTE	157, 0
+LD389:	.WORD	L8321, 000747		; Object ?? 12
+	.BYTE	160, 0
+LD38E:	.WORD	L8162, 000762		; Object ?? 13
+	.BYTE	161, 0
+LD393:	.WORD	L7EF2, 000770		; Object ?? 14
+	.BYTE	162, 0
+LD398:	.WORD	L7F48, 000664		; Object ?? 15
+	.BYTE	163, 0
+LD39D:	.WORD	L7C6D, 000667		; Object ?? 16
+	.BYTE	164, 0
+LD3A2:	.WORD	L7A9E, 000715		; Object ?? 17
+	.BYTE	165, 0
+LD3A7:	.WORD	L7A9E, 000727		; Object ?? 18
+	.BYTE	166, 0
+LD3AC:	.WORD	L7A9E, 000731		; Object ?? 19
+	.BYTE	167, 0
+LD3B1:	.WORD	L7AF8, 000765		; Object ?? 20
+	.BYTE	170, 0
+LD3B6:	.WORD	L7AF8, 000766		; Object ?? 21
+	.BYTE	171, 0
+LD3BB:	.WORD	L9376, 000653		; Object ?? 22
+	.BYTE	172, 0
+LD3C0:	.WORD	L79C6, 000765		; Object ?? 23
+	.BYTE	173, 0
+LD3C5:	.WORD	L80F6, 000743		; Object ?? 24
+	.BYTE	174, 0
+LD3CA:	.WORD	L99A6, 000763		; Object ?? 25
+	.BYTE	175, 0
+LD3CF:	.WORD	L92A7, 000715		; Object ?? 26
+	.BYTE	176, 0
+LD3D4:	.WORD	L92EF, 000330		; Object ?? 27
+	.BYTE	177, 0
+LD3D9:	.WORD	L9005, 000445		; Object ?? 28
+	.BYTE	200, 0
 
 ; Find record for the current room in DE84 table
 LDE68:
@@ -3335,6 +3506,9 @@ LDF60:	CALL	LDEC1			; Clear strings on the screen
 ; Start Mission
 LE2A7:
 	;TODO
+
+	MOVB	#TIMERI, LB5C4		; set initial value for the fast timer
+
 	BR	LF913
 
 
