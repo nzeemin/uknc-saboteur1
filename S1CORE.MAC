@@ -1424,7 +1424,7 @@ LACCA:
 LAD1D:
 	MOV	#<SCRIND+7.>, R2
 	MOV	#13., R1
-	MOV	#LAD4A, R3
+	MOV	#LAD4A, R3		; Indicator messages start address
 	CALL	LAED1			; Print string "PAY : $ 00000"
 	MOV	#<SCRIND+1200+23.>, R2	; screen address for timer value
 	MOV	#2, R1
@@ -2075,6 +2075,7 @@ LB720:	.WORD	L7359	; #0D: Set border color; params: 1 byte
 LB722:	.WORD	L734D	; #0E: Put one tile at the given address; params: 3 bytes (tile, address)
 
 ; Finish room initialization
+; Called to finish room initialization from room initialization procedure
 LB724:	MOV	#L678E, R3		; Tile screen 1 start address
 	MOV	#<510./2>, R1
 10$:	MOV	#401, (R3)+		; put two bytes $01
@@ -2087,11 +2088,19 @@ LB724:	MOV	#L678E, R3		; Tile screen 1 start address
 ;
 	MOV	#LD34D, R3		; Table of objects address
 	MOV	#35., R1		; 35 objects
-LB753:
-	;TODO
-
+LB753:	PUSH	R3			; save address in Table of objects
+	CMP	(R3)+, L7184		; is it current room?
+	BNE	LB768			; no =>
+	MOV	(R3)+, R2		; get offset
+	ADD	#L6590, R2		; now R2 = address in Tile screen 0
+	MOVB	(R3), R0		; get tile byte
+	MOVB	R0, (R2)		; set tile byte in Tile screen
+LB768:	POP	R3			; restore address in Table of objects
+	ADD	#6, R3			; next object
+	SOB	R1, LB753
+;
 	CMPB	#9., L7346 		; Guard state = 9. ?
-	BEQ	LB77B
+	BEQ	LB77B			; no => skip
 	MOVB	#10., L7346		; set Guard state = $0A
 ;
 ; Game loop start
@@ -2135,7 +2144,7 @@ LB7B6:	MOV	#LB5C6, R3		; Time mode address
 LB7CA:	MOV	#34471, R3		; !!MUT-ARG!! "99" bomb timer initial value
 	MOV	R3, LAD57		; set Indicator Time value
 	MOVB	#1, LB5C4
-	;TODO
+	;TODO: Как-то подсветить индикатор времени
 	MOV	#50., R1
 	CALL	LB4DE			; Increase PAY value by 5000
 LB7ED:	MOV	#L678E, R3		; Tile screen 1 start address
@@ -2260,7 +2269,7 @@ LB92D:	MOV	#177777, (R3)+		; put two bytes $FF
 	SOB	R1, LB92D
 	MOV	L7184, R3		; get Current Room address
 	MOV	(R3), R3
-	JMP	@R3
+	JMP	@R3			; execute room procedure
 
 ; Standard room procedure (redirect from B41F)
 LB937:	MOV	#LA39F, R4
@@ -2271,6 +2280,14 @@ LB93D:	MOVB	#3, LB951
 LB94F:	MOVB	3(R4), R0
 LB951 = LB94F + 2
 
+	JMP	LBAD5
+LBA14:	MOVB	(R4), R0
+	MOVB	R0, (R3)
+	MOV	#1, R5
+	XOR	R5, R0
+	MOVB	R0, (R4)
+	CALL	LBBAE
+;
 LBA20:
 
 LBA2A:	MOV	#<L678E+165.>, R3	; !!MUT-ARG!! Tile screen 1 + 5 rows + 15.
@@ -2298,6 +2315,11 @@ LBBAE:
 
 LBAB2:	.BYTE	0	; ??
 	.EVEN
+
+LBAD5:
+	;TODO
+
+	JMP	LBA20
 
 ; Set update flags for Ninja, 6x7 tiles
 LBBBB:	MOV	L9C42, R3		; get Ninja position in tilemap
@@ -2631,6 +2653,7 @@ LBF35:	.ASCII	/    TIME OUT   /
 	.ASCII	/ MISSION TERMINATED /
 LBF58:	.ASCII	/ SABOTEUR DEAD /
 	.ASCII	/  MISSION FAILURE   /
+	.EVEN
 
 ; UP pressed (continued, see BDE2)
 LBF7B:	MOV	#<L6590+2>, R3		; Tile screen 0 + 2
@@ -2692,6 +2715,8 @@ LC056:	MOV	#LBF12, LBEB4		; "ESCAPE" / "MISSION SUCCESSFUL"
 	;NOP
 	;NOP
 	JMP	LBEB3			; => Game Over
+
+;NOTE: Messages LC062 moved from here
 
 ; ?? Movement handler (helicopter?)
 LC094:	DECB	#L7343			; decrease counter
@@ -3227,8 +3252,11 @@ LC681:	MOV	#L9A1E, <L7C9C+4>	; set "room to left" for room 7C9C
 LC68F:	MOV	#<L7D0D+19.>, R3	; address in 7D0D sprite
 	MOV	#3, R1			; 3 rows
 LC697:	MOVB	R0, (R3)+
+	INC	R0
 	MOVB	R0, (R3)+
+	INC	R0
 	MOVB	R0, (R3)
+	INC	R0
 	ADD	#4, R3
 	SOB	R1, LC697
 	JMP	LB724			; => Finish room initialization
@@ -3402,63 +3430,63 @@ LD344:	.WORD	000324		; Object ?? 34
 	.WORD	0
 
 ; Table of objects, 35 records, 6 bytes each
-LD34D:	.WORD	L9ED9, 000517		; Object ?? 00
+LD34D:	.WORD	L9ED9, 000517		; Object L00
 	.BYTE	201, 0
-LD352:	.WORD	L9E22, 000614		; Object ?? 01
+LD352:	.WORD	L9E22, 000614		; Object L01
 	.BYTE	145, 0
-LD357:	.WORD	L9E22, 000636		; Object ?? 02
+LD357:	.WORD	L9E22, 000636		; Object L02: BOMB
 	.BYTE	146, 0
-LD35C:	.WORD	L990D, 000767		; Object ?? 03
+LD35C:	.WORD	L990D, 000767		; Object L03
 	.BYTE	147, 0
-LD361:	.WORD	L8D5C, 000727		; Object ?? 04
+LD361:	.WORD	L8D5C, 000727		; Object L04
 	.BYTE	150, 0
-LD366:	.WORD	L8EE1, 000716		; Object ?? 05
+LD366:	.WORD	L8EE1, 000716		; Object L05
 	.BYTE	151, 0
-LD36B:	.WORD	L889F, 000514		; Object ?? 06
+LD36B:	.WORD	L889F, 000514		; Object L06
 	.BYTE	152, 0
-LD370:	.WORD	L890E, 000411		; Object ?? 07
+LD370:	.WORD	L890E, 000411		; Object L07
 	.BYTE	153, 0
-LD375:	.WORD	L8CC8, 000762		; Object ?? 08
+LD375:	.WORD	L8CC8, 000762		; Object L08
 	.BYTE	154, 0
-LD37A:	.WORD	L8739, 000432		; Object ?? 09
+LD37A:	.WORD	L8739, 000432		; Object L09
 	.BYTE	155, 0
-LD37F:	.WORD	L8799, 000707		; Object ?? 10
+LD37F:	.WORD	L8799, 000707		; Object L10
 	.BYTE	156, 0
-LD384:	.WORD	L913F, 000762		; Object ?? 11
+LD384:	.WORD	L913F, 000762		; Object L11
 	.BYTE	157, 0
-LD389:	.WORD	L8321, 000747		; Object ?? 12
+LD389:	.WORD	L8321, 000747		; Object L12
 	.BYTE	160, 0
-LD38E:	.WORD	L8162, 000762		; Object ?? 13
+LD38E:	.WORD	L8162, 000762		; Object L13
 	.BYTE	161, 0
-LD393:	.WORD	L7EF2, 000770		; Object ?? 14
+LD393:	.WORD	L7EF2, 000770		; Object L14
 	.BYTE	162, 0
-LD398:	.WORD	L7F48, 000664		; Object ?? 15
+LD398:	.WORD	L7F48, 000664		; Object L15
 	.BYTE	163, 0
-LD39D:	.WORD	L7C6D, 000667		; Object ?? 16
+LD39D:	.WORD	L7C6D, 000667		; Object L16
 	.BYTE	164, 0
-LD3A2:	.WORD	L7A9E, 000715		; Object ?? 17
+LD3A2:	.WORD	L7A9E, 000715		; Object L17
 	.BYTE	165, 0
-LD3A7:	.WORD	L7A9E, 000727		; Object ?? 18
+LD3A7:	.WORD	L7A9E, 000727		; Object L18
 	.BYTE	166, 0
-LD3AC:	.WORD	L7A9E, 000731		; Object ?? 19
+LD3AC:	.WORD	L7A9E, 000731		; Object L19
 	.BYTE	167, 0
-LD3B1:	.WORD	L7AF8, 000765		; Object ?? 20
+LD3B1:	.WORD	L7AF8, 000765		; Object L20
 	.BYTE	170, 0
-LD3B6:	.WORD	L7AF8, 000766		; Object ?? 21
+LD3B6:	.WORD	L7AF8, 000766		; Object L21
 	.BYTE	171, 0
-LD3BB:	.WORD	L9376, 000653		; Object ?? 22
+LD3BB:	.WORD	L9376, 000653		; Object L22
 	.BYTE	172, 0
-LD3C0:	.WORD	L79C6, 000765		; Object ?? 23
+LD3C0:	.WORD	L79C6, 000765		; Object L23
 	.BYTE	173, 0
-LD3C5:	.WORD	L80F6, 000743		; Object ?? 24
+LD3C5:	.WORD	L80F6, 000743		; Object L24: Console in room 80F6
 	.BYTE	174, 0
-LD3CA:	.WORD	L99A6, 000763		; Object ?? 25
+LD3CA:	.WORD	L99A6, 000763		; Object L25: Console in room 99A6
 	.BYTE	175, 0
-LD3CF:	.WORD	L92A7, 000715		; Object ?? 26
+LD3CF:	.WORD	L92A7, 000715		; Object L26: Console in room 92A7
 	.BYTE	176, 0
-LD3D4:	.WORD	L92EF, 000330		; Object ?? 27
+LD3D4:	.WORD	L92EF, 000330		; Object L27: Console in room 92EF
 	.BYTE	177, 0
-LD3D9:	.WORD	L9005, 000445		; Object ?? 28
+LD3D9:	.WORD	L9005, 000445		; Object L28: Console in room 9005
 	.BYTE	200, 0
 
 ; Find record for the current room in DE84 table
@@ -3477,6 +3505,14 @@ TITLE:	.ASCII	/SABOTEUR 1 UKNC/
 VERSIO:
 .INCLUDE /VERSIO.MAC/
 LDF27:	.ASCII	/S  START MISSION/
+
+LC062:	.ASCII	/DISK RETRIEVED/
+LC070:	.ASCII	/DISK /
+LC075:	.ASCII	/BONUS: $05000/
+LC082:	.ASCII	/LEVEL/
+LC087:	.ASCII	/TOTAL PAY : $/
+
+LE1EC:	.ASCII	/1/	; Current Level digit
 	.EVEN
 
 LDF37:
@@ -3488,15 +3524,24 @@ LDF60:	CALL	LDEC1			; Clear strings on the screen
 	MOV	#15., R1
 	MOV	#TITLE, R3
 	MOV	#<SCRTOP+<1200*0.>+13.>, R2		;TODO
-	CALL	LAED1			; Print string "S START MISSION"
+	CALL	LAED1			; Print string - title
 	MOV	#17., R1
 	MOV	#VERSIO, R3
 	MOV	#<SCRTOP+<1200*2.>+13.>, R2		;TODO
-	CALL	LAED1			; Print string "S START MISSION"
+	CALL	LAED1			; Print string - version
 	MOV	#16., R1
 	MOV	#LDF27, R3
 	MOV	#<SCRTOP+<1200*10.>+13.>, R2		;TODO
 	CALL	LAED1			; Print string "S START MISSION"
+	MOV	#LC082, R3		; "LEVEL"
+	MOV	#5., R1
+	MOV	#<SCRTOP+<1200*12.>+16.>, R2		;TODO
+	CALL	LAED1			; Print string "LEVEL"
+	MOV	#LE1EC, R3
+	INC	R1			; 1 char
+	INC	R2
+	CALL	LAED1			; Print level digit
+
 	;TODO
 	CALL	WTKEY ;DEBUG
 	BR	LE2A7 ;DEBUG		; => Start Mission
