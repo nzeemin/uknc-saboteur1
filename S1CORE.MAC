@@ -1030,7 +1030,7 @@ LA3EE:	CMPB	L9C40, L71C6		; compare Ninja Y to Guard Y
 	BEQ	10$			; same Y =>
 99$:	RETURN
 10$:	MOV	L71C3, R3		; get Guard position in tilemap
-	ADD	#<L6590+2>, R3		; now R3 in Back tile screen
+	ADD	#<L6590+2>, R3		; + Tile screen 0 + 2
 	MOV	#144, R0		; $64
 	CMPB	R0, (R3)
 	BLO	99$
@@ -1784,7 +1784,7 @@ LB40A:	MOV	#L71C3, R2		; address to store guard data
 ; Standard room procedure (for 63 rooms)
 LB41F:	JMP	LB937
 ; Standard room initialization (for 60 rooms)
-LB422:	JMP	LB724			; => Finish room initialization
+;NOTE: LB422 now just alias for LB724	; => Finish room initialization
 ; Rooms 7C9C/92EF initialization (redirect from 791B)
 LB425:	MOV	#LC66B, R3		; Guard data address
 	CALL	LB40A			; Initialize a guard
@@ -1979,7 +1979,7 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	MOVB	#4, <LC66B+4>		; set status for Guard in rooms 7C9C/92EF
 	MOVB	#4, <LD486+15.>		; set tile in Sprite Ninja/Guard standing sprite
 	MOVB	#250., LB2FD		; $FA set counter for head animation
-	MOVB	#200., LBD7A		; $C8
+	MOVB	#310, LBD7A		; $C8 Shuriken - set HELD tile
 	CALL	L7472
 	;DI
 	MOV	#LB513, L7184		; set Current Room = Initial room
@@ -2077,6 +2077,7 @@ LB722:	.WORD	L734D	; #0E: Put one tile at the given address; params: 3 bytes (ti
 ; Finish room initialization
 ; Called to finish room initialization from room initialization procedure
 LB724:	MOV	#L678E, R3		; Tile screen 1 start address
+LB422 = LB724
 	MOV	#<510./2>, R1
 10$:	MOV	#401, (R3)+		; put two bytes $01
 	SOB	R1, 10$
@@ -2183,12 +2184,13 @@ LB891:	MOV	#LB84F, R3		; NEAR item address
 	MOV	#<SCRIND+27.>, R3	; screen address for NEAR item
 	CALL	L74CD			; Draw NEAR/HELD item
 LB8B0:	MOV	#LB850, R3		; HELD tile address
-	MOVB	LBD7A, R0
+	CLR	R0
+	BISB	LBD7A, R0		; get HELD tile
 	CMPB	R0, (R3)		; HELD changing?
-	BEQ	LB8C9
-	MOVB	R0, (R3)
+	BEQ	LB8C9			; no => skip
+	MOVB	R0, (R3)		; set HELD tile
 	BEQ	LB8C2
-	SUB	#302, R0
+	SUB	#306, R0		; $C6
 	ASR	R0
 LB8C2:	MOVB	R0, L74CE		; set item to draw
 	MOV	#<SCRIND+1>, R3		; screen address for HELD item
@@ -2196,7 +2198,7 @@ LB8C2:	MOVB	R0, L74CE		; set item to draw
 	;DI
 LB8C9:	CLRB	LA39E
 LB8CD:	JMP	@#LBEB3			; !!MUT-ARG!! => run handler
-LB8CE = LB8CD + 2
+LB8CE = LB8CD + 2	; Movement handler address
 
 ; Increase Energy a bit
 LB83C:	CMPB	#377, L749D
@@ -2280,7 +2282,7 @@ LB93D:	MOVB	#3, LB951
 LB94F:	MOVB	3(R4), R0
 LB951 = LB94F + 2
 
-	JMP	LBAD5
+	BR	LBAD5
 LBA14:	MOVB	(R4), R0
 	MOVB	R0, (R3)
 	MOV	#1, R5
@@ -2319,7 +2321,7 @@ LBAB2:	.BYTE	0	; ??
 LBAD5:
 	;TODO
 
-	JMP	LBA20
+	BR	LBA20
 
 ; Set update flags for Ninja, 6x7 tiles
 LBBBB:	MOV	L9C42, R3		; get Ninja position in tilemap
@@ -2436,41 +2438,44 @@ LBCC4:	CALL	LBBDF			; Read Input
 	BNE	LBCCC			; FIRE =>
 	JMP	LBDDD
 ; FIRE pressed, ninja standing
-LBCCC:	MOV	#LB595, R3		; action cooldown counter
+LBCCC:	MOV	#LB595, R3		; action cooldown counter address
 	TSTB	(R3)			; check if counter is 0
 	BEQ	LBCD4
 	JMP	LBDB2			; not zero =>
 LBCD4:	MOVB	#5, (R3)		; reset cooldown (5 ticks until next action)
 	MOVB	LB84C, R1		; get Object tile
 	CMPB	#143, R1		; Object tile = $63 Console ?
-	BEQ	LBD33			; => execute the object procedure
-	ADD	#<L6590+217>, R3	; Tile screen 0 + 7 row + 7
+	BEQ	LBD33			; yes => execute the object procedure
+	MOV	L9C42, R3		; get Ninja position in tilemap
+	ADD	#<L6590+217.>, R3	; + Tile screen 0 + 7 row + 7
 	CMPB	#234, (R3)		; $9C ?
-	BNE	LBCF3
+	BNE	LBCF3			; no =>
 	CMPB	#2, LB5C6		; Time mode = BOMB ticking mode?
-	BEQ	LBD37
+	BEQ	LBD37			; yes =>
 	BR	LBCF7
 LBCF3:	TSTB	R1			; Object tile = nothing?
 	BEQ	LBD37			; nothing =>
-LBCF7:	MOVB	LB850, R0		; get HELD tile
+LBCF7:	CLR	R0
+	BISB	LB850, R0		; get HELD tile
 	MOV	LB84A, R2		; get Object address + 4
-	MOVB	R0, (R2)		; set Object tile
+	MOVB	R0, (R2)		; set Object tile = held
 	DEC	R2			; Object address + 3
 	TSTB	R0			; held nothing?
 	BEQ	LBD08			; nothing =>
 	SUB	#306, R0		; $C6
 	ASR	R0
-LBD08:	MOVB	R0, (R2)
-	MOVB	#9., <LD256+<7*8.>+3>	; set ?? in Object #7 in Table of objects D256
+LBD08:	MOVB	R0, (R2)		; set Object item
+	MOVB	#9., <LD256+<7*8.>+3>	; set item in Object #7 in Table of objects D256
 	MOV	R1, R0
-	MOVB	R0, LBD7A
-	CMPB	#324, R0		; $D4 ?
+	MOVB	R0, LBD7A		; set HELD tile
+	CMPB	#324, R0		; $D4 diskette ?
 	BEQ	LBD17
 	JMP	LB8D0			; => Update Ninja on tilemap
 LBD17:	MOV	#LB5C6, R3		; Time mode address
 	TSTB	(R3)			; 0 = time ticking ?
-	BEQ	LBD1F
+	BEQ	LBD1F			; yes =>
 	JMP	LB8D0			; => Update Ninja on tilemap
+; We've got the disk, so stop the time and give a bonus
 LBD1F:	MOVB	#1, (R3)		; set Time mode = time stopped
 	MOV	#400., R3
 	CALL	LB371			; Play melody
@@ -2491,9 +2496,9 @@ LBD37:	MOV	#LA39F, R3
 	BNE	LBDB2
 	MOVB	LB850, R0		; get HELD tile
 	BEQ	LBDB2			; nothing =>
-	CMPB	#324, R0		; $D4 ?
+	CMPB	#324, R0		; $D4 diskette ?
 	BEQ	LBDB2
-	CMPB	#326, R0		; $D6 ?
+	CMPB	#326, R0		; $D6 bomb ?
 	BEQ	LBDB2
 	MOVB	R0, (R3)
 	MOV	L9C42, R3		; get Ninja position in tilemap
@@ -2510,7 +2515,7 @@ LBD6A:	MOVB	R1, LA3A5
 	ADD	#2, R0
 	MOVB	R0, LA3A4
 LBD79:	MOV	#310, R0		; !!MUT-ARG!! $C8
-LBD7A = LBD79 + 2
+LBD7A = LBD79 + 2	; HELD tile
 	MOVB	R0, LA39F
 	CLRB	LBD7A
 	MOV	#3, R1
@@ -2530,8 +2535,7 @@ LBDA2:	MOVB	R1, LA3A2
 	MOV	#LD504, R2		; Sprite Ninja/Guard punching
 	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
 
-LBDAF:	; Ninja standing (redirect)
-	JMP	LC226			; => Ninja standing
+;NOTE: LBDAF now an alias for LC226	; => Ninja standing
 
 ; ?? Ninja action?
 LBDB2:	MOV	L9C42, R3		; get Ninja position in tilemap
@@ -2658,14 +2662,12 @@ LBF58:	.ASCII	/ SABOTEUR DEAD /
 ; UP pressed (continued, see BDE2)
 LBF7B:	MOV	#<L6590+2>, R3		; Tile screen 0 + 2
 	ADD	R2, R3
-	CMPB	#144, (R3)
-	BHIS	LBF85
-	BR	LC16E			; => Update Ninja on tilemap
-LBF85:	INC	R3
-	CMPB	#144, (R3)
-	BHIS	LBF8A
-	BR	LC16E			; => Update Ninja on tilemap
-LBF8A:	MOVB	#3, L7343		; set counter = 3
+	CMPB	#144, (R3)		; $64 ?
+	BLO	LC16E			; => Update Ninja on tilemap
+	INC	R3
+	CMPB	#144, (R3)		; $64 ?
+	BLO	LC16E			; => Update Ninja on tilemap
+	MOVB	#3, L7343		; set counter = 3
 	MOVB	L7232, R0		; get Input bits
 	TSTB	L7239			; check Ninja direction
 	BEQ	LBFA0			; left =>
@@ -2679,7 +2681,7 @@ LBFA0:	BIT	#2, R0			; check LEFT bit
 LBFA5:	MOV	#LC339, R3		; Movement handler: Ninja jumping
 	MOVB	#2, L7343		; set counter = 2
 	MOV	#LD4B0, R2		; Sprite Ninja/Guard jumping
-
+;
 ; Set movement handler = R3, set Ninja sprite = R2
 LBFB0:	MOV	R3, LB8CE		; set movement handler
 	MOV	R2, L7186		; set Ninja sprite address
@@ -2689,11 +2691,10 @@ LBFBA:	BIT	#4, R0			; bit 2 - down
 	BEQ	LC13D			; no =>
 ; DOWN pressed
 LBFBF:	MOV	L9C42, R3		; get Ninja position in tilemap
-	ADD	#<L6590+212.>, R3	;
+	ADD	#<L6590+212.>, R3	; + Tile screen 0 + 7 rows + 2
 	CALL	LC392			; Check if tile is a ladder
-	BNE	LBFCC
-	BR	LC12E			; => Ninja on ladder
-
+	BEQ	LC12E			; => Ninja on ladder
+;
 ; Switch Ninja to sitting
 LBFCC:	MOV	#LC22F, R3		; Movement handler: Ninja sitting
 	MOV	#LD558, R2		; Sprite Ninja sitting
@@ -2702,8 +2703,11 @@ LBFCC:	MOV	#LC22F, R3		; Movement handler: Ninja sitting
 ; Escaped; clear screen, show final messages, then Game Over
 LBFD5:	MOV	#10., R1
 	CALL	LB4DE			; Increase PAY value by 1000 - Escape by Helicopter
-	CMPB	#324, LBD7A		; $D4
+	CMPB	#324, LBD7A		; HELD tile = $D4 diskette ?
 	BNE	LC04A
+	MOV	#50., R1
+	CALL	LB4DE			; Increase PAY value by 5000
+	;TODO: Clear whole screen
 	;TODO
 
 LC04A:	CMPB	#2, LB5C6		; Time mode = BOMB ticking mode ?
@@ -2798,14 +2802,15 @@ LC21E:	CALL	LBBDF			; Read Input
 
 ; Ninja standing
 LC226:	MOV	#LBC55, R3		; Movement handler: Ninja standing
+LBDAF = LC226
 	MOV	#LD486, R2		; Sprite Ninja/Guard standing
 	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 ; Movement handler (B8CE handler): Ninja sitting
 LC22F:	CALL	LBBDF			; Read input
 	BIT	#4, R0			; check DOWN bit
-	BNE	LC239			; still pressed =>
-	JMP	LC226			; DOWN key released => stand up
+	BEQ	LC226			; DOWN key released => stand up
+; DOWN still pressed
 LC239:	MOV	L9C42, R3		; get Ninja position in tilemap
 	ADD	#<L6F86+182.>, R3	; Tile screen 5 + 182.
 	CMPB	#014, (R3)
@@ -2816,8 +2821,7 @@ LC248:	BR	LC16E			; => Object procedure
 
 ; Movement handler - Ninja walking left
 LC24B:	TSTB	L9C41			; Ninja X at very left?
-	BNE	LC253			; no =>
-	BR	LC319			; => Going to room at Left
+	BEQ	LC319			; yes => Going to room at Left
 LC253:	MOV	L9C42, R3		; get Ninja position in tilemap
 	ADD	#<L6590+181.>, R3	; + Tile screen 0 + 6 rows + 1
 	CMPB	#144, (R3)		; $64
@@ -2872,7 +2876,7 @@ LC2C5:	MOVB	L733A, R0
 	;TODO: Sound?
 
 LC2E8:	MOV	L733B(R3), L7186	; sprite address from table -> Ninja sprite
-	JMP	LC16E			; => Update Ninja on tilemap
+	JMP	LB8D0			; => Update Ninja on tilemap
 
 ; Going to room at Right
 LC2FA:	CLRB	L9C41			; set Ninja X = 0
@@ -2895,7 +2899,7 @@ LC339:	DECB	L7343			; decrease counter
 	BEQ	LC340
 	JMP	LB8D0			; => Update Ninja on tilemap
 LC340:	MOV	L9C42, R3		; get Ninja position in tilemap
-	ADD	#<L6590+2>, R3		; Tile screen 0 + 2
+	ADD	#<L6590+2>, R3		; + Tile screen 0 + 2
 	TSTB	L7239			; check Ninja direction
 	BNE	LC361
 	MOVB	(R3), R0
@@ -2966,7 +2970,7 @@ LC3CF:	INCB	L9C41			; increase Ninja X
 
 ; Movement handler (B8CE handler): Ninja on ladder
 LC3D9:	MOV	L9C42, R3		; get Ninja position in tilemap
-	ADD	#<L6590+183.>, R3	; Tile screen 0 + 6 rows + 3
+	ADD	#<L6590+183.>, R3	; + Tile screen 0 + 6 rows + 3
 	CMPB	#014, (R3)		; ladder?
 	BEQ	LC3EC			; yes => Read and process Input
 	DEC	R3
@@ -2979,7 +2983,7 @@ LC3EC:	CALL	LBBDF			; Read Input
 	BEQ	LC40E
 ; Pressed RIGHT
 	MOV	L9C42, R3		; get Ninja position in tilemap
-	ADD	#<L6590+184.>, R3	; Tile screen 0 + 6 rows + 4
+	ADD	#<L6590+184.>, R3	; + Tile screen 0 + 6 rows + 4
 	CMPB	#144, (R3)		; $64
 	BLO	LC42C
 	ADD	#30., R3		; next row
@@ -2992,7 +2996,7 @@ LC40E:	BIT	#2, R0			; check LEFT bit
 	BEQ	LC42C
 ; Pressed LEFT
 	MOV	L9C42, R3		; get Ninja position in tilemap
-	ADD	#<L6590+181.>, R3	; Tile screen 0 + 6 rows + 1
+	ADD	#<L6590+181.>, R3	; + Tile screen 0 + 6 rows + 1
 	CMPB	#144, (R3)		; $64
 	BLO	LC42C
 	ADD	#30., R3		; next row
@@ -3006,7 +3010,7 @@ LC42C:	MOVB	L7232, R0		; get Input bits
 	BEQ	LC477
 ; Pressed UP
 	MOV	L9C42, R3		; get Ninja position in tilemap
-	ADD	#<L6590+183.>, R3	; Tile screen 0 + 6 rows + 3
+	ADD	#<L6590+183.>, R3	; + Tile screen 0 + 6 rows + 3
 	CMPB	#014, (R3)		; $0C
 	BEQ	LC447
 	DEC	R3
@@ -3034,7 +3038,7 @@ LC477:	BIT	#4, R0			; check DOWN bit
 	BNE	LC483
 	JMP	LC604			; => Going to room Down from current
 LC483:	MOV	L9C42, R3		; get Ninja position in tilemap
-	ADD	#<L6590+213.>, R3	; Tile screen 0 + 7 rows + 3
+	ADD	#<L6590+213.>, R3	; + Tile screen 0 + 7 rows + 3
 	CMPB	#014, (R3)
 	BEQ	LC498			; => Move down one tile
 	DEC	R3
@@ -3106,7 +3110,7 @@ LC525:	CALL	LC57B			; Check for ??
 	BNE	LC533			; falling =>
 	DECB	L7343			; decrease counter
 	BEQ	LC538
-	JMP	LC16E			; => Update Ninja on tilemap
+	JMP	LB8D0			; => Update Ninja on tilemap
 ;LC531:	BR	LC538
 LC533:	MOV	#4, R1
 	CALL	L9DD9			; Decrease Energy by 4
@@ -3184,7 +3188,7 @@ LC5C6:	ADD	#30., L9C42		; Ninja position in tilemap +30.
 	CMPB	#10., (R3)		; at room bottom?
 	BEQ	LC604			; => Going to room Down from current
 	MOV	L9C42, R3		; get Ninja position in tilemap
-	ADD	#<L6590+212.>, R3	; address in Tile screen 0 (background)
+	ADD	#<L6590+212.>, R3	; + Tile screen 0 + 7 rows + 2
 	CMPB	#144, (R3)
 	BLO	LC5EE
 	INC	R3
@@ -3347,61 +3351,61 @@ LD280:	.WORD	005122		; Object 06
 LD287:	.WORD	000331		; Object 07: Diskette
 	.BYTE	234,011,324, 0
 	.WORD	0
-LD28E:	.WORD	000013		; Object ?? 08
+LD28E:	.WORD	000013		; Object 08: Pipe
 	.BYTE	232,005,320, 0
 	.WORD	0
-LD295:	.WORD	000700		; Object ?? 09
+LD295:	.WORD	000700		; Object 09: Pipe
 	.BYTE	070,005,320, 0
 	.WORD	0
-LD29C:	.WORD	000324		; Object ?? 10
+LD29C:	.WORD	000324		; Object 10: Pipe
 	.BYTE	201,005,320, 0
 	.WORD	0
-LD2A3:	.WORD	000324		; Object ?? 11
+LD2A3:	.WORD	000324		; Object 11: Granade
 	.BYTE	145,006,322, 0
 	.WORD	0
 LD2AA:	.WORD	000324		; Object 12: BOMB
 	.BYTE	146,010,326, 0
 	.WORD	0
-LD2B1:	.WORD	000324		; Object ?? 13
+LD2B1:	.WORD	000324		; Object 13: Knife
 	.BYTE	147,002,312, 0
 	.WORD	0
 LD2B8:	.WORD	000324		; Object ?? 14
 	.BYTE	150,003,314, 0
 	.WORD	0
-LD2BF:	.WORD	000324		; Object ?? 15
+LD2BF:	.WORD	000324		; Object 15: Pipe
 	.BYTE	151,005,320, 0
 	.WORD	0
-LD2C6:	.WORD	000324		; Object ?? 16
+LD2C6:	.WORD	000324		; Object 16: Pipe
 	.BYTE	152,005,320, 0
 	.WORD	0
-LD2CD:	.WORD	000324		; Object ?? 17
+LD2CD:	.WORD	000324		; Object 17: Pipe
 	.BYTE	153,005,320, 0
 	.WORD	0
 LD2D4:	.WORD	000324		; Object ?? 18
 	.BYTE	154,003,314, 0
 	.WORD	0
-LD2DB:	.WORD	000324		; Object ?? 19
+LD2DB:	.WORD	000324		; Object 19: Knife
 	.BYTE	155,002,312, 0
 	.WORD	0
-LD2E2:	.WORD	000324		; Object ?? 20
+LD2E2:	.WORD	000324		; Object 20: Knife
 	.BYTE	155,002,312, 0
 	.WORD	0
 LD2E9:	.WORD	000324		; Object ?? 21
 	.BYTE	156,003,314, 0
 	.WORD	0
-LD2F0:	.WORD	000324		; Object ?? 22
+LD2F0:	.WORD	000324		; Object 22: Knife
 	.BYTE	157,002,312, 0
 	.WORD	0
-LD2F7:	.WORD	000324		; Object ?? 23
+LD2F7:	.WORD	000324		; Object 23: Granade
 	.BYTE	160,006,322, 0
 	.WORD	0
-LD2FE:	.WORD	000324		; Object ?? 24
+LD2FE:	.WORD	000324		; Object 24: Knife
 	.BYTE	161,002,312, 0
 	.WORD	0
-LD305:	.WORD	000324		; Object ?? 25
+LD305:	.WORD	000324		; Object 25: Granade
 	.BYTE	162,006,322, 0
 	.WORD	0
-LD30C:	.WORD	000324		; Object ?? 26
+LD30C:	.WORD	000324		; Object 26: Knife
 	.BYTE	163,002,312, 0
 	.WORD	0
 LD313:	.WORD	000324		; Object ?? 27
@@ -3413,19 +3417,19 @@ LD31A:	.WORD	000324		; Object ?? 28
 LD321:	.WORD	000324		; Object ?? 29
 	.BYTE	166,003,314, 0
 	.WORD	0
-LD328:	.WORD	000324		; Object ?? 30
+LD328:	.WORD	000324		; Object 30: Brick
 	.BYTE	167,004,316, 0
 	.WORD	0
-LD32F:	.WORD	000324		; Object ?? 31
+LD32F:	.WORD	000324		; Object 31: Brick
 	.BYTE	170,004,316, 0
 	.WORD	0
-LD336:	.WORD	000324		; Object ?? 32
+LD336:	.WORD	000324		; Object 32: Brick
 	.BYTE	171,004,316, 0
 	.WORD	0
-LD33D:	.WORD	000324		; Object ?? 33
+LD33D:	.WORD	000324		; Object 33: Brick
 	.BYTE	172,004,316, 0
 	.WORD	0
-LD344:	.WORD	000324		; Object ?? 34
+LD344:	.WORD	000324		; Object 34: Brick
 	.BYTE	173,004,316, 0
 	.WORD	0
 
