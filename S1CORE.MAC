@@ -983,22 +983,29 @@ LA38E:	; Room 80F6 initialization
 	BR	LA356			; Initialize a dog, then Standard room initialization
 
 LA39E:	.BYTE	0
-LA39F:	.BYTE	0
-LA3A0:	.BYTE	304			; $C4
-	.BLKB	1
+	.EVEN
+
+; Three objects, 8. bytes each
+; 1st object - object thrown by Ninja
+LA39F:	.BYTE	0			; Thrown object tile
+	.EVEN
+LA3A0:	.WORD	304			; Thrown object position
 LA3A2:	.BYTE	0
 LA3A3:	.BYTE	3
-LA3A4:	.BYTE	6
-LA3A5:	.BYTE	4
+LA3A4:	.BYTE	6			; Thrown object Y
+LA3A5:	.BYTE	4			; Thrown object X
+; 2nd object
 LA3A6:	.BYTE	0
-	.BLKB	6
+	.BLKB	7
+; 3rd object - Turett
 LA3AD:	.BYTE	0
+	.EVEN
 LA3AE:	.WORD	105.			; Turret offset in tilemap
-	.BLKB	1
 LA3B0:	.BYTE	6
 LA3B1:	.BYTE	6
 LA3B2:	.BYTE	3			; Turret Y
 LA3B3:	.BYTE	15.			; Turret X
+
 LA3B4:	.BYTE	1			; ?? Guard counter
 	.EVEN
 
@@ -2024,9 +2031,13 @@ LB696 = LB695 + 2
 LB6A6:	CLR	LB674			; set current Dog data address = no dog
 	CLR	LB696			; set current Guard data address = no guard
 	CLRB	LBAB2
-
-	;TODO
-
+; Clear 3 objects at LA39F
+	MOV	#LA39F, R3		; Three objects start address
+	MOV	#3, R1
+LB6BB:	CLRB	(R3)
+	ADD	#8., R3
+	SOB	R1, LB6BB
+;
 	MOV	#L6590, R3		; Tile screen 0 start address
 	MOV	#<510./2>, R1
 LB6CD:	CLR	(R3)+			; clear two bytes
@@ -2274,28 +2285,114 @@ LB92D:	MOV	#177777, (R3)+		; put two bytes $FF
 	JMP	@R3			; execute room procedure
 
 ; Standard room procedure (redirect from B41F)
-LB937:	MOV	#LA39F, R4
+LB937:	MOV	#LA39F, R4		; Three objects start address
 	MOV	#3, R1
-LB93D:	MOVB	#3, LB951
-	;TODO
-
-LB94F:	MOVB	3(R4), R0
+LB93D:	MOVB	#4, LB951
+	TSTB	(R4)			; have an object here?
+	BNE	LB94A
+	JMP	LBA21			; no => skip to end of loop
+LB94A:	PUSH	R1
+	CALL	LBBAE			; set "need update" mark for object
+	MOV	#2, R1
+LB94F:	MOVB	4(R4), R0
 LB951 = LB94F + 2
-
+	CLR	R2
+	CMPB	R0, #3
+	BHIS	LB95F
+	MOV	#-30., R2
+	DECB	6(R4)			; decrement object Y
+LB95F:	CMPB	R0, #6
+	BLO	LB969
+	MOV	#30., R2
+	INCB	6(R4)			; increment object Y
+LB969:	CMPB	R0, #1
+	BEQ	LB98D
+	CMPB	R0, #4
+	BEQ	LB98D
+	CMPB	R0, #7
+	BEQ	LB98D
+	DEC	R2
+	DECB	7(R4)			; decrement object X
+	CMPB	R0, #3
+	BEQ	LB98D
+	TSTB	R0
+	BEQ	LB98D
+	CMPB	R0, #6
+	BEQ	LB98D
+	INC	R2
+	INC	R2
+	INCB	7(R4)			; increment object X
+	INCB	7(R4)
+LB98D:	MOV	2(R4), R3
+	ADD	R2, R3
+	MOV	R3, 2(R4)
+	MOVB	6(R4), R0		; get object Y
+	CMPB	R0, #-1
+	BEQ	LBBA7
+	CMPB	R0, #17.
+	BEQ	LBBA7
+	MOVB	7(R4), R0		; get object X
+	CMPB	R0, #30.
+	BEQ	LBBA7
+	CMPB	R0, #-1
+	BEQ	LBBA7
+	MOV	R3, R5
+	ADD	#L6590, R5		; Tile screen 0 start address
+	CMPB	#144, (R5)		; $64
+	BLO	LBAD5
+	MOV	R3, R5
+	ADD	#L6B8A, R5		; Tile screen 3 start address
+	CMPB	#377, (R5)
+	BEQ	LB9DA
+	MOVB	L71CF, R0
+	CMPB	R0, #102
+	BHIS	LBAD5
+	ADD	#102, R0
+	MOVB	R0, L71CF
+	BR	LBAD5
+LB9DA:	MOV	R3, R5
+	ADD	#L6D88, R5		; Tile screen 4 start address
+	CMPB	#377, (R5)
+	BEQ	LB9F9
+	CMPB	#9., L7346		; Guard state = 9 dead ?
+	BEQ	LBAD5
+	MOVB	#9., L7346		; set Guard state = 9 dead
+	MOV	#1, R1
+	CALL	LB4DE			; Increase PAY value by 100 - Guard killed by weapon
+	BR	LBAD5
+LB9F9:	INCB	LB951
+	DEC	R1
+	BNE	LB94F
+	ADD	#L698C, R3		; Tile screen 2 start address
+	CMPB	(R3), #310		; $C8
+	BHIS	LBA14
+	MOV	#20., R1
+	CALL	L9DD9			; Decrease Energy by B = 20.
 	BR	LBAD5
 LBA14:	MOVB	(R4), R0
 	MOVB	R0, (R3)
 	MOV	#1, R5
 	XOR	R5, R0
 	MOVB	R0, (R4)
-	CALL	LBBAE
+	CALL	LBBAE			; set "need update" mark for object
 ;
-LBA20:
-
+LBA20:	POP	R1
+LBA21:	ADD	#8., R4			; next object record
+	DEC	R1
+	BEQ	LBA2A
+	JMP	LB93D
+;
 LBA2A:	MOV	#<L678E+165.>, R3	; !!MUT-ARG!! Tile screen 1 + 5 rows + 15.
 LBA2B = LBA2A + 2
-
-	;TODO
+	MOV	#3, R1
+	MOV	#1, R0
+LBA2F:	MOV	R3, R5
+	MOVB	R0, (R5)+
+	MOVB	R0, (R5)+
+	MOVB	R0, (R5)+
+	ADD	#30., R3
+	SOB	R1, LBA2F
+;
 	CALL	LB148			; Draw tile map on the screen
 	;TODO: Restore drawing of Dog and Guard tiles
 	TSTB	LBAB2
@@ -2307,14 +2404,6 @@ LBA52:
 	;TODO
 	JMP	LB77B			; => Game loop start
 
-LBBA7:
-	;TODO
-	BR	LBA20
-
-LBBAE:
-	;TODO
-	RETURN	;STUB
-
 LBAB2:	.BYTE	0	; ??
 	.EVEN
 
@@ -2322,6 +2411,15 @@ LBAD5:
 	;TODO
 
 	BR	LBA20
+
+LBBA7:	CLRB	(R4)			; delete the object
+	BR	LBA20
+
+; Set "need update" mark for object R4
+LBBAE:	MOV	2(R4), R3		; get object position
+	ADD	#L678E, R3		; Tile screen 1 start address
+	MOVB	#1, (R3)
+	RETURN
 
 ; Set update flags for Ninja, 6x7 tiles
 LBBBB:	MOV	L9C42, R3		; get Ninja position in tilemap
@@ -2341,8 +2439,9 @@ LBBBB:	MOV	L9C42, R3		; get Ninja position in tilemap
 ; Movement handler: Ninja punching
 LBBD4:	CALL	LBBDF			; Read input
 	BIT	#20, R0			; check FIRE bit
-	BNE	LB8D0			; => Update Ninja on tilemap
-	JMP	LC226			; => Ninja standing
+	BEQ	LBBDC
+	JMP	LB8D0			; => Update Ninja on tilemap
+LBBDC:	JMP	LC226			; no FIRE => Ninja standing
 
 ; Read Input
 LBBDF:	TSTB	@#177560		; do we have an unprocessed key?
@@ -2500,20 +2599,21 @@ LBD37:	MOV	#LA39F, R3
 	BEQ	LBDB2
 	CMPB	#326, R0		; $D6 bomb ?
 	BEQ	LBDB2
+; Have throwable item in HELD, so throw it away
 	MOVB	R0, (R3)
 	MOV	L9C42, R3		; get Ninja position in tilemap
-	ADD	#61., R3
+	ADD	#61., R3		; + 2 rows + 1
 	MOVB	L9C41, R1		; get Ninja X
 	INC	R1
 	TSTB	L7239			; check Ninja direction
-	BEQ	LBD6A
-	ADD	#3, R1
-	ADD	#3, R3
-LBD6A:	MOVB	R1, LA3A5
-	MOV	R3, LA3A0
-	MOVB	L9C41, R0		; get Ninja X
+	BEQ	LBD6A			; left =>
+	ADD	#3, R1			; Ninja X + 1 + 3
+	ADD	#3, R3			; Ninja position + 3
+LBD6A:	MOVB	R1, LA3A5		; set thrown object X
+	MOV	R3, LA3A0		; set thrown object position
+	MOVB	L9C40, R0		; get Ninja Y
 	ADD	#2, R0
-	MOVB	R0, LA3A4
+	MOVB	R0, LA3A4		; set thrown object Y
 LBD79:	MOV	#310, R0		; !!MUT-ARG!! $C8
 LBD7A = LBD79 + 2	; HELD tile
 	MOVB	R0, LA39F
