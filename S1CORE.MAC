@@ -63,6 +63,12 @@ PAUSE:	; Pause to let PPU finish the previous commands
 	SOB	R5, 1$
 RETN:	RETURN
 
+; Подпрограмма: Очистка буфера клавиатуры
+WAITUP:	TSTB	@#177560
+	BPL	RETN
+	MOVB	@#177562, R0
+	BR	WAITUP
+
 ; Подпрограмма: Ожидание символа с клавиатуры: R0 = полученный символ
 WTKEY:	TSTB	@#177560
 	BPL	WTKEY
@@ -3609,6 +3615,7 @@ TITLE:	.ASCII	/SABOTEUR 1 UKNC/
 VERSIO:
 .INCLUDE /VERSIO.MAC/
 LDF27:	.ASCII	/S  START MISSION/
+LE1FE:	.ASCII	/1-9 SELECT LEVEL/
 
 LC062:	.ASCII	/DISK RETRIEVED/
 LC070:	.ASCII	/DISK /
@@ -3618,39 +3625,93 @@ LC087:	.ASCII	/TOTAL PAY : $/
 
 LE1EC:	.ASCII	/1/	; Current Level digit
 	.EVEN
+LE1ED:	.WORD	LE217	; Current level description address, 14-char string
 
 LDF37:
 	;TODO
 
 ; Main menu
-LDF60:	CALL	LDEC1			; Clear strings on the screen
+LDF60:	CALL	WAITUP			; clear keyboard buffer
+	CALL	LDEC1			; Clear strings on the screen
 	;TODO
 	MOV	#15., R1
 	MOV	#TITLE, R3
-	MOV	#<SCRTOP+<1200*0.>+13.>, R2		;TODO
+	MOV	#<SCRTOP+<1200*0.>+13.>, R2
 	CALL	LAED1			; Print string - title
 	MOV	#17., R1
 	MOV	#VERSIO, R3
-	MOV	#<SCRTOP+<1200*2.>+13.>, R2		;TODO
+	MOV	#<SCRTOP+<1200*2.>+13.>, R2
 	CALL	LAED1			; Print string - version
 	MOV	#16., R1
+	MOV	#LE1FE, R3
+	MOV	#<SCRTOP+<1200*9.>+13.>, R2
+	CALL	LAED1			; Print string "1-9 SELECT LEVEL"
+	MOV	#16., R1
 	MOV	#LDF27, R3
-	MOV	#<SCRTOP+<1200*10.>+13.>, R2		;TODO
-	CALL	LAED1			; Print string "S START MISSION"
-	MOV	#LC082, R3		; "LEVEL"
+	MOV	#<SCRTOP+<1200*15.>+14.>, R2
+	CALL	LAED1			; Print string "S  START MISSION"
+LDF8E:	MOV	#LC082, R3		; "LEVEL"
 	MOV	#5., R1
-	MOV	#<SCRTOP+<1200*12.>+16.>, R2		;TODO
+	MOV	#<SCRTOP+<1200*11.>+16.>, R2
 	CALL	LAED1			; Print string "LEVEL"
 	MOV	#LE1EC, R3
 	INC	R1			; 1 char
 	INC	R2
 	CALL	LAED1			; Print level digit
+	MOV	LE1ED, R3		; get level description address
+	MOV	#14., R1		; 14.-char string
+	MOV	#<SCRTOP+<1200*12.>+16.>, R2
+	CALL	LAED1			; Print string
 
 	;TODO
-	CALL	WTKEY ;DEBUG
-	BR	LE2A7 ;DEBUG		; => Start Mission
+10$:
+	CALL	WTKEY
+	CMPB	R0, #140
+	BLO	20$			; upper/lower?
+	SUB	#040, R0		; to upper
+20$:	CMPB	R0, #123		; 'S' ?
+	BEQ	LE2A7			; => Start Mission
+	CMPB	R0, #061		; '1'
+	BLO	30$
+	CMPB	R0, #072		; '9'+1
+	BLO	LEVSEL
+30$:
+	BR	10$			; continue menu loop
+;
+; Selected a level digit in Menu
+LEVSEL:	MOVB	R0, LE1EC		; set current level digit 1..9
+	SUB	#061, R0		; 0..8
+	ADD	R0, R0
+	ADD	R0, R0
+	ADD	R0, R0
+	ADD	R0, R0			; * 16.
+	ADD	#LE217, R0		; Level descriptions address
+	MOV	R0, LE1ED		; save level description address
 
-	JMP	LBC3B
+	;TODO: Prepare level variables, see E325
+
+	BR	LDF8E			; return to Menu, redraw LEVEL sign
+	;JMP	LBC3B
+
+; Level descriptions and data addresses
+LE217:	.ASCII	/EXTREMELY EASY/
+	.WORD	LE38C
+	.ASCII	/  VERY  EASY  /
+	.WORD	LE3A0
+	.ASCII	/     EASY     /
+	.WORD	LE3B4
+	.ASCII	/SLIGHTLY  EASY/
+	.WORD	LE3C8
+	.ASCII	/   MODERATE   /
+	.WORD	LE3DC
+	.ASCII	/SLIGHTLY  HARD/
+	.WORD	LE3F0
+	.ASCII	/     HARD     /
+	.WORD	LE404
+	.ASCII	/  VERY HARD   /
+	.WORD	LE418
+	.ASCII	/EXTREMELY HARD/
+	.WORD	LE42C
 
 ; Start Mission
 LE2A7:
@@ -3660,6 +3721,79 @@ LE2A7:
 
 	BR	LF913
 
+; Levels data
+; Level 1 "EXTREMELY EASY"
+LE38C:	.BYTE	20.,25.,50.
+	.ASCII	/9999/
+	.BYTE	000,001,001,001,001
+	.ASCII	/ 10/
+	.BYTE	10.
+	.WORD	L9E22
+	.WORD	414.
+; Level 2 "VERY EASY"
+LE3A0:	.BYTE	18.,15.,45.
+	.ASCII	/9995/
+	.BYTE	000,001,001,001,001
+	.ASCII	/ 20/
+	.BYTE	024
+	.WORD	L9E22
+	.WORD	414.
+; Level 3 "EASY"
+LE3B4:	.BYTE	16.,12.,40.
+	.ASCII	/9590/
+	.BYTE	000,007,001,001,001
+	.ASCII	/ 30/
+	.BYTE	036
+	.WORD	L924E
+	.WORD	504.
+; Level 4 "SLIGHTLY EASY"
+LE3C8:	.BYTE	14.,10.,35.
+	.ASCII	/9080/
+	.BYTE	377,001,001,001,011
+	.ASCII	/ 50/
+	.BYTE	062
+	.WORD	L8608
+	.WORD	503.
+; Level 5 "MODERATE"
+LE3DC:	.BYTE	12.,9.,30.
+	.ASCII	/9070/
+	.BYTE	377,001,001,007,001
+	.ASCII	/ 70/
+	.BYTE	106
+	.WORD	L8689
+	.WORD	322.
+; Level 6 "SLIGHTLY HARD"
+LE3F0:	.BYTE	10.,7.,25.
+	.ASCII	/8560/
+	.BYTE	377,007,001,007,001
+	.ASCII	/100/
+	.BYTE	144
+	.WORD	L8BAB
+	.WORD	496.
+; Level 7 "HARD"
+LE404:	.BYTE	8.,6.,20.
+	.ASCII	/8550/
+	.BYTE	377,007,010,007,001
+	.ASCII	/130/
+	.BYTE	202
+	.WORD	L8D5C
+	.WORD	455.
+; Level 8 "VERY HARD"
+LE418:	.BYTE	5.,5.,15.
+	.ASCII	/8050/
+	.BYTE	377,007,010,007,011
+	.ASCII	/170/
+	.BYTE	252
+	.WORD	L8279
+	.WORD	467.
+; Level 9 "EXTREMELY HARD"
+LE42C:	.BYTE	2.,3.,10.
+	.ASCII	/7040/
+	.BYTE	377,007,010,007,011
+	.ASCII	/250/
+	.BYTE	372
+	.WORD	L8608
+	.WORD	503.
 
 LF913:
 	;TODO
