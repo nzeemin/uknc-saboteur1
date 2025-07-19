@@ -695,8 +695,9 @@ L844E:	; Room 844E
 	.BYTE	377			; End of sequence
 	.EVEN
 L84A8:	; Room 84A8
+;NOTE: Crane sprite copying moved into room sequence
 	.WORD	LB41F		; Room procedure
-	.WORD	LF973		; Initialization
+	.WORD	LB422		; Initialization
 	.WORD	L84EE		; Room to Left
 	.WORD	L844E		; Room to Right
 	.WORD	0		; Room to Up

@@ -16,6 +16,8 @@
 
 ;------------------------------------------------------------------------------
 
+CHELTH=1		; Cheat code for no damage
+
 SCREEN = 100000		; Начало экрана, косвенный адрес для УКНЦ
 SCRTOP = SCREEN + 4	; Where the game scren starts
 SCRIND = SCRTOP + <1200*19.>	; Screen address for first indicators line
@@ -726,7 +728,9 @@ L9DD0:	MOV	R3, @#LB674		; save current Dog data address
 
 ; Decrease Energy by R1
 L9DD9:	RETURN				; !!MUT-CMD!! "PUSH R1" or "RETURN"
+.IF EQ CHELTH		; Cheat code for no damage
 	CALL	L749E			; Decrease Energy
+.ENDC
 	POP	R1
 	CMPB	#4, L749C		; Energy = MIN ?
 	BNE	L9DF1
@@ -1739,7 +1743,17 @@ LB33E:	MOV	#8., R0
 ; Object procedure: flip trigger "A": set/remove wall in room 7F48
 LB348:	MOV	#9., R0
 	;TODO
-LB350:
+; Change Console color in NEAR, so we see that console action worked
+LB350:	MOV	#<SCRIND+27.>, R3	; screen address for NEAR item
+	MOV	#24., R1		; 24. rows
+	MOV	#177777, R0		; value for XOR
+10$:	MOV	R3, @#176640
+	MOV	#4, R4
+20$:	XOR	R0, @#176642
+	INC	@#176640
+	SOB	R4, 20$
+	ADD	#<120-4>, R3		; next row
+	SOB	R1, 10$
 	;TODO
 LB365:	JMP	@#LB8D0			; => Update Ninja on tilemap
 
@@ -2008,7 +2022,6 @@ LB66A:	MOVB	L71D4, R0
 ;LB66D:	MOVB	R0, @#000000
 ;LB66E = LB66D + 2
 	;TODO
-
 ; If we have a Dog, copy it's data
 	TST	LB674			; have a dog in the room?
 	BEQ	LB67B			; no => skip copying
@@ -2020,6 +2033,12 @@ LB679:	MOVB	(R3)+, (R2)+
 	SOB	R1, LB679
 LB67B:
 	;TODO
+
+	CALL	LDE68			; Find record for the current room in DE84 table
+	BNE	LB68B			; found =>
+	CLR	R3
+LB68B:	MOVB	(R3), L71D4		; get flag
+;	MOV	R3, LB66E
 
 ; If we have a Guard, copy his data
 	TST	LB696
@@ -2728,7 +2747,7 @@ LBE63:	MOV	#000207, L9DD9		; set instruction = RETURN
 ; Time is out
 LBE71:	CMPB	LB5C6, #2		; Time mode = BOMB ticking mode?
 	BEQ	LBE80			; yes =>
-	MOV	#LBF35, LBEB4		; set wo-line Game Over message = "TIME OUT" / "MISSION TERMINATED"
+	MOV	#LBF35, LBEB4		; set two-line Game Over message = "TIME OUT" / "MISSION TERMINATED"
 	BR	LBE63			; => Ninja dead
 ; BOMB time is out, BOMB explodes
 LBE80:
@@ -3540,37 +3559,37 @@ LD344:	.WORD	000324		; Object 34: Brick
 	.WORD	0
 
 ; Table of objects, 35 records, 6 bytes each
-LD34D:	.WORD	L9ED9, 000517		; Object L00
+LD34D:	.WORD	L9ED9, 000517		; Object L00: Pipe
 	.BYTE	201, 0
-LD352:	.WORD	L9E22, 000614		; Object L01
+LD352:	.WORD	L9E22, 000614		; Object L01: Granade
 	.BYTE	145, 0
 LD357:	.WORD	L9E22, 000636		; Object L02: BOMB
 	.BYTE	146, 0
-LD35C:	.WORD	L990D, 000767		; Object L03
+LD35C:	.WORD	L990D, 000767		; Object L03: Knife
 	.BYTE	147, 0
 LD361:	.WORD	L8D5C, 000727		; Object L04
 	.BYTE	150, 0
-LD366:	.WORD	L8EE1, 000716		; Object L05
+LD366:	.WORD	L8EE1, 000716		; Object L05: Pipe
 	.BYTE	151, 0
-LD36B:	.WORD	L889F, 000514		; Object L06
+LD36B:	.WORD	L889F, 000514		; Object L06: Pipe
 	.BYTE	152, 0
-LD370:	.WORD	L890E, 000411		; Object L07
+LD370:	.WORD	L890E, 000411		; Object L07: Pipe
 	.BYTE	153, 0
 LD375:	.WORD	L8CC8, 000762		; Object L08
 	.BYTE	154, 0
-LD37A:	.WORD	L8739, 000432		; Object L09
+LD37A:	.WORD	L8739, 000432		; Object L09: Knife
 	.BYTE	155, 0
 LD37F:	.WORD	L8799, 000707		; Object L10
 	.BYTE	156, 0
-LD384:	.WORD	L913F, 000762		; Object L11
+LD384:	.WORD	L913F, 000762		; Object L11: Knife
 	.BYTE	157, 0
-LD389:	.WORD	L8321, 000747		; Object L12
+LD389:	.WORD	L8321, 000747		; Object L12: Granade
 	.BYTE	160, 0
-LD38E:	.WORD	L8162, 000762		; Object L13
+LD38E:	.WORD	L8162, 000762		; Object L13: Knife
 	.BYTE	161, 0
-LD393:	.WORD	L7EF2, 000770		; Object L14
+LD393:	.WORD	L7EF2, 000770		; Object L14: Granade
 	.BYTE	162, 0
-LD398:	.WORD	L7F48, 000664		; Object L15
+LD398:	.WORD	L7F48, 000664		; Object L15: Knife in room 7F48
 	.BYTE	163, 0
 LD39D:	.WORD	L7C6D, 000667		; Object L16
 	.BYTE	164, 0
@@ -3578,15 +3597,15 @@ LD3A2:	.WORD	L7A9E, 000715		; Object L17
 	.BYTE	165, 0
 LD3A7:	.WORD	L7A9E, 000727		; Object L18
 	.BYTE	166, 0
-LD3AC:	.WORD	L7A9E, 000731		; Object L19
+LD3AC:	.WORD	L7A9E, 000731		; Object L19: Brick
 	.BYTE	167, 0
-LD3B1:	.WORD	L7AF8, 000765		; Object L20
+LD3B1:	.WORD	L7AF8, 000765		; Object L20: Brick
 	.BYTE	170, 0
-LD3B6:	.WORD	L7AF8, 000766		; Object L21
+LD3B6:	.WORD	L7AF8, 000766		; Object L21: Brick
 	.BYTE	171, 0
-LD3BB:	.WORD	L9376, 000653		; Object L22
+LD3BB:	.WORD	L9376, 000653		; Object L22: Brick
 	.BYTE	172, 0
-LD3C0:	.WORD	L79C6, 000765		; Object L23
+LD3C0:	.WORD	L79C6, 000765		; Object L23: Brick in room 79C6
 	.BYTE	173, 0
 LD3C5:	.WORD	L80F6, 000743		; Object L24: Console in room 80F6
 	.BYTE	174, 0
@@ -3600,9 +3619,59 @@ LD3D9:	.WORD	L9005, 000445		; Object L28: Console in room 9005
 	.BYTE	200, 0
 
 ; Find record for the current room in DE84 table
-LDE68:
-	;TODO
+LDE68:	MOV	#20., R1		; 20. records
+	MOV	#LDE84, R3
+	MOV	L7184, R4		; get Current Room address
+LDE6D:	CMP	(R3)+, R4
+	BEQ	LDE7B
+	TST	(R3)+
+	SOB	R1, LDE6D
+	CLR	R0			; not found
 	RETURN
+LDE7B:	MOV	#1, R0
+	RETURN
+
+; ?? Dog rooms/flags ?? 20 records, 4 bytes each
+LDE84:	.WORD	L79C6
+	.BYTE	000, 0
+	.WORD	L7C2E
+	.BYTE	000, 0
+	.WORD	L7F9C
+	.BYTE	001, 0
+	.WORD	L81E5
+	.BYTE	000, 0
+	.WORD	L8162
+	.BYTE	001, 0
+	.WORD	L7EF2
+	.BYTE	001, 0
+	.WORD	L7E05
+	.BYTE	001, 0
+	.WORD	L80A7
+	.BYTE	000, 0
+	.WORD	L83ED
+	.BYTE	000, 0
+	.WORD	L80F6
+	.BYTE	000, 0
+	.WORD	L924E
+	.BYTE	000, 0
+	.WORD	L91BA
+	.BYTE	001, 0
+	.WORD	L90DB
+	.BYTE	001, 0
+	.WORD	L909F
+	.BYTE	000, 0
+	.WORD	L8802
+	.BYTE	000, 0
+	.WORD	L8608
+	.BYTE	000, 0
+	.WORD	L844E
+	.BYTE	000, 0
+	.WORD	L9739
+	.BYTE	001, 0
+	.WORD	L9A5A
+	.BYTE	000, 0
+	.WORD	L9B9D
+	.BYTE	001, 0
 
 ; Clear strings on the screen
 LDEC1:
@@ -3800,10 +3869,10 @@ LF913:
 	JMP	LB3B0
 
 
-; Room 84A8 initialization
-LF973:
+; Room 84A8 initialization - UNUSED, replaced in the room description
+;LF973:
 ;NOTE: Crane sprite copying moved into room sequence
-	JMP	LB422
+;	JMP	LB422
 
 ; Sound ??
 LF9A1:
