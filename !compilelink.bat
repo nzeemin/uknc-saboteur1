@@ -42,6 +42,8 @@ if "%undefg%"=="" (
   goto :Failed
 )
 
+dir /-c S1CORE.SAV|findstr /R /C:"S1CORE.SAV"
+
 echo %ESCchar%[92mSUCCESS%ESCchar%[0m
 exit
 

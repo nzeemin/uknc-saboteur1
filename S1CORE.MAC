@@ -18,7 +18,7 @@
 
 CHELTH=1		; Cheat code for no damage
 
-SCREEN = 100000		; Начало экрана, косвенный адрес для УКНЦ
+SCREEN = 100000		; Screen start, indirect address for UKNC
 SCRTOP = SCREEN + 4	; Where the game scren starts
 SCRIND = SCRTOP + <1200*19.>	; Screen address for first indicators line
 
@@ -31,119 +31,119 @@ STCORE::
 K01000:
 	CLR	@#177560
 	MTPS	#000340			; Disable interrupts
-	MOV	SP, OSTACK		; Сохраняем начальное значение SP
+	MOV	SP, OSTACK		; Save initial SP address
 	MOV	#1000, SP
-;	CALL	STPAL			; Установить игровую палитру
-	MOV	#GAMESC, R1		; Строка для подготовки игрового экрана
+;	CALL	STPAL			; Set up the game palette
+	MOV	#GAMESC, R1		; String for game screen preparing
 	CALL	PRINT
-	CALL	PAUSE			; подождём пока очистится экран
+	CALL	PAUSE			; wait while screen updates
 K01220:	BR	START
 ;
-OSTACK:	.WORD	01000			; Сохраняем начальное значение SP
+OSTACK:	.WORD	01000			; Saved initial SP
 ;
 FNCORE:
 	MOV	OSTACK, SP
-	MOV	#EXITSC, R1		; Строка очистки экрана перед выходом
+	MOV	#EXITSC, R1		; String for screen cleanup before the exit
 	CALL	PRINT
 	EMT	350			; .EXIT
 ;
 ;------------------------------------------------------------------------------
 
-; Подпрограмма: Печать строки: R1 = адрес строки, строка завершается 0; портит R0
+; Procedure: Print string: R1 = string address, string ends with zero; utilizes R0
 PRINT:
-10$:	MOVB	(R1)+, R0	; Конец строки?
-	BEQ	RETN		; да => выходим
-20$:	TSTB	@#177564	; Источник канала 0 готов?
-	BPL	20$		; нет => ждём
-	MOV	R0, @#177566	; передаём символ в канал 0
+10$:	MOVB	(R1)+, R0	; End of line?
+	BEQ	RETN		; yes => exit
+20$:	TSTB	@#177564	; Channel 0 source ready?
+	BPL	20$		; no => wait
+	MOV	R0, @#177566	; send symbol into Channel 0
 	BR	10$
 
-; Подпрограмма: пауза после очистки экрана чтобы ПП закончил работу
+; Procedure: Pause after screen cleanup, so PPU will finish the work
 PAUSE:	; Pause to let PPU finish the previous commands
 	MOV	#177777, R5
 1$:	NOP
 	SOB	R5, 1$
 RETN:	RETURN
 
-; Подпрограмма: Очистка буфера клавиатуры
+; Procedure: Cleae key buffer
 WAITUP:	TSTB	@#177560
 	BPL	RETN
 	MOVB	@#177562, R0
 	BR	WAITUP
 
-; Подпрограмма: Ожидание символа с клавиатуры: R0 = полученный символ
+; Procedure: Wait for a key from the keyboard: R0 = key received
 WTKEY:	TSTB	@#177560
 	BPL	WTKEY
 	CLR	R0
-	MOVB	@#177562, R0	; символ в R0
+	MOVB	@#177562, R0	; symbol to R0
 	CMPB	R0, #33
 	BNE	RETN
 ESCKEY:	TSTB	@#177560
 	BPL	ESCKEY
-	MOVB	@#177562, R0	; символ в R0
-	BIS	#15400,R0	; #33 в верхний байт
+	MOVB	@#177562, R0	; symbol to R0
+	BIS	#15400,R0	; #33 to higher byte
 	RETURN
-; Подпрограмма: Получение символа с клавиатуры: флаг Z=0 = есть символ, R0 = полученный символ
-GETKEY:	TSTB	@#177560	; есть символ?
-	BPL	10$		; нет символа => выходим
-	MOVB	@#177562, R0	; символ в R0
+; Procedure: Receive a symbol from keyboard: flag Z=0 = have a symbol, R0 = key received
+GETKEY:	TSTB	@#177560	; have a symbol?
+	BPL	10$		; nothing => exiting
+	MOVB	@#177562, R0	; symbol to R0
 	CMPB	R0, #33		; Esc ?
 	BEQ	ESCKEY
 	RETURN
-10$:	CLR	R0		; возвращаем пустой код клавиши
+10$:	CLR	R0		; return zero for key received
 	RETURN
 
-GAMESC:	; Строка подготовки игрового экрана
-	.BYTE	33,246,62	; Формат экрана 40x24
-	.BYTE	33,240,63	; Цвет символа
-	.BYTE	33,241,60	; Цвет знакоместа 0
-	.BYTE	33,242,60	; Цвет фона 0
+GAMESC:	; String for game screen preparing
+	.BYTE	33,246,62	; Screen format 40x24
+	.BYTE	33,240,63	; Ink color
+	.BYTE	33,241,60	; Place color 0
+	.BYTE	33,242,60	; Back color 0
 	.BYTE	14		; Clear screen
-	.BYTE	33,247,60	; Цвет курсора
+	.BYTE	33,247,60	; Cursor color
 	.BYTE	033,131,61,40	; Курсор в позицию
 	.BYTE	0
-EXITSC:	; Строка очистки экрана перед выходом
-	.BYTE	33,246,061	; Формат экрана 80x24
-	.BYTE	33,240,67	; Цвет символа
-	.BYTE	33,241,61	; Цвет знакоместа 1
-	.BYTE	33,242,61	; Цвет фона 1
-	.BYTE	33,247,67	; Цвет курсора
-	.BYTE	14		; Очистить экран
+EXITSC:	; String for screen cleanup before the exit
+	.BYTE	33,246,061	; Screen format 80x24
+	.BYTE	33,240,67	; Ink color
+	.BYTE	33,241,61	; Place color 1
+	.BYTE	33,242,61	; Back color 1
+	.BYTE	33,247,67	; Cursor color
+	.BYTE	14		; Clear screen
 	.BYTE	0
 
 	.EVEN
 
 ;------------------------------------------------------------------------------
 
-PALNO:	.WORD	0		; Номер текущей палитры
-; Палитра для установки в памяти ПП
+PALNO:	.WORD	0		; Current palette number
+; Palette to set up in the PPU memory
 ;		 |____....____....|
-PALETD:	.WORD	^B1011101010011000	; Палитра УКНЦ по умолчанию
+PALETD:	.WORD	^B1011101010011000	; Default UKNC palette
 	.WORD	^B1111111011011100	;
-PALETT:	.WORD	^B1011111110010000	; Игровая палитра 0
+PALETT:	.WORD	^B1011111110010000	; Game palette 0
 	.WORD	^B1111110011011110	;   белый на чёрном
-	.WORD	^B1011110010011000	; Игровая палитра 1
+	.WORD	^B1011110010011000	; Game palette 1
 	.WORD	^B1111111111011110	;   зелёный на чёрном
-	.WORD	^B1011111110011001	; Игровая палитра 2
+	.WORD	^B1011111110011001	; Game palette 2
 	.WORD	^B1111111111011100	;   чёрный на синем
-	.WORD	^B0100000001101111	; Игровая палитра 3
+	.WORD	^B0100000001101111	; Game palette 3
 	.WORD	^B0000001100100001	;   чёрный на белом
 
-; Массив параметров для обмена с ПП по каналу 2
-PPBLCK:	.BYTE	0		; В этом байте будет содержаться код ошибки или 0
-PPBCMD:	.BYTE	20		; Команда (01-ВЫДЕЛИТЬ ПАМЯТЬ, 02-ОСВОБОДИТЬ ПАМЯТЬ 10-ЧТЕНИЕ, 20-ЗАПИСЬ, 30-ПУСК)
-	.WORD	32		; Устройство - периферийный процессор
-PPBAPP:	.WORD	002470		; Адрес ОЗУ ПП - два слова палитры
-PPBACP:	.WORD	PALETT		; Адрес ОЗУ ЦП - адрес новой палитры
-	.WORD	2		; Длина блока в словах
-PPBADR:	.WORD	PPBLCK		; Слово всегда содержит начальный адрес массива параметров
-	.WORD	401		; Стоповый элемент (используется при передаче)
+; Parameters block used to exchange with PPU using Channel 2
+PPBLCK:	.BYTE	0		; This byte will have error code or zero
+PPBCMD:	.BYTE	20		; Command (01-get memory, 02-free memory 10-read, 20-write, 30-start)
+	.WORD	32		; Device - PPU
+PPBAPP:	.WORD	002470		; Address in PPU RAM - two words for the new palette
+PPBACP:	.WORD	PALETT		; Address in PPU RAM - address for the palette
+	.WORD	2		; Block length in bytes
+PPBADR:	.WORD	PPBLCK		; Start address of the parameters block
+	.WORD	401		; Stop element (used in the exchange)
 
-; Вернуть стандартную палитру
+; Restore the default palette
 STPALD:
 	MOV	#PALETD, R0
 	BR	STPAL1
-; Установить текущую палитру
+; Set up the palette
 STPAL:
 	MOV	@#PALNO, R0
 	BIC	#177774, R0	; 0..3
@@ -152,7 +152,7 @@ STPAL:
 	ADD	#PALETT, R0
 STPAL1:	MOV	R0, @#PPBACP
 ;	BR	PPSEND
-; Подпрограмма передачи по каналу К2 массива параметров в ПП
+; Procedure used to send parameters block for PPU using Channel 2
 PPSEND:	MOV	#PPBADR, R0
 	MOV	#5, R1
 	MTPS	#200
@@ -519,7 +519,7 @@ L74D4 = L74D3 + 2	; address for Table of items
 	ADD	R0, R2
 	MOV	(R2), R2		; get item address from the table
 	MOV	#176640, R5
-	MOV	R3, (R5)		; косвенный адрес УКНЦ
+	MOV	R3, (R5)		; косвенный адрес UKNC
 	MOV	#24., R1
 L74E4:	CLR	R3			; <
 	BISB	(R2)+, R3
@@ -1426,7 +1426,7 @@ LACCA:
 27$:	MOV	#8., R4
 30$:	CLR	R0
 	BISB	(R2)+, R0
-	MOV	R0, @#176642		; Пишем данные в ВОЗУ УКНЦ
+	MOV	R0, @#176642		; Пишем данные в ВОЗУ UKNC
 	ADD	#120, @#176640		; next line
 	SOB	R4, 30$
 	SUB	#<1200-1>, @#176640	; next column
@@ -1480,8 +1480,8 @@ LAED1:
 	BISB	(R0), R5
 	SWAB	R5
 	BISB	(R0)+, R5
-	MOV	R2, @#176640		; Пишем адрес в ВОЗУ УКНЦ
-	MOV	R5, @#176642		; Пишем данные в ВОЗУ УКНЦ
+	MOV	R2, @#176640		; Пишем адрес в ВОЗУ UKNC
+	MOV	R5, @#176642		; Пишем данные в ВОЗУ UKNC
 	ADD	#120, R2		; к следующей строке экрана
 	SOB	R4, 10$
 	SUB	#<1200-1>, R2		; на 8. строк выше, плюс колонка вправо
@@ -1725,36 +1725,38 @@ LB2FD:	.BYTE	195.			; Counter for Ninja/Guard head tile change
 ;------------------------------------------------------------------------------
 
 ; Object procedure: flip trigger "D": set/remove wall in room 9739
-LB320:	MOV	#6, R0
-	;TODO	XOR	R0, L9756
-	BR	LB350			; => Change Console color in NEAR
+LB320:	MOV	#6, R0			; value for XOR
+	MOV	#L9756, R1		; address for XOR
+	BR	LB34B			; XOR and => Change Console color in NEAR
 ; Object procedure: flip trigger "E": set/remove wall in room 97A6
-LB32A:	MOV	#377, R0
-	;TODO
-	BR	LB350			; => Change Console color in NEAR
+LB32A:	MOV	#377, R0		; value for XOR
+	MOV	#L97D0, R1		; address for XOR
+	BR	LB34B			; XOR and => Change Console color in NEAR
 ; Object procedure: flip trigger "C": set/remove wall in room 8D5C
-LB334:	MOV	#6, R0
-	;TODO
-	BR	LB350			; => Change Console color in NEAR
+LB334:	MOV	#6, R0			; value for XOR
+	MOV	#L8DBC, R1		; address for XOR
+	BR	LB34B			; XOR and => Change Console color in NEAR
 ; Object procedure: flip trigger "B": set/remove wall in room 8F20
-LB33E:	MOV	#8., R0
-	;TODO
-	BR	LB350			; => Change Console color in NEAR
+LB33E:	MOV	#8., R0			; value for XOR
+	MOV	#L8F32, R1		; address for XOR
+	BR	LB34B			; XOR and => Change Console color in NEAR
 ; Object procedure: flip trigger "A": set/remove wall in room 7F48
-LB348:	MOV	#9., R0
-	;TODO
+LB348:	MOV	#9., R0			; value for XOR
+	MOV	#L7F7B, R1		; address for XOR
+LB34B:	MOVB	(R1), R5
+	XOR	R0, R5
+	MOVB	R5, (R1)
 ; Change Console color in NEAR, so we see that console action worked
 LB350:	MOV	#<SCRIND+27.>, R3	; screen address for NEAR item
 	MOV	#24., R1		; 24. rows
-	MOV	#177777, R0		; value for XOR
+	MOV	#177400, R0		; value for XOR
 10$:	MOV	R3, @#176640
 	MOV	#4, R4
 20$:	XOR	R0, @#176642
 	INC	@#176640
 	SOB	R4, 20$
-	ADD	#<120-4>, R3		; next row
+	ADD	#120, R3		; next row
 	SOB	R1, 10$
-	;TODO
 LB365:	JMP	@#LB8D0			; => Update Ninja on tilemap
 
 ; Room 97A6 initialization
@@ -2473,7 +2475,7 @@ LBBDF:	TSTB	@#177560		; do we have an unprocessed key?
 	BPL	K41276			; no => jump
 	MOVB	@#177562, R0		; get the key
 	MOV	#KEYMAP, R3		; table address
-	MOV	#5., R1			; table size
+	MOV	#7., R1			; table size
 K41256:	CMPB	(R3)+, R0		; <  matches the key?
 	BNE	K41270			; |  no => jump
 	MOVB	(R3), R0		; |  get the result byte
@@ -2494,8 +2496,8 @@ KEYMAP:	.BYTE	070, 010		; '8' - up
 	.BYTE	064, 002		; '4' - left
 	.BYTE	066, 001		; '6' - right
 	.BYTE	065, 020		; '5' - fire
-;	.BYTE	061, 000		; '1' - up + left
-;	.BYTE	063, 000		; '3' - up + right
+	.BYTE	061, 012		; '1' - up + left
+	.BYTE	063, 011		; '3' - up + right
 ;	.BYTE	067, 000		; '7' - down + fire
 ;	.BYTE	071, 000		; '9' - down + fire
 	.EVEN
@@ -3696,6 +3698,9 @@ LE1EC:	.ASCII	/1/	; Current Level digit
 	.EVEN
 LE1ED:	.WORD	LE217	; Current level description address, 14-char string
 
+LE388:	.ASCII	/ 10/
+	.BYTE	10.
+
 LDF37:
 	;TODO
 
@@ -3756,8 +3761,29 @@ LEVSEL:	MOVB	R0, LE1EC		; set current level digit 1..9
 	ADD	R0, R0			; * 16.
 	ADD	#LE217, R0		; Level descriptions address
 	MOV	R0, LE1ED		; save level description address
-
-	;TODO: Prepare level variables, see E325
+	ADD	#14., R0
+	MOV	(R0), R3		; now R3 = address for level variables
+; Prepare level variables, see E325
+	MOVB	(R3)+, LA3BF		; set Guard counter value
+	MOVB	(R3)+, L9C57		; set Dog counter value
+	MOVB	(R3)+, <LB4C3+1>	; set Turret counter value
+	MOV	#LAD57, R1		; address for Indicator Time value
+	MOVB	(R3)+, (R1)+		; set Indicator Time value, lower digit
+	MOVB	(R3)+, (R1)		; set Indicator Time value, higher digit
+	MOV	#<LB7CA+1>, R1		; address for Time value for BOMB
+	MOVB	(R3)+, (R1)+		; set Time value for BOMB, lower digit
+	MOVB	(R3)+, (R1)		; set Time value for BOMB, higher digit
+	MOVB	(R3)+, L97D0		; set flag for wall in room L97A6
+	MOVB	(R3)+, L9756		; set flag for wall in room L9739
+	MOVB	(R3)+, L7F7B		; set flag for wall in room L7F48
+	MOVB	(R3)+, L8DBC		; set flag for wall in room L8D5C
+	MOVB	(R3)+, L8F32		; set flag for wall in room L8F20
+	MOV	#LE388, R1
+	MOV	(R3)+, (R1)+
+	MOV	(R3)+, (R1)
+	MOV	#LD357, R1		; address for BOMB in Table of objects D34D
+	MOV	(R3)+, (R1)+		; Copy last 4 bytes: BOMB placement
+	MOV	(R3)+, (R1)
 
 	BR	LDF8E			; return to Menu, redraw LEVEL sign
 	;JMP	LBC3B
@@ -3791,6 +3817,18 @@ LE2A7:
 	BR	LF913
 
 ; Levels data
+;   +$00: Guard counter value
+;   +$01: Dog counter value
+;   +$02: Turret counter value
+;   +$03/$04: two digits for TIME value
+;   +$05/$06: two digits for BOMB timer
+;   +$07: flag for wall in room 97A6
+;   +$08: count for wall in room 9739: $01 = no wall, $07 = put wall
+;   +$09: count for wall in room 7F48
+;   +$0A: count for wall in room 8D5C
+;   +$0B: count for wall in room 8F20: $01 = no wall, $09 = put wall
+;   +$10/$11: room for BOMB placement
+;   +$12/$13: address in Tile screen 0 for BOMB placement
 ; Level 1 "EXTREMELY EASY"
 LE38C:	.BYTE	20.,25.,50.
 	.ASCII	/9999/
