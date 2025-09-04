@@ -1395,8 +1395,7 @@ LACA2:	.WORD	LA31B,LA311,LA307,LA2FD
 	.WORD	LA271,LA2E9,LA299,L71D6
 
 ; LA7AD:
-.INCLUDE /S1ITEM.MAC/
-	.EVEN
+;NOTE: Pictures of NEAR/HELD items moved into S1INDS.MAC
 
 ; Draw game screen frames and indicator text
 LACCA:
@@ -2731,7 +2730,7 @@ LBE3A:	MOVB	R0, (R3)+
 	MOV	#210., R1		; 7 rows
 LBE4F:	MOVB	R0, (R3)+
 	SOB	R1, LBE4F
-	MOV	#LC094, R3		; Movement handler (helicopter?)
+	MOV	#LC094, R3		; Movement handler: helicopter moving up
 	MOV	#LC0E6, R2		; Empty sprite
 LBE57:	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
@@ -2790,11 +2789,13 @@ LBF58:	.ASCII	/ SABOTEUR DEAD /
 LBF7B:	MOV	#<L6590+2>, R3		; Tile screen 0 + 2
 	ADD	R2, R3
 	CMPB	#144, (R3)		; $64 ?
-	BLO	LC16E			; => Update Ninja on tilemap
-	INC	R3
+	BHIS	LBF85
+	JMP	LC16E			; => Update Ninja on tilemap
+LBF85:	INC	R3
 	CMPB	#144, (R3)		; $64 ?
-	BLO	LC16E			; => Update Ninja on tilemap
-	MOVB	#3, L7343		; set counter = 3
+	BHIS	LBF8A
+	JMP	LC16E			; => Update Ninja on tilemap
+LBF8A:	MOVB	#3, L7343		; set counter = 3
 	MOVB	L7232, R0		; get Input bits
 	TSTB	L7239			; check Ninja direction
 	BEQ	LBFA0			; left =>
@@ -2849,13 +2850,25 @@ LC056:	MOV	#LBF12, LBEB4		; "ESCAPE" / "MISSION SUCCESSFUL"
 
 ;NOTE: Messages LC062 moved from here
 
-; ?? Movement handler (helicopter?)
+; Movement handler: helicopter moving up
+;NOTE: Scrolling block of 17x16 tiles, scroll 4 lines up
 LC094:	DECB	#L7343			; decrease counter
 	BEQ	LBFD5			; => zero => Escaped; final messages, then Game Over
-	;TODO
-
-	;HALT
-	;TODO
+	MOV	#<SCRTOP+1200+500+7>, R3	; from
+	MOV	#<SCRTOP+1200+7>, R2	; to
+	MOV	#120., R1		; vertical count
+10$:	MOV	#17., R4		; horz tiles count
+20$:	MOV	R3, @#176640		; from address
+	MOV	@#176642, R0		; get word
+	MOV	R2, @#176640		; to address
+	MOV	R0, @#176642		; write word
+	INC	R3
+	INC	R2
+	SOB	R4, 20$			; loop horz by tiles
+	MOV	#<120-17.>, R0
+	ADD	R0, R3			; next line from
+	ADD	R0, R2			; next line to
+	SOB	R1, 10$			; loop by vertical count
 	JMP	LB8D0			; => Update Ninja on tilemap
 
 ; Ninja on ladder
