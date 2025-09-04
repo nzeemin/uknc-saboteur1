@@ -28,7 +28,7 @@ L791E:	; Room 791E
 L79C6:	; Room 79C6
 	.WORD	LB452		; Room procedure
 	.WORD	LB42E		; Initialization
-	.WORD	L8DCA;L791E		; Room to Left
+	.WORD	L791E		; Room to Left
 	.WORD	L7A17		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down

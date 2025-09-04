@@ -33,7 +33,7 @@ K01000:
 	MTPS	#000340			; Disable interrupts
 	MOV	SP, OSTACK		; Save initial SP address
 	MOV	#1000, SP
-;	CALL	STPAL			; Set up the game palette
+	CALL	STPAL			; Set up the game palette
 	MOV	#GAMESC, R1		; String for game screen preparing
 	CALL	PRINT
 	CALL	PAUSE			; wait while screen updates
@@ -96,11 +96,11 @@ GETKEY:	TSTB	@#177560	; have a symbol?
 GAMESC:	; String for game screen preparing
 	.BYTE	33,246,62	; Screen format 40x24
 	.BYTE	33,240,63	; Ink color
-	.BYTE	33,241,60	; Place color 0
-	.BYTE	33,242,60	; Back color 0
+	.BYTE	33,241,60	; Place color
+	.BYTE	33,242,60	; Back color
 	.BYTE	14		; Clear screen
 	.BYTE	33,247,60	; Cursor color
-	.BYTE	033,131,61,40	; Курсор в позицию
+	.BYTE	033,131,61,40	; Cursor position
 	.BYTE	0
 EXITSC:	; String for screen cleanup before the exit
 	.BYTE	33,246,061	; Screen format 80x24
@@ -120,14 +120,14 @@ PALNO:	.WORD	0		; Current palette number
 ;		 |____....____....|
 PALETD:	.WORD	^B1011101010011000	; Default UKNC palette
 	.WORD	^B1111111011011100	;
-PALETT:	.WORD	^B1011111110010000	; Game palette 0
-	.WORD	^B1111110011011110	;   белый на чёрном
+PALETT:	.WORD	^B1010100111000000	; Game palette 0
+	.WORD	^B1100110011011010	;   black / blue / red / green
 	.WORD	^B1011110010011000	; Game palette 1
-	.WORD	^B1111111111011110	;   зелёный на чёрном
+	.WORD	^B1111111111011110	;   green on black
 	.WORD	^B1011111110011001	; Game palette 2
-	.WORD	^B1111111111011100	;   чёрный на синем
+	.WORD	^B1111111111011100	;   black on blue
 	.WORD	^B0100000001101111	; Game palette 3
-	.WORD	^B0000001100100001	;   чёрный на белом
+	.WORD	^B0000001100100001	;   black on white
 
 ; Parameters block used to exchange with PPU using Channel 2
 PPBLCK:	.BYTE	0		; This byte will have error code or zero
@@ -474,7 +474,7 @@ L7472:	MOV	#<SCRTOP+<1200*21.>+6>, R2	; screen address
 	MOV	#15., R1
 10$:	MOV	R2, @#176640
 	MOV	#16., R4
-20$:	MOV	#377, @#176642
+20$:	MOV	#177400, @#176642
 	ADD	#120, @#176640		; next line
 	SOB	R4, 20$
 	INC	R2
@@ -502,6 +502,7 @@ L74CC:	MOVB	L749C, R2		; $04..$13
 	ADD	#<SCRTOP+<1200*21.>+1>, R2	; screen address
 	CLR	R1
 	BISB	L749D, R1
+	SWAB	R1 ;DEBUG Color adjustment
 	MOV	#16., R4
 	MOV	R2, @#176640
 10$:	MOV	R1, @#176642
@@ -519,22 +520,26 @@ L74D4 = L74D3 + 2	; address for Table of items
 	ADD	R0, R2
 	MOV	(R2), R2		; get item address from the table
 	MOV	#176640, R5
-	MOV	R3, (R5)		; косвенный адрес UKNC
+	MOV	R3, (R5)		; UKNC indirect address
 	MOV	#24., R1
 L74E4:	CLR	R3			; <
 	BISB	(R2)+, R3
+	SWAB	R3 ;DEBUG Color adjustment
 	MOV	R3, @#176642		; | copy pixels
 	INC	(R5)
 	CLR	R3
 	BISB	(R2)+, R3
+	SWAB	R3 ;DEBUG Color adjustment
 	MOV	R3, @#176642		; | copy pixels
 	INC	(R5)
 	CLR	R3
 	BISB	(R2)+, R3
+	SWAB	R3 ;DEBUG Color adjustment
 	MOV	R3, @#176642		; | copy pixels
 	INC	(R5)
 	CLR	R3
 	BISB	(R2)+, R3
+	SWAB	R3 ;DEBUG Color adjustment
 	MOV	R3, @#176642		; | copy pixels
 	ADD	#<120-3>, (R5)		; |  next line
 	SOB	R1, L74E4		; repeat
@@ -908,6 +913,9 @@ LA259:	.BYTE	324,000,002,007,012,000	; Room 7F9C guard
 LA25F:	.BYTE	013,000,013,000,012,001	; Room 8162 guard
 LA265:	.BYTE	040,001,022,011,012,001	; Room 80A7 guard
 LA26B:	.BYTE	060,000,022,001,012,001	; Room 9B9D guard
+
+LC66B:	; Guard data for rooms 7C9C/92EF
+	.BYTE	016,000,016,000,004,000
 
 ; Dogs data, 19 records, 10 bytes each
 ; +$00/$01: Dog position in tilemap
@@ -1417,15 +1425,15 @@ LACCA:
 	BISB	(R2)+, R0
 	PUSH	R2
 20$:	MOV	R0, R2
-	ASL	R0
-	ASL	R0
-	ASL	R0			; * 8.
-	ADD	R0, R2			; * 9.
+	ASL	R2
+	ASL	R2
+	ASL	R2			; * 8.
+	ASL	R2			; * 16.
 	ADD	#LAE02, R2		; Indicator tiles address
 27$:	MOV	#8., R4
-30$:	CLR	R0
-	BISB	(R2)+, R0
-	MOV	R0, @#176642		; Пишем данные в ВОЗУ UKNC
+30$:	;CLR	R0
+	MOV	(R2)+, R0
+	MOV	R0, @#176642		; Write to UKNC VRAM
 	ADD	#120, @#176640		; next line
 	SOB	R4, 30$
 	SUB	#<1200-1>, @#176640	; next column
@@ -1433,7 +1441,7 @@ LACCA:
 	BIC	#177740, R5		; keep 5 lower bits = 0..31.
 	BNE	40$
 	ADD	#<1200-40>, @#176640	; next row
-40$:	SUB	#8., R2
+40$:	SUB	#16., R2
 	SOB	R1, 27$
 	POP	R2
 	BR	10$
@@ -1476,14 +1484,14 @@ LAED1:
 	ADD	#<LC721-400>, R0	; + font base address
 	MOV	#8., R4
 10$:	CLR	R5
-	BISB	(R0), R5
-	SWAB	R5
 	BISB	(R0)+, R5
-	MOV	R2, @#176640		; Пишем адрес в ВОЗУ UKNC
-	MOV	R5, @#176642		; Пишем данные в ВОЗУ UKNC
-	ADD	#120, R2		; к следующей строке экрана
+	SWAB	R5
+	BIS	#377, R5 ;DEBUG Color adjustment
+	MOV	R2, @#176640		; Set UKNC VRAM address
+	MOV	R5, @#176642		; Write to UKNC VRAM
+	ADD	#120, R2		; next screen line
 	SOB	R4, 10$
-	SUB	#<1200-1>, R2		; на 8. строк выше, плюс колонка вправо
+	SUB	#<1200-1>, R2		; 8. lines up, plus one column right
 	SOB	R1, 1$
 	RETURN
 
@@ -1705,6 +1713,7 @@ LB293:	MOV	#LB13E, R2
 	MOV	#8., R1
 LB29B:	CLR	R0
 	BISB	(R2)+, R0		; get byte from the buffer
+	SWAB	R0 ;DEBUG color adjustment
 	MOV	R0, @#176642		; put byte on the screen
 	ADD	#120, @#176640		; screen address next line
 	SOB	R1, LB29B
@@ -2008,6 +2017,7 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	MOVB	#4, <LD486+15.>		; set tile in Sprite Ninja/Guard standing sprite
 	MOVB	#250., LB2FD		; $FA set counter for head animation
 	MOVB	#310, LBD7A		; $C8 Shuriken - set HELD tile
+	;MOVB	#324, LBD7A ;DEBUG
 	CALL	L7472
 	;DI
 	MOV	#LB513, L7184		; set Current Room = Initial room
@@ -2182,7 +2192,7 @@ LB7B6:	MOV	#LB5C6, R3		; Time mode address
 LB7CA:	MOV	#34471, R3		; !!MUT-ARG!! "99" bomb timer initial value
 	MOV	R3, LAD57		; set Indicator Time value
 	MOVB	#1, LB5C4
-	;TODO: Как-то подсветить индикатор времени
+	;TODO: Highlight the time indicator somehow
 	MOV	#50., R1
 	CALL	LB4DE			; Increase PAY value by 5000
 LB7ED:	MOV	#L678E, R3		; Tile screen 1 start address
@@ -2835,7 +2845,32 @@ LBFD5:	MOV	#10., R1
 	BNE	LC04A
 	MOV	#50., R1
 	CALL	LB4DE			; Increase PAY value by 5000
-	;TODO: Clear whole screen
+	MOV	#GAMESC, R1
+	CALL	PRINT			; Clear whole screen
+	CALL	PAUSE
+	MOV	#LC062, R3		; Messages address
+	MOV	#<SCREEN+<1200*4.>+13.>, R2
+	MOV	#14., R1
+	CALL	LAED1			; Print string "DISK RETRIEVED"
+	MOV	#<SCREEN+<1200*9.>+12.>, R2
+	MOV	#18., R1
+	CALL	LAED1			; Print string "DISK BONUS: $05000"
+	MOV	#<SCREEN+<1200*11.>+9.>, R2
+	MOV	#7, R1
+	CALL	LAED1			; Print string "LEVEL X"
+	MOV	#<SCREEN+<1200*19.>+6.>, R2
+	MOV	#13., R1
+	CALL	LAED1			; Print string "TOTAL PAY : $"
+	MOV	#LC075, R3		; Messages address
+	MOV	#<SCREEN+<1200*11.>+17.>, R2
+	MOV	#13., R1
+	CALL	LAED1			; Print string "BONUS: $05000"
+	MOV	#LE388, R3		; Message address: level bonus
+	MOV	#<SCREEN+<1200*11.>+25.>, R2
+	MOV	#3., R1
+	CALL	LAED1			; Print string
+	MOVB	<LE388+3>, R1
+	CALL	LB4DE			; Increase PAY value by B * 100
 	;TODO
 
 LC04A:	CMPB	#2, LB5C6		; Time mode = BOMB ticking mode ?
@@ -2856,7 +2891,7 @@ LC094:	DECB	#L7343			; decrease counter
 	BEQ	LBFD5			; => zero => Escaped; final messages, then Game Over
 	MOV	#<SCRTOP+1200+500+7>, R3	; from
 	MOV	#<SCRTOP+1200+7>, R2	; to
-	MOV	#120., R1		; vertical count
+	MOV	#120., R1		; lines count
 10$:	MOV	#17., R4		; horz tiles count
 20$:	MOV	R3, @#176640		; from address
 	MOV	@#176642, R0		; get word
@@ -2868,7 +2903,7 @@ LC094:	DECB	#L7343			; decrease counter
 	MOV	#<120-17.>, R0
 	ADD	R0, R3			; next line from
 	ADD	R0, R2			; next line to
-	SOB	R1, 10$			; loop by vertical count
+	SOB	R1, 10$			; loop by lines
 	JMP	LB8D0			; => Update Ninja on tilemap
 
 ; Ninja on ladder
@@ -2886,7 +2921,7 @@ LC13D:	BIT	#2, R0			; bit 1 - left
 	BR	LC16E			; => Update Ninja on tilemap
 LC14B:	MOV	#LC24B, R3		; Movement handler address
 	MOV	#LD3DE, R2		; Sprite Ninja/Guard walking 1
-	BR	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
 
 LC154:	BIT	#1, R0			; bit 0 - right
 	BEQ	LC16E			; no =>
@@ -3379,9 +3414,6 @@ LC65A:	.BYTE	343,343,343,366,366,343,343,343
 	.BYTE	343
 	.EVEN
 
-LC66B:	; Guard data for rooms 7C9C/92EF
-	.BYTE	016,000,016,000,004,000
-
 ; Room 93DF/947C (room right from Train) initialization
 LC671:	MOV	#L947C, <L7C9C+4>	; set "room to left" for room 7C9C
 	MOV	#L93DF, <L7C9C+6>	; set "room to right" for room 7C9C
@@ -3704,10 +3736,10 @@ LE1FE:	.ASCII	/1-9 SELECT LEVEL/
 LC062:	.ASCII	/DISK RETRIEVED/
 LC070:	.ASCII	/DISK /
 LC075:	.ASCII	/BONUS: $05000/
-LC082:	.ASCII	/LEVEL/
+LC082:	.ASCII	/LEVEL /
+LE1EC:	.ASCII	/1/	; Current Level digit
 LC087:	.ASCII	/TOTAL PAY : $/
 
-LE1EC:	.ASCII	/1/	; Current Level digit
 	.EVEN
 LE1ED:	.WORD	LE217	; Current level description address, 14-char string
 
@@ -3737,14 +3769,10 @@ LDF60:	CALL	WAITUP			; clear keyboard buffer
 	MOV	#LDF27, R3
 	MOV	#<SCRTOP+<1200*15.>+14.>, R2
 	CALL	LAED1			; Print string "S  START MISSION"
-LDF8E:	MOV	#LC082, R3		; "LEVEL"
-	MOV	#5., R1
+LDF8E:	MOV	#LC082, R3		; "LEVEL X"
+	MOV	#7., R1
 	MOV	#<SCRTOP+<1200*11.>+16.>, R2
-	CALL	LAED1			; Print string "LEVEL"
-	MOV	#LE1EC, R3
-	INC	R1			; 1 char
-	INC	R2
-	CALL	LAED1			; Print level digit
+	CALL	LAED1			; Print string "LEVEL X"
 	MOV	LE1ED, R3		; get level description address
 	MOV	#14., R1		; 14.-char string
 	MOV	#<SCRTOP+<1200*12.>+16.>, R2
