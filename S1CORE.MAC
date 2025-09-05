@@ -19,7 +19,7 @@
 CHELTH=1		; Cheat code for no damage
 
 SCREEN = 100000		; Screen start, indirect address for UKNC
-SCRTOP = SCREEN + 4	; Where the game scren starts
+SCRTOP = SCREEN + 1200 + 4	; Where the game screen starts
 SCRIND = SCRTOP + <1200*19.>	; Screen address for first indicators line
 
 TIMERI = 200.		; Fast timer reset value, see LB5C4
@@ -37,11 +37,11 @@ K01000:
 	MOV	#GAMESC, R1		; String for game screen preparing
 	CALL	PRINT
 	CALL	PAUSE			; wait while screen updates
-K01220:	BR	START
+K01220:	JMP	START
 ;
 OSTACK:	.WORD	01000			; Saved initial SP
 ;
-FNCORE:
+FNCORE:	CALL	STPALD			; Select default palette
 	MOV	OSTACK, SP
 	MOV	#EXITSC, R1		; String for screen cleanup before the exit
 	CALL	PRINT
@@ -65,7 +65,7 @@ PAUSE:	; Pause to let PPU finish the previous commands
 	SOB	R5, 1$
 RETN:	RETURN
 
-; Procedure: Cleae key buffer
+; Procedure: Clear key buffer
 WAITUP:	TSTB	@#177560
 	BPL	RETN
 	MOVB	@#177562, R0
@@ -91,6 +91,24 @@ GETKEY:	TSTB	@#177560	; have a symbol?
 	BEQ	ESCKEY
 	RETURN
 10$:	CLR	R0		; return zero for key received
+	RETURN
+
+; Procedure: Clear screen with Blue color, for Menu screen
+CLSRNM:	MOV	#377, @#<CLSRN+2>
+	BR	CLSRN
+
+; Procedure: Clear screen with Black color, for Game screen
+CLSRNB:	CLR	@#<CLSRN+2>
+
+CLSRN:	MOV	#377, R0		; Blue color filler
+	MOV	#SCREEN + 2, @#176640
+	MOV	#208., R4
+10$:	MOV	#36., R1
+20$:	MOV	R0, @#176642
+	INC	@#176640
+	SOB	R1, 20$
+	ADD	#<120-36.>, @#176640
+	SOB	R4, 10$
 	RETURN
 
 GAMESC:	; String for game screen preparing
@@ -144,8 +162,7 @@ STPALD:
 	MOV	#PALETD, R0
 	BR	STPAL1
 ; Set up the palette
-STPAL:
-	MOV	@#PALNO, R0
+STPAL:	MOV	@#PALNO, R0
 	BIC	#177774, R0	; 0..3
 	ASL	R0
 	ASL	R0		; x4
@@ -208,9 +225,11 @@ L62A9:	MOV	#SCRTOP, R3		; Screen start address
 L62B1:	PUSH	R3			; save screen address
 	MOV	#<24.*8.>, R1		; Number of lines = 24. * 8.
 	MOV	R3, @#176640
+	MOV	#377, R5		; XOR value
 L62B4:	MOVB	(R2)+, R0
 	MOVB	REFBFH(R0), R0		; byte mirroring
 	BIC	#177400, R0
+	XOR	R5, R0
 	MOV	R0, @#176642		; put pixels on the screen
 	ADD	#120, @#176640
 	SOB	R1, L62B4		; continue loop for lines
@@ -2513,9 +2532,7 @@ KEYMAP:	.BYTE	070, 010		; '8' - up
 
 LBC0D:
 ; Clear the screen
-	MOV	#GAMESC, R1
-	CALL	PRINT
-	CALL	PAUSE
+	CALL	CLSRNM			; Clear screen with Blue color
 ; Prepare screen background for title picture
 	;TODO
 
@@ -2845,9 +2862,7 @@ LBFD5:	MOV	#10., R1
 	BNE	LC04A
 	MOV	#50., R1
 	CALL	LB4DE			; Increase PAY value by 5000
-	MOV	#GAMESC, R1
-	CALL	PRINT			; Clear whole screen
-	CALL	PAUSE
+	CALL	CLSRNM			; Clear the screen with Blue color
 	MOV	#LC062, R3		; Messages address
 	MOV	#<SCREEN+<1200*4.>+13.>, R2
 	MOV	#14., R1
@@ -3730,8 +3745,10 @@ LDEE6:	.ASCII	/                /	; String 18 spaces
 TITLE:	.ASCII	/SABOTEUR 1 UKNC/
 VERSIO:
 .INCLUDE /VERSIO.MAC/
-LDF27:	.ASCII	/S  START MISSION/
+	.ASCII	/P  PALETTE/
 LE1FE:	.ASCII	/1-9 SELECT LEVEL/
+LDF27:	.ASCII	/S  START MISSION/
+	.ASCII	/X  EXIT/
 
 LC062:	.ASCII	/DISK RETRIEVED/
 LC070:	.ASCII	/DISK /
@@ -3758,17 +3775,23 @@ LDF60:	CALL	WAITUP			; clear keyboard buffer
 	MOV	#<SCRTOP+<1200*0.>+13.>, R2
 	CALL	LAED1			; Print string - title
 	MOV	#17., R1
-	MOV	#VERSIO, R3
+	;MOV	#VERSIO, R3
 	MOV	#<SCRTOP+<1200*2.>+13.>, R2
 	CALL	LAED1			; Print string - version
+	MOV	#10., R1
+	MOV	#<SCRTOP+<1200*6.>+14.>, R2
+	CALL	LAED1			; Print string "P  PALETTE"
 	MOV	#16., R1
-	MOV	#LE1FE, R3
+	;MOV	#LE1FE, R3
 	MOV	#<SCRTOP+<1200*9.>+13.>, R2
 	CALL	LAED1			; Print string "1-9 SELECT LEVEL"
 	MOV	#16., R1
-	MOV	#LDF27, R3
+	;MOV	#LDF27, R3
 	MOV	#<SCRTOP+<1200*15.>+14.>, R2
 	CALL	LAED1			; Print string "S  START MISSION"
+	MOV	#7., R1
+	MOV	#<SCRTOP+<1200*18.>+14.>, R2
+	CALL	LAED1			; Print string "X  EXIT"
 LDF8E:	MOV	#LC082, R3		; "LEVEL X"
 	MOV	#7., R1
 	MOV	#<SCRTOP+<1200*11.>+16.>, R2
@@ -3784,9 +3807,18 @@ LDF8E:	MOV	#LC082, R3		; "LEVEL X"
 	CMPB	R0, #140
 	BLO	20$			; upper/lower?
 	SUB	#040, R0		; to upper
-20$:	CMPB	R0, #123		; 'S' ?
-	BEQ	LE2A7			; => Start Mission
-	CMPB	R0, #061		; '1'
+20$:	CMPB	R0, #120		; 'P' ?
+	BNE	22$
+	INC	@#PALNO			; Next palette
+	CALL	STPAL			; Apply the palette
+	BR	10$			; continue menu loop
+22$:	CMPB	R0, #123		; 'S' ?
+	BNE	24$
+	JMP	LE2A7			; => Start Mission
+24$:	CMPB	R0, #130		; 'X' ?
+	BNE	26$
+	JMP	FNCORE			; => Exit the program
+26$:	CMPB	R0, #061		; '1'
 	BLO	30$
 	CMPB	R0, #072		; '9'+1
 	BLO	LEVSEL
@@ -3851,6 +3883,7 @@ LE217:	.ASCII	/EXTREMELY EASY/
 
 ; Start Mission
 LE2A7:
+	CALL	CLSRNB			; Clear the screen
 	;TODO
 
 	MOVB	#TIMERI, LB5C4		; set initial value for the fast timer
