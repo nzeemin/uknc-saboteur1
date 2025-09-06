@@ -1600,7 +1600,7 @@ LB177:	CLRB	(R3)			; clear "need to update" flag
 	MOVB	@L722F, R0		; get tile from Tile screen 0
 	CMPB	#377, R0		; $FF - "earth" background?
 	;TODO
-	BIC	#17400, R0
+	BIC	#177400, R0
 	ASL	R0
 	ASL	R0
 	ASL	R0			; * 8.
@@ -1617,7 +1617,7 @@ LB1A3:	MOV	L7231, R3		; get address in Tile scrren 2
 	MOVB	(R3), R0		; get tile from Tile screen 2
 	CMPB	#377, R0		; $FF ?
 	BEQ	LB1FC			; $FF => skip Ninja tile drawing
-	BIC	#17400, R0
+	BIC	#177400, R0
 	ASL	R0
 	ASL	R0
 	ASL	R0
@@ -1646,7 +1646,7 @@ LB1FC:	MOV	L7233, R3		; get address in Tile scrren 3
 	MOVB	(R3), R0		; get tile from Tile screen 3
 	CMPB	#377, R0		; $FF ?
 	BEQ	LB230			; $FF => skip Dog tile drawing
-	BIC	#17400, R0
+	BIC	#177400, R0
 	ASL	R0
 	ASL	R0
 	ASL	R0
@@ -1673,7 +1673,7 @@ LB230:	MOV	L7235, R3		; get address in Tile scrren 4
 	MOVB	(R3), R0		; get tile from Tile screen 4
 	CMPB	#377, R0		; $FF ?
 	BEQ	LB263			; $FF => skip Guard tile drawing
-	BIC	#17400, R0
+	BIC	#177400, R0
 	ASL	R0
 	ASL	R0
 	ASL	R0
@@ -1700,7 +1700,10 @@ LB263:	MOV	L7237, R3		; get address in Tile scrren 5
 	MOVB	(R3), R0		; get tile from Tile screen 5
 	CMPB	#377, R0		; $FF - transparent?
 	BEQ	LB293			; $FF => skip front tile drawing
-	BIC	#17400, R0
+	CMPB	#364, R0		; <= $F4 ?
+	BHIS	5$
+	SUB	#<365-126.>, R0		; correction for tiles $F5..$FE
+5$:	BIC	#177400, R0
 	ASL	R0
 	ASL	R0
 	ASL	R0
@@ -2216,12 +2219,11 @@ LB7ED:	MOV	#L678E, R3		; Tile screen 1 start address
 	MOV	#LD256, R2		; Table address
 ; Loop through the table
 LB814:	MOV	(R2)+, R3		; get offset
-	ADD	#L6590, R3
+	ADD	#L6590, R3		; + Tile screen 0 address
 	ADD	L9C42, R3		; add Ninja position in tilemap
 	CMPB	(R2)+, (R3)		; compare to byte +$02
 	BNE	LB889
-	CLR	R1
-	BISB	(R2)+, R1		; get byte +$03
+	MOVB	(R2)+, R1		; get byte +$03 = 0..9
 	MOV	R2, LB84A		; store Object address + 4
 	MOVB	(R2)+, LB84C		; copy byte +$04 - object tile
 	INC	R2			; skip even-filler
@@ -2281,7 +2283,7 @@ LB851:	MOV	#35., R1		; 35 objects
 	MOV	#<LD256+3>, R4		; address for Table of Objects + 3
 	MOV	#LD210, R3		; address for table with initial data
 10$:	MOVB	(R3)+, (R4)+		; set byte +$03 in the record
-	MOVB	(R3), (R4)		; set byte +$04 in the record
+	MOVB	(R3)+, (R4)		; set byte +$04 in the record
 	ADD	#<8.-1>, R4		; next record
 	SOB	R1, 10$			; continue the loop
 	RETURN
@@ -2548,8 +2550,8 @@ LBC76:	MOV	#LB2FD, R3		; address for head movement counter
 	INCB	(R3)			; increase counter
 	BNE	LBC98			; not zero => skip head animation
 	MOVB	#190., (R3)		; reset counter (how often head moves)
-LBC7E:	MOV	#<LD486+8.>, R2
-	MOV	#364, R5
+LBC7E:	MOV	#<LD486+8.>, R2		; head tile address
+	MOV	#364, R5		; $F4
 	MOVB	(R2), R0
 	XOR	R5, R0			; toggle tile with $F4
 	MOVB	R0, (R2)+		; set head tile
@@ -2722,7 +2724,7 @@ LBE0E = LBE0D + 2
 	MOV	R3, LBE0E
 	ADD	#511., R3		; R3 = address in Tile screen 1
 	MOVB	R0, (R3)		; put "need to update" flag
-LBE1C:	MOV	#<L6590+55.>, R3
+LBE1C:	MOV	#<L6590+55.>, R3	; = $6590 (Tile screen 0) + 1 row + 25
 LBE1D = LBE1C + 2
 	MOVB	R0, (R3)+		; put background tile
 	MOV	R3, LBE1D
@@ -2733,7 +2735,7 @@ LBE1D = LBE1C + 2
 	BEQ	LBE30
 	JMP	LB8D0			; => Update Ninja on tilemap
 LBE30:	MOVB	#20., (R3)		; reset the counter
-	MOV	#<L6590+458.>, R3
+	MOV	#<L6590+458.>, R3	; = $6590 (Tile screen 0) + 15. rows + 8.
 	MOV	#<L678E+458.>, R2
 	MOV	#10., R1
 LBE3A:	MOVB	R0, (R3)+
@@ -2852,7 +2854,7 @@ LBFD5:	MOV	#10., R1
 	MOV	#<SCREEN+<1200*11.>+9.>, R2
 	MOV	#7, R1
 	CALL	LAED1			; Print string "LEVEL X"
-	MOV	#<SCREEN+<1200*19.>+6.>, R2
+	MOV	#<SCREEN+<1200*20.>+6.>, R2
 	MOV	#13., R1
 	CALL	LAED1			; Print string "TOTAL PAY : $"
 	MOV	#LC075, R3		; Messages address
@@ -3394,7 +3396,7 @@ LC643:	MOV	#LC5C6, R3		; Movement handler address: Ninja falling
 
 ; Room 791E (room with pier) initialization
 LC64C:	MOV	#LC65A, R3
-	MOV	#<L6590+220.>, R2	; = $6590 (Tile screen 0) + 220.
+	MOV	#<L6590+220.>, R2	; = $6590 (Tile screen 0) + 7 rows + 10.
 	MOV	#17., R1
 LC655:	MOVB	(R3)+, (R2)+		; copy bytes to Background
 	SOB	R1, LC655
@@ -3451,7 +3453,7 @@ LC6DF:	JMP	LB937			; => Standard room procedure
 
 ; Movement handler (B8CE handler): Train moving left
 LC6E2:	MOV	#2, R4
-10$:	MOV	#<L6590+480.>, R2
+10$:	MOV	#<L6590+480.>, R2	; = $6590 (Tile screen 0) + 16. rows
 	MOV	#<L6590+479.>, R3
 	MOV	#29., R1
 	MOVB	(R3), R0		; store tile from right
@@ -3471,7 +3473,7 @@ LC709:	JMP	LB8D0			; => Update Ninja on tilemap
 
 ; Movement handler (B8CE handler): Train moving right
 LC70C:	MOV	#2, R4
-10$:	MOV	#<L6590+450.>, R2
+10$:	MOV	#<L6590+450.>, R2	; = $6590 (Tile screen 0) + 15. rows
 	MOV	#<L6590+451.>, R3
 	MOV	#29., R1
 	MOVB	(R2), R0		; store tile from left
@@ -3488,7 +3490,13 @@ LD210:	.BYTE	004,316,011,143,011,143,011,143,011,143,011,143,011,143,011,324
 	.BYTE	002,312,006,322,002,312,003,314,003,314,003,314,004,316,004,316
 	.BYTE	004,316,004,316,004,316
 
-; Table ?? objects, 35. records, 8. bytes each
+; Table of objects, 35. records, 8. bytes each
+;   +$00/$01: Object tile offset
+;   +$02: Object tile unique, to identify the object
+;   +$03: Object item, for NEAR indicator
+;   +$04: Object tile as object type
+;   +$04: Even filler = 0
+;   +$06/$07: Object procedure, or 0
 LD256:	.WORD	004562		; Object 00: Brick
 	.BYTE	130,004,316, 0
 	.WORD	0
@@ -3596,6 +3604,9 @@ LD344:	.WORD	000324		; Object 34: Brick
 	.WORD	0
 
 ; Table of objects, 35 records, 6 bytes each
+;   +$00/$01: room address
+;   +$02/$03: offset in Tile screen 0
+;   +$04: tile byte
 LD34D:	.WORD	L9ED9, 000517		; Object L00: Pipe
 	.BYTE	201, 0
 LD352:	.WORD	L9E22, 000614		; Object L01: Granade
@@ -3669,6 +3680,7 @@ LDE7B:	MOV	#1, R0
 	RETURN
 
 ; ?? Dog rooms/flags ?? 20 records, 4 bytes each
+;   +$00/$01: room address
 LDE84:	.WORD	L79C6
 	.BYTE	000, 0
 	.WORD	L7C2E
@@ -3715,7 +3727,7 @@ LDEC1:
 	;TODO
 	RETURN	;STUB
 
-LDEE6:	.ASCII	/                /	; String 18 spaces
+;LDEE6:	.ASCII	/                /	; String 18 spaces
 
 TITLE:	.ASCII	/SABOTEUR 1 UKNC/
 VERSIO:
