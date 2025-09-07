@@ -138,10 +138,10 @@ PALNO:	.WORD	0		; Current palette number
 ;		 |____....____....|
 PALETD:	.WORD	^B1011101010011000	; Default UKNC palette
 	.WORD	^B1111111011011100	;
-PALETT:	.WORD	^B1010100111000000	; Game palette 0
+PALETT:	.WORD	^B1010100111000000	; Game palette 0 - for GRB
 	.WORD	^B1100110011011010	;   black / blue / red / green
-	.WORD	^B1011110010011000	; Game palette 1
-	.WORD	^B1111111111011110	;   green on black
+	.WORD	^B1010100111010000	; Game palette 1 - for RGB
+	.WORD	^B1010101011011100	;   black / blue / green / red
 	.WORD	^B1011111110011001	; Game palette 2
 	.WORD	^B1111111111011100	;   black on blue
 	.WORD	^B0100000001101111	; Game palette 3
@@ -1017,7 +1017,7 @@ LA3A2:	.BYTE	0
 LA3A3:	.BYTE	3
 LA3A4:	.BYTE	6			; Thrown object Y
 LA3A5:	.BYTE	4			; Thrown object X
-; 2nd object
+; 2nd object - knife thrown by Guard
 LA3A6:	.BYTE	0
 	.BLKB	7
 ; 3rd object - Turett
@@ -1048,11 +1048,10 @@ LA3BF = LA3BE + 2
 LA3D1:	CMPB	L9C40, L71C6		; compare Ninja Y to Guard Y
 	BEQ	10$			; same Y =>
 99$:	RETURN
-10$:	TSTB	LA3A6
-	BNE	99$
+10$:	TSTB	LA3A6			; Object #2 active?
+	BNE	99$			; yes => return
 	POP	R3
-	;BR LA3BE ;DEBUG
-	MOVB	20., L7346		; set Guard state = $14
+	MOVB	20., L7346		; set Guard state = $14 = throwing a knife
 	MOV	#LD504, LA70F		; set Sprite Ninja/Guard punching
 	JMP	LA6FF			; => Draw Guard on tilemap
 
@@ -1111,15 +1110,13 @@ LA44A:	;TODO: Sound?
 	MOV	#005302, LA4D1		; "DEC R2" instruction
 	TSTB	L7347			; check Guard direction
 	BEQ	LA4A2			; left =>
-; Guard facing right
 	NEG	R1
 	ADD	#26., R1
 	ADD	#5, R2
 	ADD	#5, R3
 	MOV	#005203, LA4D0		; "INC R3" instruction
 	MOV	#005202, LA4D1		; "INC R2" instruction
-LA4A2:
-	CMPB	#144, L6590(R2)		; $64, in Tile screen 0
+LA4A2:	CMPB	#144, L6590(R2)		; $64, in Tile screen 0
 	BLO	LA4D4			; => exit the loop
 	CMPB	#377, L6F86(R2)		; $FF, in Tile screen 5
 	BNE	LA4C0			; no => skip draw on this tile
@@ -1136,16 +1133,17 @@ LA4CF:
 LA4D0:	INC	R3			; !!MUT-CMD!! "DEC R3" or "INC R3" instruction
 LA4D1:	INC	R2			; !!MUT-CMD!! "DEC R2" or "INC R2" instruction
 	SOB	R1, LA4A2
-LA4D4:
-	;TODO: Sound off
+LA4D4:	;TODO: Sound off
 	TSTB	LA3B4			; check Guard counter
-	BNE	90$			; => Draw Guard on tilemap
+	BNE	LA4E4			; => Draw Guard on tilemap
 	MOVB	#4., L7346		; set Guard state = $04
-90$:	JMP	LA6FF			; => Draw Guard on tilemap
+LA4E4:	JMP	LA6FF			; => Draw Guard on tilemap
 ; Guard state = $14 ?
 LA4E7:	CMPB	R0, #20.
 	BNE	LA52F
-
+; Guard state = $14 = throwing a knife
+	MOVB	#4, (R3)		; set Guard state = $04
+	MOV	#LD486, LA70F		; set Guard sprite = Guard standing
 	;TODO
 	HALT
 
@@ -1264,10 +1262,10 @@ LA661:	CMPB	#1, R0
 	CALL	LA418
 LA666:	CMPB	#9., R0
 	BNE	LA66B
-	CALL	LA3D1
+	CALL	LA3D1			; Process Ninja and Guard in 9. tiles
 LA66B:	CMPB	#12., R0
 	BNE	LA670
-	CALL	LA3B5
+	CALL	LA3B5			; Process Ninja and Guard in 12. tiles
 LA670:	CMPB	#4, L7346		; Guard state = $04 ?
 	BNE	LA67F			; no =>
 	MOVB	#3, L7346		; set Guard state = walking phase 3
@@ -1297,10 +1295,10 @@ LA6B5:	CMPB	#-1, R0
 	CALL	LA418
 LA6BA:	CMPB	#-9., R0
 	BNE	LA6BF
-	CALL	LA3D1
+	CALL	LA3D1			; Process Ninja and Guard in 9. tiles
 LA6BF:	CMPB	#-12., R0
 	BNE	LA6C4
-	CALL	LA3B5
+	CALL	LA3B5			; Process Ninja and Guard in 12. tiles
 LA6C4:	CMPB	#4, L7346		; Guard state = $04 ?
 	BNE	LA6D2
 	MOVB	#3, L7346		; set Guard state = walking phase 3
@@ -1312,7 +1310,7 @@ LA6D2:	INC	L71C5			; increment Guard X - move one tile right
 LA6DE:	ADD	R2, L71C3		; Guard position in tilemap +1 / -1
 	MOVB	L7346, R0		; get Guard state
 	INC	R0
-	BIC	#177774, R0			; 0..3
+	BIC	#177774, R0		; 0..3
 	MOVB	R0, L7346		; set Guard state
 	ADD	R0, R0			; * 2
 	MOV	L733B(R0), LA70F	; sprite from table -> set Guard sprite
@@ -1545,28 +1543,25 @@ LAED1:
 	SOB	R1, 1$
 	RETURN
 
-LAEF0:
-	;TODO
-LAF7E:
-	;TODO
-LAF84:
-	;TODO
+;LAEF0:
 
-LAF9C:
-	;TODO
-LAFAA:
-	;TODO
-LAFBE:
-	;TODO
+;LAF7E:
+
+;LAF84:
+
+
+;LAF9C:
+
+;LAFAA:
+
+;LAFBE:
 
 ; Print table of records
-LB005:
-	;TODO
-	RETURN
+;LB005:
+;	RETURN
 
-LB040:
-	;TODO
-	BR	LAFBE
+;LB040:
+;	BR	LAFBE
 
 ;LB061:	.ASCII	/00  $/
 
@@ -1589,7 +1584,7 @@ LB040:
 ;	.ASCII	/ OUR TEN BEST/
 ;	.ASCII	/NINJA SABOTEURS./
 ;	.ASCII	/ENTER YOUR NAME.../
-	.EVEN
+;	.EVEN
 
 ;------------------------------------------------------------------------------
 
@@ -1642,14 +1637,13 @@ LB2A9:	MOV	#L722F, R3
 LB177:	CLRB	(R3)			; clear "need to update" flag
 ; Process Tile screen 0 - background tile
 	MOVB	@L722F, R0		; get tile from Tile screen 0
-	CMPB	#377, R0		; $FF - "earth" background?
-	;TODO
+	;CMPB	#377, R0		; $FF - "earth" background?
+	;TODO: Don't draw Ninja for background tile $FF
 	BIC	#177400, R0
 	ASL	R0
 	ASL	R0
 	ASL	R0			; * 8.
 	ADD	#LF700, R0		; + Background tiles base address
-	;TODO
 	MOV	R0, R3
 	MOV	#LB13E, R2		; buffer address
 	MOV	(R3)+, (R2)+		; copy two bytes
@@ -1852,7 +1846,6 @@ LB3B0:	MOV	#LC681, <L982B+2>
 	MOV	#LB422, <L7BD2+2>
 	MOV	#LC64C, <L791E+2>
 	MOV	#LB702, <L734A+2>	; ??? do we really need this?
-	;TODO
 	;NOTE: Mirror table preparation was here
 	JMP	LB5C7
 
@@ -1995,7 +1988,11 @@ LB53E = LB53D + 2	; Boat position
 	ADD	#-8., R2
 	MOVB	#1, (R2)		; put "need update" flag
 	INC	@#LB53E			; increase boat position
-	;TODO
+	MOV	#1, R5
+	MOVB	<LB5A7+1>, R0
+	XOR	R5, R0
+	MOVB	R0, <LB5A7+1>
+	;TODO: Sound ??
 	DECB	L7343			; decrease counter
 	BEQ	LB577
 	JMP	LB8D0			; => Update Ninja on tilemap
@@ -2016,7 +2013,7 @@ LB598:	JMP	LF9A1
 
 ; Sound ??
 LB59E:
-	;TODO
+	;TODO: Sound ??
 	RETURN
 
 ; Table of items: addresses for NEAR/HELD items
@@ -2093,7 +2090,7 @@ LB674 = LB673 + 2	; current Dog data address
 LB679:	MOVB	(R3)+, (R2)+
 	SOB	R1, LB679
 LB67B:
-	;TODO
+	;TODO: For first drawing entering the room, skip Dog and Guard tiles drawing
 
 	CALL	LDE68			; Find record for the current room in DE84 table
 	BNE	LB68B			; found =>
@@ -2128,7 +2125,6 @@ LB6BB:	CLRB	(R3)
 	MOV	#<510./2>, R1
 LB6CD:	CLR	(R3)+			; clear two bytes
 	SOB	R1, LB6CD
-	;TODO
 	MOV	#L6D88, R3		; Tile screen 4 start address
 	MOV	#510., R1		; to fill Tile Tile screen 4 and Tile screen 5
 LB6DA:	MOV	#177777, (R3)+		; put two bytes $FF = transparent tile
@@ -2203,7 +2199,7 @@ LB768:	POP	R3			; restore address in Table of objects
 ;
 ; Game loop start
 LB77B:
-	;TODO
+;NOTE: Removed: Clear LAST / get LASTK
 	CMPB	#1, LB5C6		; Time mode = stopped ?
 	BEQ	LB7AF			; yes =>
 ; Decrease Time, check if Time is out
@@ -2487,13 +2483,19 @@ LBA2F:	MOV	R3, R5
 
 ; Draw Explosion image on the screen and make some noise
 LBA52:
-	;TODO
+	;TODO: Draw Explosion and make noise
 	JMP	LB77B			; => Game loop start
 
 LBAB2:	.BYTE	0	; ??
 	.EVEN
 
+; Called from logic in Standard room procedure, see B937
+; R4 = object address in LA39F table
 LBAD5:
+	CMP	#L8DCA, L7184		; current room = 8DCA (room with helicopter) ?
+	BEQ	LBBA7			; yes =>
+;
+LBAE4:	MOVB	(R4), R0
 	;TODO
 
 	BR	LBA20
@@ -2565,16 +2567,16 @@ LBC0D:
 ; Clear the screen
 	CALL	CLSRNM			; Clear screen with Blue color
 ; Prepare screen background for title picture
-	;TODO
+	;TODO: Prepare screen background
 
 LBC13:
-	;TODO
+	;TODO: Melody??
 
 ; Show the title picture
 LBC38:	CALL	L6289			; Show title picture (two ninjas)
 
 LBC3B:
-	;TODO
+;NOTE: Skipped code related to Table of Scores
 
 	JMP	LDF37
 
@@ -2605,9 +2607,8 @@ LBC7E:	MOV	#<LD486+8.>, R2		; head tile address
 	;MOVB	R0, (R2)
 LBC98:	;CMPB	#210., (R3)
 	;BEQ	LBC7E
-; Check for suicide key combination
-LBC9D:
-	;TODO
+;NOTE: Skipped code to check for suicide key combination
+;LBC9D:
 
 LBCB6:	CALL	LC5A3			; Check for falling
 	BNE	LBCBC
@@ -2808,15 +2809,16 @@ LBE71:	CMPB	LB5C6, #2		; Time mode = BOMB ticking mode?
 ; BOMB time is out, BOMB explodes
 LBE80:
 	HALT
-	;TODO
+	;TODO: BOMB explodes
 	PUSH	R3
+
 ; Saboteur is dead
 LBEAA:	POP	R3
 	MOV	#LBF58, LBEB4		; set two-line Game Over message = "SABOTEUR DEAD" / "MISSION FAILURE"
 	BR	LBE63			; => Ninja dead
 
 ; Movement handler: Game Over
-LBEB3:	MOV	#LBEEF, R3		; !!MUT-ARG!! two-line message address
+LBEB3:	MOV	#LBF12, R3		; !!MUT-ARG!! two-line message address
 LBEB4 = LBEB3 + 2
 	MOV	#<SCREEN+<1200*3.>+12.>, R2
 	MOV	#15., R1
@@ -2826,8 +2828,9 @@ LBEB4 = LBEB3 + 2
 	CALL	LAED1			; Print string 1st line
 ;
 	CALL	LF9B9			; Pause, then wait for any key pressed
-
-	;TODO
+	;NOP
+;NOTE: Skipped code to set BEDF instruction
+;
 	JMP	LBC0D			; => Title picture and music, then go to Main menu
 
 ;NOTE: Messages LBEEF moved from here
@@ -2906,8 +2909,7 @@ LBFD5:	MOV	#10., R1
 	CALL	LAED1			; Print string
 	MOVB	<LE388+3>, R1
 	CALL	LB4DE			; Increase PAY value by B * 100
-	;TODO
-
+;NOTE: Skipped code to set BEDF instruction
 LC04A:	CMPB	#2, LB5C6		; Time mode = BOMB ticking mode ?
 	BNE	LC056			; no =>
 	MOV	#100., R1
@@ -3759,9 +3761,8 @@ LDE84:	.WORD	L79C6
 	.BYTE	001, 0
 
 ; Clear strings on the screen
-LDEC1:
-	;TODO
-	RETURN	;STUB
+;LDEC1:
+;	RETURN	;STUB
 
 ;LDEE6:	.ASCII	/                /	; String 18 spaces
 
@@ -3773,8 +3774,8 @@ LE1FE:	.ASCII	/1-9 SELECT LEVEL/
 LDF27:	.ASCII	/S  START MISSION/
 	.ASCII	/X  EXIT/
 
-LBEEF:	.ASCII	/     SEPUKU    /
-	.ASCII	/  MISSION ABORTED   /
+;LBEEF:	.ASCII	/     SEPUKU    /
+;	.ASCII	/  MISSION ABORTED   /
 LBF12:	.ASCII	/     ESCAPE    /
 	.ASCII	/ MISSION SUCCESSFUL /
 LBF35:	.ASCII	/    TIME OUT   /
@@ -3795,13 +3796,13 @@ LE1ED:	.WORD	LE217	; Current level description address, 14-char string
 LE388:	.ASCII	/ 10/
 	.BYTE	10.
 
+; Prepare for Menu
 LDF37:
-	;TODO
 
-; Main menu
+; Menu
 LDF60:	CALL	WAITUP			; clear keyboard buffer
-	CALL	LDEC1			; Clear strings on the screen
-	;TODO
+	;CALL	LDEC1			; Clear strings on the screen
+
 	MOV	#15., R1
 	MOV	#TITLE, R3
 	MOV	#<SCRTOP+<1200*0.>+13.>, R2
@@ -3833,7 +3834,7 @@ LDF8E:	MOV	#LC082, R3		; "LEVEL X"
 	MOV	#<SCRTOP+<1200*12.>+16.>, R2
 	CALL	LAED1			; Print string
 
-	;TODO
+; Menu loop starts here
 10$:
 	CALL	WTKEY
 	CMPB	R0, #140
@@ -4001,26 +4002,27 @@ LE42C:	.BYTE	2.,3.,10.
 
 ; Start Mission
 LE2A7:
+;NOTE: in the original game, here we ask for Skill Level, moved to the Menu, see LEVSEL
 	CALL	CLSRNB			; Clear the screen
-	;TODO
 
 	MOVB	#TIMERI, LB5C4		; set initial value for the fast timer
 
+	CALL	WAITUP			; clear keyboard buffer
 	;BR	LF913
 LF913:
-	;TODO
+	;TODO: Changing rooms based on current Skill Level in LE1EC
 	JMP	LB3B0
 
 ; Sound ??
 LF9A1:
-	;TODO
+	;TODO: Sound??
 	RETURN
 
 ; Pause, then wait for any key pressed
 LF9B9:
-	;TODO
+	CALL	PAUSE
 	CALL	WTKEY ;DEBUG
-	RETURN	;STUB
+	RETURN
 
 LF9F9:	MOV	#264, R3		; $00B4
 	MOV	#1, R1
@@ -4029,7 +4031,7 @@ LF9F9:	MOV	#264, R3		; $00B4
 	RETURN
 
 LFA11:
-	;TODO
+	;TODO: Sound??
 	RETURN	;STUB
 
 LFA31:	CALL	L9DD9			; Decrease Energy by R1
