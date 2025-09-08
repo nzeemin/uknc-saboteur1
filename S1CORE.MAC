@@ -234,9 +234,9 @@ L62B4:	MOVB	(R2)+, R0
 L7184:	.WORD	L791E	; Current Room address
 L7186:	.WORD	LA0B5	; Ninja sprite address
 
-L71C3:	.WORD	257.	; Current Guard position in tilemap
-L71C5:	.BYTE	17.	; Current Guard X position
-L71C6:	.BYTE	8.	; Current Guard Y position
+L71C3:	.WORD	257.	; Guard position in tilemap
+L71C5:	.BYTE	17.	; Guard X position
+L71C6:	.BYTE	8.	; Guard Y position
 
 L71CB:	.WORD	398.	; Dog position in tilemap
 L71CD:	.BYTE	0	; Dog direction
@@ -1163,7 +1163,7 @@ LA545:	MOVB	LA39E, R0
 	BEQ	LA565
 	MOVB	L71C5, R0		; get Guard X
 	TSTB	L7347			; check Guard direction
-	BEQ	LA55F			; right =>
+	BNE	LA55F			; right =>
 	ADD	#2, R0			; for left, Guard X + 2
 	CMPB	R0, (R3)		; compare with Ninja X
 	BLO	LA55D
@@ -1190,7 +1190,7 @@ LA587:	MOVB	#3, (R3)		; set Guard state = walking state 3
 	MOV	L71C3, R3		; get Guard position in tilemap
 	MOV	#<L698C+64.>, R2	; Tile screen 2 + 2 rows + 4
 	TSTB	L7347			; check Guard direction
-	BNE	LA599
+	BNE	LA599			; right =>
 	MOV	#<L698C+61.>, R2	; Tile screen 2 + 2 rows + 1
 LA599:	ADD	R2, R3
 	CMPB	#377, (R3)
@@ -1210,22 +1210,30 @@ LA5AA:	CMPB	#5., R0
 90$:	JMP	LA6FF			; => Draw Guard on tilemap
 ; Guard state = $06 ? Jump-kick
 LA5C7:	CMPB	#6., R0
-	BNE	LA614
+	BNE	LA5FC
 	DECB	LA3B4			; decrement Guard counter
 	BNE	90$
 	MOVB	#1, LA3B4		; set Guard counter = 1
 	MOVB	#7, (R3)		; set Guard state = $07: back to standing
 	MOV	#LD4B0, LA70F		; set Sprite Ninja/Guard jumping
 	MOV	L71C3, R3		; get Guard position in tilemap
-	MOV	#<L698C+65.>, R2	; Tile screen 2 + 65.
+	MOV	#<L698C+65.>, R2	; Tile screen 2 + 2 rows + 5
 	TSTB	L7347			; check Guard direction
 	BNE	10$			; right =>
-	MOV	#<L698C+60.>, R2	; Tile screen 2 + 60.
+	MOV	#<L698C+60.>, R2	; Tile screen 2 + 2 rows
 10$:	ADD	R2, R3
 	CMPB	#377, (R3)
 	BEQ	90$
 	MOV	#10., R1		; 10. damage
 	CALL	LFA31			; Decrease Energy + Sound
+90$:	JMP	LA6FF			; => Draw Guard on tilemap
+; Guard state = $07 ? - back to standing
+LA5FC:	CMPB	#7., R0
+	BNE	LA614
+	DECB	LA3B4			; decrement Guard counter
+	BNE	90$
+	MOVB	#3, (R3)		; set Guard state = walking phase 3
+	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
 90$:	JMP	LA6FF			; => Draw Guard on tilemap
 ; Guard state is none of the above
 LA614:	MOVB	L9C41, R1		; get Ninja X
@@ -1316,10 +1324,10 @@ LA6DE:	ADD	R2, L71C3		; Guard position in tilemap +1 / -1
 	MOV	L733B(R0), LA70F	; sprite from table -> set Guard sprite
 ;
 ; Draw Guard on tilemap
-LA6FF:	MOV	L71C3, R3		; get Current Guard position in tilemap
+LA6FF:	MOV	L71C3, R3		; get Guard position in tilemap
 	TSTB	L7347			; check Guard direction
 	BNE	LA728			; right =>
-	ADD	#<L6D88+6>, R3		; Tile screen 4 start address + 6
+	ADD	#<L6D88+6>, R3		; Tile screen 4 + 6
 LA70E:	MOV	#LD432, R2		; !!MUT-ARG!! current Ninja/Guard sprite address
 LA70F = LA70E + 2
 	MOV	#7, R1			; 7 rows
@@ -1382,7 +1390,7 @@ LA747:	.WORD	SCRTOP+<1200*3>+<120*5>+1
 	.WORD	SCRTOP+<1200*13.>+<120*5>+1
 
 ; Set update flags for Guard, 6x7 tiles
-LA75B:	MOV	L71C3, R3		; get Current Guard position in tilemap
+LA75B:	MOV	L71C3, R3		; get Guard position in tilemap
 	ADD	#L678E, R3		; Tile screen 1 start address
 	MOV	#7, R1			; 7 rows
 	MOV	#001, R0		; "need to update" flag
@@ -1843,9 +1851,9 @@ LB3B0:	MOV	#LC681, <L982B+2>
 	MOV	#LC671, R3
 	MOV	R3, <L947C+2>
 	MOV	R3, <L93DF+2>
-	MOV	#LB422, <L7BD2+2>
-	MOV	#LC64C, <L791E+2>
-	MOV	#LB702, <L734A+2>	; ??? do we really need this?
+	;MOV	#LB422, <L7BD2+2>	; NO NEED: the only assignment for this address
+	;MOV	#LC64C, <L791E+2>	; NO NEED: the only assignment for this address
+	;MOV	#LB702, <L734A+2>	; NO NEED: the only assignment for this address
 	;NOTE: Mirror table preparation was here
 	JMP	LB5C7
 
@@ -2240,7 +2248,7 @@ LB7CA:	MOV	#34471, R3		; !!MUT-ARG!! "99" bomb timer initial value
 	MOVB	#1, LB5C4
 	;TODO: Highlight the time indicator somehow
 	MOV	#50., R1
-	CALL	LB4DE			; Increase PAY value by 5000
+	CALL	LB4DE			; Increase PAY value by 5000.
 LB7ED:	MOV	#L678E, R3		; Tile screen 1 start address
 	MOV	#<510./2>, R1
 10$:	CLR	(R3)+			; put two bytes $00 = "no need to update" value
@@ -2440,7 +2448,7 @@ LB9DA:	MOV	R3, R5
 	BEQ	LBAD5
 	MOVB	#9., L7346		; set Guard state = 9 dead
 	MOV	#1, R1
-	CALL	LB4DE			; Increase PAY value by 100 - Guard killed by weapon
+	CALL	LB4DE			; Increase PAY value by 100. - Guard killed by weapon
 	BR	LBAD5
 LB9F9:	INCB	LB951
 	DEC	R1
@@ -2664,7 +2672,7 @@ LBD1F:	MOVB	#1, (R3)		; set Time mode = time stopped
 	MOV	#400., R3
 	CALL	LB371			; Play melody
 	MOV	#50., R1
-	CALL	LB4DE			; Increase PAY value by 5000
+	CALL	LB4DE			; Increase PAY value by 5000.
 	JMP	LB8D0			; => Update Ninja on tilemap
 
 ; "BOMB" message
@@ -2722,17 +2730,17 @@ LBDA2:	MOVB	R1, LA3A2
 
 ; ?? Ninja action?
 LBDB2:	MOV	L9C42, R3		; get Ninja position in tilemap
-	MOV	#<L6D88+34.>, R2	; Tile screen 4 + 34, for right
+	MOV	#<L6D88+34.>, R2	; Tile screen 4 + 34., for right
 	TSTB	L7239			; check Ninja direction
 	BNE	LBDC2			; right =>
-	MOV	#<L6D88+31.>, R2	; Tile screen 4 + 31, for left
+	MOV	#<L6D88+31.>, R2	; Tile screen 4 + 31., for left
 LBDC2:	ADD	R2, R3			; now R3 = address in Guard tilemap
 	CMPB	#377, (R3)		; empty tile?
 	BEQ	LBDD4			; yes =>
 	MOVB	#9., L7346		; set Guard state = $09 dead
 	CALL	LB596			; Play sound
 	MOV	#5, R1			; 5 hundreds
-	CALL	LB4DE			; Increase PAY value by 500 - Guard killed
+	CALL	LB4DE			; Increase PAY value by 500. - Guard killed
 LBDD4:	MOV	#LBBD4, R3		; Movement handler address
 	MOV	#LD504, R2		; Sprite Ninja/Guard punching
 	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
@@ -2764,7 +2772,7 @@ LBE0E = LBE0D + 2
 	MOV	R3, LBE0E
 	ADD	#511., R3		; R3 = address in Tile screen 1
 	MOVB	R0, (R3)		; put "need to update" flag
-LBE1C:	MOV	#<L6590+55.>, R3	; = $6590 (Tile screen 0) + 1 row + 25
+LBE1C:	MOV	#<L6590+55.>, R3	; = $6590 (Tile screen 0) + 1 row + 25.
 LBE1D = LBE1C + 2
 	MOVB	R0, (R3)+		; put background tile
 	MOV	R3, LBE1D
@@ -2880,11 +2888,11 @@ LBFCC:	MOV	#LC22F, R3		; Movement handler: Ninja sitting
 
 ; Escaped; clear screen, show final messages, then Game Over
 LBFD5:	MOV	#10., R1
-	CALL	LB4DE			; Increase PAY value by 1000 - Escape by Helicopter
+	CALL	LB4DE			; Increase PAY value by 1000. - Escape by Helicopter
 	CMPB	#324, LBD7A		; HELD tile = $D4 diskette ?
 	BNE	LC04A
 	MOV	#50., R1
-	CALL	LB4DE			; Increase PAY value by 5000
+	CALL	LB4DE			; Increase PAY value by 5000.
 	CALL	CLSRNM			; Clear the screen with Blue color
 	MOV	#LC062, R3		; Messages address
 	MOV	#<SCREEN+<1200*4.>+13.>, R2
@@ -2908,12 +2916,12 @@ LBFD5:	MOV	#10., R1
 	MOV	#3., R1
 	CALL	LAED1			; Print string
 	MOVB	<LE388+3>, R1
-	CALL	LB4DE			; Increase PAY value by B * 100
+	CALL	LB4DE			; Increase PAY value by B * 100.
 ;NOTE: Skipped code to set BEDF instruction
 LC04A:	CMPB	#2, LB5C6		; Time mode = BOMB ticking mode ?
 	BNE	LC056			; no =>
 	MOV	#100., R1
-	CALL	LB4DE			; Increase PAY value by 10000 - Escape with Disk and Bomb
+	CALL	LB4DE			; Increase PAY value by 10000. - Escape with Disk and Bomb
 LC056:	MOV	#LBF12, LBEB4		; "ESCAPE" / "MISSION SUCCESSFUL"
 	;NOP
 	;NOP
@@ -3025,7 +3033,7 @@ LC22F:	CALL	LBBDF			; Read input
 	BEQ	LC226			; DOWN key released => stand up
 ; DOWN still pressed
 LC239:	MOV	L9C42, R3		; get Ninja position in tilemap
-	ADD	#<L6F86+182.>, R3	; Tile screen 5 + 182.
+	ADD	#<L6F86+182.>, R3	; Tile screen 5 + 6 rows + 2
 	CMPB	#014, (R3)
 	BNE	LC248
 	MOV	#2, R1
@@ -3279,7 +3287,7 @@ LC4BE:	ADD	R2, R3			; now R3 = address in Tile screen 4
 	MOVB	#9., L7346		; set Guard state = $09 dead
 	CALL	LB596			; Play sound
 	MOV	#5, R1
-	CALL	LB4DE			; Increase PAY value by 500 - Guard killed by punch/kick
+	CALL	LB4DE			; Increase PAY value by 500. - Guard killed by punch/kick
 ; Finalize the jump
 LC4D0:	MOV	#LC4DE, R3		; Movement handler address
 	MOV	#LD4B0, R2		; Sprite Ninja/Guard jumping
@@ -4061,6 +4069,8 @@ L6B8A:	.BLKB	510.
 L6D88:	.BLKB	510.
 ; Tile screen 5 30x17 tiles, 510 bytes - front
 L6F86:	.BLKB	510.
+
+STACK::	.BLKW	20		; Initial stack
 
 ;------------------------------------------------------------------------------
 	.END	STCORE
