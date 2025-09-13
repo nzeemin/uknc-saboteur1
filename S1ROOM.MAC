@@ -1,10 +1,10 @@
 ; Start of S1ROOM.MAC
 
-L791E:	; Room 791E
+RM791E:	; Room 791E
 	.WORD	LB446		; Room procedure
 	.WORD	LC64C		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L79C6		; Room to Right
+	.WORD	RM79C6		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 015		; Fill entire screen with 0D
@@ -25,11 +25,11 @@ L791E:	; Room 791E
 	.BYTE	001, 003, 022, 225,000	; Fill vert 3 tiles with 12 at 6625
 	.BYTE	377			; End of sequence
 	.EVEN
-L79C6:	; Room 79C6
+RM79C6:	; Room 79C6
 	.WORD	LB452		; Room procedure
 	.WORD	LB42E		; Initialization
-	.WORD	L791E		; Room to Left
-	.WORD	L7A17		; Room to Right
+	.WORD	RM791E		; Room to Left
+	.WORD	RM7A17		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 015		; Fill entire screen with 0D
@@ -47,12 +47,12 @@ L79C6:	; Room 79C6
 	.BYTE	016, 360, 335,000	; Put tile F0 at 666D
 	.BYTE	377			; End of sequence
 	.EVEN
-L7A17:	; Room 7A17
+RM7A17:	; Room 7A17
 	.WORD	LB483		; Room procedure
 	.WORD	LA142		; Initialization
-	.WORD	L79C6		; Room to Left
-	.WORD	L7B90		; Room to Right
-	.WORD	L8238		; Room to Up
+	.WORD	RM79C6		; Room to Left
+	.WORD	RM7B90		; Room to Right
+	.WORD	RM8238		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 002		; Fill entire screen with 02
 	.BYTE	010, 377, 006, 075,001	; Triangle with FF, count=6 at 66CD
@@ -71,13 +71,13 @@ L7A17:	; Room 7A17
 	.BYTE	005, 004, 007, 8., 233,012	; Block 4x7 tiles from 798E to 702B
 	.BYTE	377			; End of sequence
 	.EVEN
-L7A75:	; Room 7A75
+RM7A75:	; Room 7A75
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L7BD2		; Room to Up
-	.WORD	L7A9E		; Room to Down
+	.WORD	RM7BD2		; Room to Up
+	.WORD	RM7A9E		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	002, 022, 003, 177,000	; Fill horz 18 tiles with 03 at 660F
 	.BYTE	003, 002, 022, 005, 235,000	; Rect 18x5 tiles with 02 at 662D
@@ -86,12 +86,12 @@ L7A75:	; Room 7A75
 	.BYTE	016, 360, 065,001	; Put tile F0 at 66C5
 	.BYTE	377			; End of sequence
 	.EVEN
-L7A9E:	; Room 7A9E
+RM7A9E:	; Room 7A9E
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L7ACD		; Room to Right
-	.WORD	L7A75		; Room to Up
+	.WORD	RM7ACD		; Room to Right
+	.WORD	RM7A75		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	002, 034, 003, 362,000	; Fill horz 28 tiles with 03 at 6682
@@ -101,12 +101,12 @@ L7A9E:	; Room 7A9E
 	.BYTE	005, 006, 002, 0., 220,013	; Block 6x2 tiles from 7188 to 7120
 	.BYTE	377			; End of sequence
 	.EVEN
-L7ACD:	; Room 7ACD
+RM7ACD:	; Room 7ACD
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L7A9E		; Room to Left
-	.WORD	L7AF8		; Room to Right
-	.WORD	L7B56		; Room to Up
+	.WORD	RM7A9E		; Room to Left
+	.WORD	RM7AF8		; Room to Right
+	.WORD	RM7B56		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 002, 036, 006, 360,000	; Rect 30x6 tiles with 02 at 6680
@@ -116,12 +116,12 @@ L7ACD:	; Room 7ACD
 	.BYTE	014, 4., 002, 016, 022,000	; Block 2 tiles from 71B9 to 65A2 copy 14 times
 	.BYTE	377			; End of sequence
 	.EVEN
-L7AF8:	; Room 7AF8
+RM7AF8:	; Room 7AF8
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L7ACD		; Room to Left
+	.WORD	RM7ACD		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L7C6D		; Room to Up
+	.WORD	RM7C6D		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 002, 034, 010, 360,000	; Rect 28x8 tiles with 02 at 6680
@@ -139,13 +139,13 @@ L7AF8:	; Room 7AF8
 	.BYTE	005, 001, 002, 10., 316,001	; Block 1x2 tiles from 7B4F to 675E
 	.BYTE	377			; End of sequence
 	.EVEN
-L7B56:	; Room 7B56
+RM7B56:	; Room 7B56
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L7D5A		; Room to Up
-	.WORD	L7ACD		; Room to Down
+	.WORD	RM7D5A		; Room to Up
+	.WORD	RM7ACD		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 002, 010, 006, 230,000	; Rect 8x6 tiles with 02 at 6628
 	.BYTE	003, 002, 012, 005, 243,000	; Rect 10x5 tiles with 02 at 6633
@@ -156,11 +156,11 @@ L7B56:	; Room 7B56
 	.BYTE	014, 7., 002, 001, 076,001	; Block 2 tiles from 7984 to 66CE copy 1 times
 	.BYTE	377			; End of sequence
 	.EVEN
-L7B90:	; Room 7B90
+RM7B90:	; Room 7B90
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L7A17		; Room to Left
-	.WORD	L7BD2		; Room to Right
+	.WORD	RM7A17		; Room to Left
+	.WORD	RM7BD2		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 001		; Fill entire screen with 01
@@ -175,13 +175,13 @@ L7B90:	; Room 7B90
 	.BYTE	005, 004, 007, 9., 232,012	; Block 4x7 tiles from 79AA to 702A
 	.BYTE	377			; End of sequence
 	.EVEN
-L7BD2:	; Room 7BD2
+RM7BD2:	; Room 7BD2
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L7B90		; Room to Left
-	.WORD	L7D5A		; Room to Right
-	.WORD	L8162		; Room to Up
-	.WORD	L7A75		; Room to Down
+	.WORD	RM7B90		; Room to Left
+	.WORD	RM7D5A		; Room to Right
+	.WORD	RM8162		; Room to Up
+	.WORD	RM7A75		; Room to Down
 	.BYTE	004, 001		; Fill entire screen with 01
 	.BYTE	003, 377, 024, 003, 244,001	; Rect 20x3 tiles with FF at 6734
 	.BYTE	002, 012, 377, 364,001	; Fill horz 10 tiles with FF at 6784
@@ -192,13 +192,13 @@ L7BD2:	; Room 7BD2
 	.BYTE	005, 002, 003, 7., 254,001	; Block 2x3 tiles from 7984 to 673C
 	.BYTE	377			; End of sequence
 	.EVEN
-L7C2E:	; Room 7C2E
+RM7C2E:	; Room 7C2E
 	.WORD	LB458		; Room procedure
 	.WORD	LA1A6		; Initialization
-	.WORD	L7D5A		; Room to Left
+	.WORD	RM7D5A		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L7DA9		; Room to Up
-	.WORD	L7C6D		; Room to Down
+	.WORD	RM7DA9		; Room to Up
+	.WORD	RM7C6D		; Room to Down
 	.BYTE	004, 001		; Fill entire screen with 01
 	.BYTE	003, 377, 036, 004, 206,001	; Rect 30x4 tiles with FF at 6716
 	.BYTE	003, 377, 005, 006, 000,000	; Rect 5x6 tiles with FF at 6590
@@ -210,13 +210,13 @@ L7C2E:	; Room 7C2E
 	.BYTE	005, 002, 004, 7., 232,001	; Block 2x4 tiles from 7984 to 672A
 	.BYTE	377			; End of sequence
 	.EVEN
-L7C6D:	; Room 7C6D
+RM7C6D:	; Room 7C6D
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L7FC4		; Room to Right
-	.WORD	L7C2E		; Room to Up
-	.WORD	L7AF8		; Room to Down
+	.WORD	RM7FC4		; Room to Right
+	.WORD	RM7C2E		; Room to Up
+	.WORD	RM7AF8		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	014, 4., 002, 021, 010,000	; Block 2 tiles from 71B9 to 6598 copy 17 times
 	.BYTE	003, 002, 016, 006, 000,001	; Rect 14x6 tiles with 02 at 6690
@@ -225,11 +225,11 @@ L7C6D:	; Room 7C6D
 	.BYTE	014, 4., 002, 016, 024,000	; Block 2 tiles from 71B9 to 65A4 copy 14 times
 	.BYTE	377			; End of sequence
 	.EVEN
-L7C9C:	; Room 7C9C
+RM7C9C:	; Room 7C9C
 	.WORD	LC6A5		; Room procedure
 	.WORD	L791B		; Initialization
-	.WORD	L947C		; Room to Left
-	.WORD	L93DF		; Room to Right
+	.WORD	RM947C		; Room to Left
+	.WORD	RM93DF		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
@@ -244,13 +244,13 @@ L7C9C:	; Room 7C9C
 	.BYTE	005, 005, 007, 22., 002,001	; Block 5x7 tiles from 7D37 to 6692
 	.BYTE	377			; End of sequence
 	.EVEN
-L7D5A:	; Room 7D5A
+RM7D5A:	; Room 7D5A
 	.WORD	LB483		; Room procedure
 	.WORD	LA14A		; Initialization
-	.WORD	L7BD2		; Room to Left
-	.WORD	L7C2E		; Room to Right
+	.WORD	RM7BD2		; Room to Left
+	.WORD	RM7C2E		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L7B56		; Room to Down
+	.WORD	RM7B56		; Room to Down
 	.BYTE	004, 001		; Fill entire screen with 01
 	.BYTE	003, 377, 036, 006, 000,000	; Rect 30x6 tiles with FF at 6590
 	.BYTE	014, 16., 002, 020, 013,000	; Block 2 tiles from 7C2A to 659B copy 16 times
@@ -265,13 +265,13 @@ L7D5A:	; Room 7D5A
 	.BYTE	005, 004, 007, 8., 031,013	; Block 4x7 tiles from 798E to 70A9
 	.BYTE	377			; End of sequence
 	.EVEN
-L7DA9:	; Room 7DA9
+RM7DA9:	; Room 7DA9
 	.WORD	L7918		; Room procedure
 	.WORD	LA0E8		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L7E8C		; Room to Right
-	.WORD	L7E05		; Room to Up
-	.WORD	L7C2E		; Room to Down
+	.WORD	RM7E8C		; Room to Right
+	.WORD	RM7E05		; Room to Up
+	.WORD	RM7C2E		; Room to Down
 	.BYTE	004, 001		; Fill entire screen with 01
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
 	.BYTE	002, 036, 377, 000,000	; Fill horz 30 tiles with FF at 6590
@@ -287,13 +287,13 @@ L7DA9:	; Room 7DA9
 	.BYTE	005, 003, 004, 13., 166,013	; Block 3x4 tiles from 7C0C to 7106
 	.BYTE	377			; End of sequence
 	.EVEN
-L7E05:	; Room 7E05
+RM7E05:	; Room 7E05
 	.WORD	LB452		; Room procedure
 	.WORD	LA35C		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L80A7		; Room to Right
-	.WORD	L83ED		; Room to Up
-	.WORD	L7DA9		; Room to Down
+	.WORD	RM80A7		; Room to Right
+	.WORD	RM83ED		; Room to Up
+	.WORD	RM7DA9		; Room to Down
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
 	.BYTE	014, 17., 002, 001, 351,001	; Block 2 tiles from 7C2C to 6779 copy 1 times
 	.BYTE	014, 17., 002, 001, 354,001	; Block 2 tiles from 7C2C to 677C copy 1 times
@@ -312,13 +312,13 @@ L7E05:	; Room 7E05
 	.BYTE	003, 377, 003, 003, 036,000	; Rect 3x3 tiles with FF at 65AE
 	.BYTE	377			; End of sequence
 	.EVEN
-L7E8C:	; Room 7E8C
+RM7E8C:	; Room 7E8C
 	.WORD	L7918		; Room procedure
 	.WORD	LA0ED		; Initialization
-	.WORD	L7DA9		; Room to Left
-	.WORD	L7EF2		; Room to Right
+	.WORD	RM7DA9		; Room to Left
+	.WORD	RM7EF2		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L7F48		; Room to Down
+	.WORD	RM7F48		; Room to Down
 	.BYTE	004, 001		; Fill entire screen with 01
 	.BYTE	002, 036, 377, 000,000	; Fill horz 30 tiles with FF at 6590
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
@@ -335,10 +335,10 @@ L7E8C:	; Room 7E8C
 	.BYTE	005, 003, 004, 13., 166,013	; Block 3x4 tiles from 7C0C to 7106
 	.BYTE	377			; End of sequence
 	.EVEN
-L7EF2:	; Room 7EF2
+RM7EF2:	; Room 7EF2
 	.WORD	LB47A		; Room procedure
 	.WORD	LA154		; Initialization
-	.WORD	L7E8C		; Room to Left
+	.WORD	RM7E8C		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
@@ -356,13 +356,13 @@ L7EF2:	; Room 7EF2
 	.BYTE	005, 003, 003, 2., 223,013	; Block 3x3 tiles from 71A0 to 7123
 	.BYTE	377			; End of sequence
 	.EVEN
-L7F48:	; Room 7F48
+RM7F48:	; Room 7F48
 	.WORD	LB483		; Room procedure
 	.WORD	LA14F		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L7F9C		; Room to Right
-	.WORD	L7E8C		; Room to Up
-	.WORD	L7FC4		; Room to Down
+	.WORD	RM7F9C		; Room to Right
+	.WORD	RM7E8C		; Room to Up
+	.WORD	RM7FC4		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 001, 010, 014, 042,000	; Rect 8x12 tiles with 01 at 65B2
 	.BYTE	003, 001, 022, 007, 336,000	; Rect 18x7 tiles with 01 at 666E
@@ -378,13 +378,13 @@ L7F7A:	.BYTE	001, 001, 344, 316,000	; Fill vert 1 tiles with E4 at 665E
 	.BYTE	377			; End of sequence
 	.EVEN
 L7F7B = L7F7A + 1		; trigger "A"
-L7F9C:	; Room 7F9C
+RM7F9C:	; Room 7F9C
 	.WORD	LB458		; Room procedure
 	.WORD	LA1B5		; Initialization
-	.WORD	L7F48		; Room to Left
+	.WORD	RM7F48		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L8008		; Room to Down
+	.WORD	RM8008		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 001, 033, 007, 322,000	; Rect 27x7 tiles with 01 at 6662
 	.BYTE	001, 001, 344, 266,000	; Fill vert 1 tiles with E4 at 6646
@@ -392,12 +392,12 @@ L7F9C:	; Room 7F9C
 	.BYTE	005, 002, 003, 7., 270,001	; Block 2x3 tiles from 7984 to 6748
 	.BYTE	377			; End of sequence
 	.EVEN
-L7FC4:	; Room 7FC4
+RM7FC4:	; Room 7FC4
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L7C6D		; Room to Left
-	.WORD	L8008		; Room to Right
-	.WORD	L7F48		; Room to Up
+	.WORD	RM7C6D		; Room to Left
+	.WORD	RM8008		; Room to Right
+	.WORD	RM7F48		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 002, 015, 006, 360,000	; Rect 13x6 tiles with 02 at 6680
@@ -411,13 +411,13 @@ L7FC4:	; Room 7FC4
 	.BYTE	005, 001, 005, 11., 027,000	; Block 1x5 tiles from 7B51 to 65A7
 	.BYTE	377			; End of sequence
 	.EVEN
-L8008:	; Room 8008
+RM8008:	; Room 8008
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L7FC4		; Room to Left
+	.WORD	RM7FC4		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L7F9C		; Room to Up
-	.WORD	L8076		; Room to Down
+	.WORD	RM7F9C		; Room to Up
+	.WORD	RM8076		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	002, 015, 003, 226,000	; Fill horz 13 tiles with 03 at 6626
 	.BYTE	002, 013, 003, 246,000	; Fill horz 11 tiles with 03 at 6636
@@ -436,13 +436,13 @@ L8008:	; Room 8008
 	.BYTE	001, 021, 375, 016,000	; Fill vert 17 tiles with FD at 659E
 	.BYTE	377			; End of sequence
 	.EVEN
-L8076:	; Room 8076
+RM8076:	; Room 8076
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L8008		; Room to Up
-	.WORD	L8384		; Room to Down
+	.WORD	RM8008		; Room to Up
+	.WORD	RM8384		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	001, 021, 375, 012,000	; Fill vert 17 tiles with FD at 659A
 	.BYTE	001, 021, 375, 016,000	; Fill vert 17 tiles with FD at 659E
@@ -452,11 +452,11 @@ L8076:	; Room 8076
 	.BYTE	014, 4., 002, 021, 024,000	; Block 2 tiles from 71B9 to 65A4 copy 17 times
 	.BYTE	377			; End of sequence
 	.EVEN
-L80A7:	; Room 80A7
+RM80A7:	; Room 80A7
 	.WORD	LB458		; Room procedure
 	.WORD	LA1CB		; Initialization
-	.WORD	L7E05		; Room to Left
-	.WORD	L80F6		; Room to Right
+	.WORD	RM7E05		; Room to Left
+	.WORD	RM80F6		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 036, 377, 000,000	; Fill horz 30 tiles with FF at 6590
@@ -471,10 +471,10 @@ L80A7:	; Room 80A7
 	.BYTE	005, 003, 003, 15., 225,013	; Block 3x3 tiles from 7C21 to 7125
 	.BYTE	377			; End of sequence
 	.EVEN
-L80F6:	; Room 80F6
+RM80F6:	; Room 80F6
 	.WORD	LB452		; Room procedure
 	.WORD	LA38E		; Initialization
-	.WORD	L80A7		; Room to Left
+	.WORD	RM80A7		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
@@ -494,13 +494,13 @@ L80F6:	; Room 80F6
 	.BYTE	005, 002, 001, 25., 305,013	; Block 2x1 tiles from 7E8A to 7155
 	.BYTE	377			; End of sequence
 	.EVEN
-L8162:	; Room 8162
+RM8162:	; Room 8162
 	.WORD	LB458		; Room procedure
 	.WORD	LA1C0		; Initialization
-	.WORD	L81E5		; Room to Left
+	.WORD	RM81E5		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L8321		; Room to Up
-	.WORD	L7BD2		; Room to Down
+	.WORD	RM8321		; Room to Up
+	.WORD	RM7BD2		; Room to Down
 	.BYTE	003, 001, 034, 010, 360,000	; Rect 28x8 tiles with 01 at 6680
 	.BYTE	002, 034, 377, 322,000	; Fill horz 28 tiles with FF at 6662
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
@@ -523,11 +523,11 @@ L8162:	; Room 8162
 	.BYTE	014, 17., 002, 001, 356,001	; Block 2 tiles from 7C2C to 677E copy 1 times
 	.BYTE	377			; End of sequence
 	.EVEN
-L81E5:	; Room 81E5
+RM81E5:	; Room 81E5
 	.WORD	LB452		; Room procedure
 	.WORD	LA353		; Initialization
-	.WORD	L8238		; Room to Left
-	.WORD	L8162		; Room to Right
+	.WORD	RM8238		; Room to Left
+	.WORD	RM8162		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	003, 377, 036, 011, 360,000	; Rect 30x9 tiles with FF at 6680
@@ -546,13 +546,13 @@ L81E5:	; Room 81E5
 	.BYTE	002, 013, 377, 345,000	; Fill horz 11 tiles with FF at 6675
 	.BYTE	377			; End of sequence
 	.EVEN
-L8238:	; Room 8238
+RM8238:	; Room 8238
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L81E5		; Room to Right
-	.WORD	L8279		; Room to Up
-	.WORD	L7A17		; Room to Down
+	.WORD	RM81E5		; Room to Right
+	.WORD	RM8279		; Room to Up
+	.WORD	RM7A17		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 000, 034, 006, 134,000	; Rect 28x6 tiles with 00 at 65EC
 	.BYTE	002, 016, 000, 020,001	; Fill horz 14 tiles with 00 at 66A0
@@ -565,13 +565,13 @@ L8238:	; Room 8238
 	.BYTE	001, 005, 053, 206,012	; Fill vert 5 tiles with 2B at 7016
 	.BYTE	377			; End of sequence
 	.EVEN
-L8279:	; Room 8279
+RM8279:	; Room 8279
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L82DD		; Room to Right
+	.WORD	RM82DD		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L8238		; Room to Down
+	.WORD	RM8238		; Room to Down
 	.BYTE	014, 26., 002, 021, 000,000	; Block 2 tiles from 81E3 to 6590 copy 17 times
 	.BYTE	007, 377, 004, 056,001	; Triangle with FF, count=4 at 66BE
 	.BYTE	002, 017, 377, 244,001	; Fill horz 15 tiles with FF at 6734
@@ -588,13 +588,13 @@ L8279:	; Room 8279
 	.BYTE	016, 000, 056,001	; Put tile 00 at 66BE
 	.BYTE	377			; End of sequence
 	.EVEN
-L82DD:	; Room 82DD
+RM82DD:	; Room 82DD
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L8279		; Room to Left
-	.WORD	L8321		; Room to Right
+	.WORD	RM8279		; Room to Left
+	.WORD	RM8321		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L81E5		; Room to Down
+	.WORD	RM81E5		; Room to Down
 	.BYTE	002, 015, 377, 340,001	; Fill horz 13 tiles with FF at 6770
 	.BYTE	002, 007, 377, 310,001	; Fill horz 7 tiles with FF at 6758
 	.BYTE	002, 006, 377, 324,001	; Fill horz 6 tiles with FF at 6764
@@ -606,13 +606,13 @@ L82DD:	; Room 82DD
 	.BYTE	005, 004, 003, 23., 225,013	; Block 4x3 tiles from 7E7B to 7125
 	.BYTE	377			; End of sequence
 	.EVEN
-L8321:	; Room 8321
+RM8321:	; Room 8321
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L82DD		; Room to Left
+	.WORD	RM82DD		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L844E		; Room to Up
-	.WORD	L8162		; Room to Down
+	.WORD	RM844E		; Room to Up
+	.WORD	RM8162		; Room to Down
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
 	.BYTE	005, 002, 001, 7., 360,001	; Block 2x1 tiles from 7984 to 6780
 	.BYTE	003, 377, 003, 004, 033,000	; Rect 3x4 tiles with FF at 65AB
@@ -628,13 +628,13 @@ L8321:	; Room 8321
 	.BYTE	014, 6., 002, 020, 020,000	; Block 2 tiles from 7348 to 65A0 copy 16 times
 	.BYTE	377			; End of sequence
 	.EVEN
-L8384:	; Room 8384
+RM8384:	; Room 8384
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L8076		; Room to Up
-	.WORD	L9376		; Room to Down
+	.WORD	RM8076		; Room to Up
+	.WORD	RM9376		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 002, 017, 007, 230,000	; Rect 15x7 tiles with 02 at 6628
 	.BYTE	002, 017, 003, 172,000	; Fill horz 15 tiles with 03 at 660A
@@ -652,13 +652,13 @@ L8384:	; Room 8384
 	.BYTE	005, 001, 005, 10., 201,001	; Block 1x5 tiles from 7B4F to 6711
 	.BYTE	377			; End of sequence
 	.EVEN
-L83ED:	; Room 83ED
+RM83ED:	; Room 83ED
 	.WORD	LB452		; Room procedure
 	.WORD	LA361		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L920A		; Room to Right
-	.WORD	L913F		; Room to Up
-	.WORD	L7E05		; Room to Down
+	.WORD	RM920A		; Room to Right
+	.WORD	RM913F		; Room to Up
+	.WORD	RM7E05		; Room to Down
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
 	.BYTE	014, 6., 002, 020, 011,000	; Block 2 tiles from 7348 to 6599 copy 16 times
 	.BYTE	005, 002, 001, 7., 351,001	; Block 2x1 tiles from 7984 to 6779
@@ -674,13 +674,13 @@ L83ED:	; Room 83ED
 	.BYTE	005, 004, 003, 23., 221,013	; Block 4x3 tiles from 7E7B to 7121
 	.BYTE	377			; End of sequence
 	.EVEN
-L844E:	; Room 844E
+RM844E:	; Room 844E
 	.WORD	LB452		; Room procedure
 	.WORD	LA37F		; Initialization
-	.WORD	L84A8		; Room to Left
+	.WORD	RM84A8		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L8321		; Room to Down
+	.WORD	RM8321		; Room to Down
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
 	.BYTE	002, 006, 377, 302,001	; Fill horz 6 tiles with FF at 6752
 	.BYTE	003, 377, 003, 004, 033,000	; Rect 3x4 tiles with FF at 65AB
@@ -695,14 +695,14 @@ L844E:	; Room 844E
 	.BYTE	005, 003, 004, 27., 167,013	; Block 3x4 tiles from 849C to 7107
 	.BYTE	377			; End of sequence
 	.EVEN
-L84A8:	; Room 84A8
+RM84A8:	; Room 84A8
 ;NOTE: Crane sprite copying moved into room sequence
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L84EE		; Room to Left
-	.WORD	L844E		; Room to Right
+	.WORD	RM84EE		; Room to Left
+	.WORD	RM844E		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L82DD		; Room to Down
+	.WORD	RM82DD		; Room to Down
 	.BYTE	003, 377, 015, 002, 302,001	; Rect 13x2 tiles with FF at 6752
 	.BYTE	003, 377, 014, 002, 324,001	; Rect 12x2 tiles with FF at 6764
 	.BYTE	002, 003, 377, 054,000	; Fill horz 3 tiles with FF at 65BC
@@ -714,12 +714,12 @@ L84A8:	; Room 84A8
 	.BYTE	005, 003, 006, 65., 112,000	; Block 3x6 tiles from F98F to 65DA
 	.BYTE	377			; End of sequence
 	.EVEN
-L84EE:	; Room 84EE
+RM84EE:	; Room 84EE
 	.WORD	L7918		; Room procedure
 	.WORD	LA10B		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L84A8		; Room to Right
-	.WORD	L8526		; Room to Up
+	.WORD	RM84A8		; Room to Right
+	.WORD	RM8526		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	003, 377, 002, 017, 000,000	; Rect 2x15 tiles with FF at 6590
 	.BYTE	003, 377, 036, 002, 302,001	; Rect 30x2 tiles with FF at 6752
@@ -734,13 +734,13 @@ L84EE:	; Room 84EE
 	.BYTE	000, 164,013		; Barrel at 7104
 	.BYTE	377			; End of sequence
 	.EVEN
-L8526:	; Room 8526
+RM8526:	; Room 8526
 	.WORD	LB483		; Room procedure
 	.WORD	LA179		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L858F		; Room to Right
-	.WORD	L8608		; Room to Up
-	.WORD	L84EE		; Room to Down
+	.WORD	RM858F		; Room to Right
+	.WORD	RM8608		; Room to Up
+	.WORD	RM84EE		; Room to Down
 	.BYTE	014, 26., 002, 020, 000,000	; Block 2 tiles from 81E3 to 6590 copy 16 times
 	.BYTE	014, 6., 002, 020, 010,000	; Block 2 tiles from 7348 to 6598 copy 16 times
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
@@ -755,11 +755,11 @@ L8526:	; Room 8526
 	.BYTE	002, 006, 377, 017,000	; Fill horz 6 tiles with FF at 659F
 	.BYTE	377			; End of sequence
 	.EVEN
-L858F:	; Room 858F
+RM858F:	; Room 858F
 	.WORD	L7918		; Room procedure
 	.WORD	LA106		; Initialization
-	.WORD	L8526		; Room to Left
-	.WORD	L85BD		; Room to Right
+	.WORD	RM8526		; Room to Left
+	.WORD	RM85BD		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
@@ -769,12 +769,12 @@ L858F:	; Room 858F
 	.BYTE	005, 003, 003, 2., 216,013	; Block 3x3 tiles from 71A0 to 711E
 	.BYTE	377			; End of sequence
 	.EVEN
-L85BD:	; Room 85BD
+RM85BD:	; Room 85BD
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L858F		; Room to Left
+	.WORD	RM858F		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L8689		; Room to Up
+	.WORD	RM8689		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
 	.BYTE	003, 377, 003, 004, 033,000	; Rect 3x4 tiles with FF at 65AB
@@ -795,13 +795,13 @@ L85BD:	; Room 85BD
 	.BYTE	000, 207,013		; Barrel at 7117
 	.BYTE	377			; End of sequence
 	.EVEN
-L8608:	; Room 8608
+RM8608:	; Room 8608
 	.WORD	LB452		; Room procedure
 	.WORD	LA37A		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L86FD		; Room to Right
+	.WORD	RM86FD		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L8526		; Room to Down
+	.WORD	RM8526		; Room to Down
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
 	.BYTE	002, 034, 377, 362,000	; Fill horz 28 tiles with FF at 6682
 	.BYTE	002, 014, 377, 344,000	; Fill horz 12 tiles with FF at 6674
@@ -828,13 +828,13 @@ L8608:	; Room 8608
 	.BYTE	000, 225,013		; Barrel at 7125
 	.BYTE	377			; End of sequence
 	.EVEN
-L8689:	; Room 8689
+RM8689:	; Room 8689
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L86FD		; Room to Left
+	.WORD	RM86FD		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L85BD		; Room to Down
+	.WORD	RM85BD		; Room to Down
 	.BYTE	002, 071, 377, 054,001	; Fill horz 57 tiles with FF at 66BC
 	.BYTE	003, 377, 003, 021, 033,000	; Rect 3x17 tiles with FF at 65AB
 	.BYTE	005, 002, 002, 7., 071,001	; Block 2x2 tiles from 7984 to 66C9
@@ -851,12 +851,12 @@ L8689:	; Room 8689
 	.BYTE	005, 004, 003, 23., 337,012	; Block 4x3 tiles from 7E7B to 706F
 	.BYTE	377			; End of sequence
 	.EVEN
-L86FD:	; Room 86FD
+RM86FD:	; Room 86FD
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L8608		; Room to Left
-	.WORD	L8689		; Room to Right
-	.WORD	L8739		; Room to Up
+	.WORD	RM8608		; Room to Left
+	.WORD	RM8689		; Room to Right
+	.WORD	RM8739		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	006, 377, 004, 206,001	; Triangle with FF, count=4 at 6716
 	.BYTE	002, 101, 377, 054,001	; Fill horz 65 tiles with FF at 66BC
@@ -870,13 +870,13 @@ L86FD:	; Room 86FD
 	.BYTE	000, 337,012		; Barrel at 706F
 	.BYTE	377			; End of sequence
 	.EVEN
-L8739:	; Room 8739
+RM8739:	; Room 8739
 	.WORD	L7918		; Room procedure
 	.WORD	LA101		; Initialization
-	.WORD	L8799		; Room to Left
-	.WORD	L8802		; Room to Right
+	.WORD	RM8799		; Room to Left
+	.WORD	RM8802		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L86FD		; Room to Down
+	.WORD	RM86FD		; Room to Down
 	.BYTE	001, 011, 072, 004,000	; Fill vert 9 tiles with 3A at 6594
 	.BYTE	001, 011, 072, 016,000	; Fill vert 9 tiles with 3A at 659E
 	.BYTE	001, 011, 072, 021,000	; Fill vert 9 tiles with 3A at 65A1
@@ -890,11 +890,11 @@ L8739:	; Room 8739
 	.BYTE	005, 003, 004, 13., 243,012	; Block 3x4 tiles from 7C0C to 7033
 	.BYTE	377			; End of sequence
 	.EVEN
-L8799:	; Room 8799
+RM8799:	; Room 8799
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L8739		; Room to Right
+	.WORD	RM8739		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	001, 017, 072, 010,000	; Fill vert 15 tiles with 3A at 6598
@@ -915,12 +915,12 @@ L8799:	; Room 8799
 	.BYTE	005, 004, 007, 8., 230,012	; Block 4x7 tiles from 798E to 7028
 	.BYTE	377			; End of sequence
 	.EVEN
-L8802:	; Room 8802
+RM8802:	; Room 8802
 	.WORD	LB452		; Room procedure
 	.WORD	LA375		; Initialization
-	.WORD	L8739		; Room to Left
+	.WORD	RM8739		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L8834		; Room to Up
+	.WORD	RM8834		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	001, 011, 072, 015,000	; Fill vert 9 tiles with 3A at 659D
 	.BYTE	001, 010, 072, 022,000	; Fill vert 8 tiles with 3A at 65A2
@@ -932,13 +932,13 @@ L8802:	; Room 8802
 	.BYTE	014, 6., 002, 010, 027,000	; Block 2 tiles from 7348 to 65A7 copy 8 times
 	.BYTE	377			; End of sequence
 	.EVEN
-L8834:	; Room 8834
+RM8834:	; Room 8834
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L889F		; Room to Left
-	.WORD	L890E		; Room to Right
-	.WORD	L8A81		; Room to Up
-	.WORD	L8802		; Room to Down
+	.WORD	RM889F		; Room to Left
+	.WORD	RM890E		; Room to Right
+	.WORD	RM8A81		; Room to Up
+	.WORD	RM8802		; Room to Down
 	.BYTE	001, 013, 072, 134,000	; Fill vert 11 tiles with 3A at 65EC
 	.BYTE	001, 016, 072, 007,000	; Fill vert 14 tiles with 3A at 6597
 	.BYTE	001, 020, 072, 015,000	; Fill vert 16 tiles with 3A at 659D
@@ -957,13 +957,13 @@ L8834:	; Room 8834
 	.BYTE	001, 003, 050, 370,011	; Fill vert 3 tiles with 28 at 6F88
 	.BYTE	377			; End of sequence
 	.EVEN
-L889F:	; Room 889F
+RM889F:	; Room 889F
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L8953		; Room to Left
-	.WORD	L8834		; Room to Right
-	.WORD	L89B9		; Room to Up
-	.WORD	L8739		; Room to Down
+	.WORD	RM8953		; Room to Left
+	.WORD	RM8834		; Room to Right
+	.WORD	RM89B9		; Room to Up
+	.WORD	RM8739		; Room to Down
 	.BYTE	001, 021, 072, 004,000	; Fill vert 17 tiles with 3A at 6594
 	.BYTE	001, 021, 072, 030,000	; Fill vert 17 tiles with 3A at 65A8
 	.BYTE	001, 014, 072, 014,000	; Fill vert 12 tiles with 3A at 659C
@@ -985,11 +985,11 @@ L889F:	; Room 889F
 	.BYTE	005, 001, 004, 33., 062,001	; Block 1x4 tiles from 8898 to 66C2
 	.BYTE	377			; End of sequence
 	.EVEN
-L890E:	; Room 890E
+RM890E:	; Room 890E
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L8834		; Room to Left
-	.WORD	L8BF0		; Room to Right
+	.WORD	RM8834		; Room to Left
+	.WORD	RM8BF0		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	001, 020, 072, 011,000	; Fill vert 16 tiles with 3A at 6599
@@ -1005,13 +1005,13 @@ L890E:	; Room 890E
 	.BYTE	016, 370, 371,000	; Put tile F8 at 6689
 	.BYTE	377			; End of sequence
 	.EVEN
-L8953:	; Room 8953
+RM8953:	; Room 8953
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L889F		; Room to Right
-	.WORD	L89B9		; Room to Up
-	.WORD	L8799		; Room to Down
+	.WORD	RM889F		; Room to Right
+	.WORD	RM89B9		; Room to Up
+	.WORD	RM8799		; Room to Down
 	.BYTE	001, 021, 072, 010,000	; Fill vert 17 tiles with 3A at 6598
 	.BYTE	001, 020, 072, 015,000	; Fill vert 16 tiles with 3A at 659D
 	.BYTE	001, 005, 072, 020,000	; Fill vert 5 tiles with 3A at 65A0
@@ -1031,13 +1031,13 @@ L8953:	; Room 8953
 	.BYTE	002, 027, 372, 121,001	; Fill horz 23 tiles with FA at 66E1
 	.BYTE	377			; End of sequence
 	.EVEN
-L89B9:	; Room 89B9
+RM89B9:	; Room 89B9
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L8A2D		; Room to Right
+	.WORD	RM8A2D		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L8953		; Room to Down
+	.WORD	RM8953		; Room to Down
 	.BYTE	016, 072, 046,001	; Put tile 3A at 66B6
 	.BYTE	016, 072, 232,001	; Put tile 3A at 672A
 	.BYTE	001, 010, 072, 033,001	; Fill vert 8 tiles with 3A at 66AB
@@ -1059,13 +1059,13 @@ L89B9:	; Room 89B9
 	.BYTE	002, 003, 372, 173,001	; Fill horz 3 tiles with FA at 670B
 	.BYTE	377			; End of sequence
 	.EVEN
-L8A2D:	; Room 8A2D
+RM8A2D:	; Room 8A2D
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L89B9		; Room to Left
-	.WORD	L8A81		; Room to Right
-	.WORD	L8B25		; Room to Up
-	.WORD	L889F		; Room to Down
+	.WORD	RM89B9		; Room to Left
+	.WORD	RM8A81		; Room to Right
+	.WORD	RM8B25		; Room to Up
+	.WORD	RM889F		; Room to Down
 	.BYTE	001, 010, 072, 022,001	; Fill vert 8 tiles with 3A at 66A2
 	.BYTE	001, 010, 072, 035,001	; Fill vert 8 tiles with 3A at 66AD
 	.BYTE	001, 010, 072, 041,001	; Fill vert 8 tiles with 3A at 66B1
@@ -1081,13 +1081,13 @@ L8A2D:	; Room 8A2D
 	.BYTE	005, 001, 003, 33., 255,001	; Block 1x3 tiles from 8898 to 673D
 	.BYTE	377			; End of sequence
 	.EVEN
-L8A81:	; Room 8A81
+RM8A81:	; Room 8A81
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L8A2D		; Room to Left
-	.WORD	L8AF4		; Room to Right
+	.WORD	RM8A2D		; Room to Left
+	.WORD	RM8AF4		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L8834		; Room to Down
+	.WORD	RM8834		; Room to Down
 	.BYTE	001, 006, 072, 121,001	; Fill vert 6 tiles with 3A at 66E1
 	.BYTE	001, 014, 072, 243,000	; Fill vert 12 tiles with 3A at 6633
 	.BYTE	001, 005, 072, 172,001	; Fill vert 5 tiles with 3A at 670A
@@ -1108,13 +1108,13 @@ L8A81:	; Room 8A81
 	.BYTE	005, 001, 002, 33., 122,001	; Block 1x2 tiles from 8898 to 66E2
 	.BYTE	377			; End of sequence
 	.EVEN
-L8AF4:	; Room 8AF4
+RM8AF4:	; Room 8AF4
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L8A81		; Room to Left
-	.WORD	L8C5A		; Room to Right
-	.WORD	L8BAB		; Room to Up
-	.WORD	L890E		; Room to Down
+	.WORD	RM8A81		; Room to Left
+	.WORD	RM8C5A		; Room to Right
+	.WORD	RM8BAB		; Room to Up
+	.WORD	RM890E		; Room to Down
 	.BYTE	001, 010, 072, 027,001	; Fill vert 8 tiles with 3A at 66A7
 	.BYTE	001, 010, 072, 037,001	; Fill vert 8 tiles with 3A at 66AF
 	.BYTE	002, 013, 372, 244,001	; Fill horz 11 tiles with FA at 6734
@@ -1124,13 +1124,13 @@ L8AF4:	; Room 8AF4
 	.BYTE	016, 370, 376,000	; Put tile F8 at 668E
 	.BYTE	377			; End of sequence
 	.EVEN
-L8B25:	; Room 8B25
+RM8B25:	; Room 8B25
 	.WORD	LB483		; Room procedure
 	.WORD	LA174		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L8B71		; Room to Right
+	.WORD	RM8B71		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L8A2D		; Room to Down
+	.WORD	RM8A2D		; Room to Down
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
 	.BYTE	002, 110, 377, 000,000	; Fill horz 72 tiles with FF at 6590
 	.BYTE	014, 6., 002, 016, 115,000	; Block 2 tiles from 7348 to 65DD copy 14 times
@@ -1143,11 +1143,11 @@ L8B25:	; Room 8B25
 	.BYTE	003, 377, 003, 004, 150,001	; Rect 3x4 tiles with FF at 66F8
 	.BYTE	377			; End of sequence
 	.EVEN
-L8B71:	; Room 8B71
+RM8B71:	; Room 8B71
 	.WORD	L7918		; Room procedure
 	.WORD	LA0FC		; Initialization
-	.WORD	L8B25		; Room to Left
-	.WORD	L8BAB		; Room to Right
+	.WORD	RM8B25		; Room to Left
+	.WORD	RM8BAB		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
@@ -1159,13 +1159,13 @@ L8B71:	; Room 8B71
 	.BYTE	005, 004, 004, 3., 167,013	; Block 4x4 tiles from 71A9 to 7107
 	.BYTE	377			; End of sequence
 	.EVEN
-L8BAB:	; Room 8BAB
+RM8BAB:	; Room 8BAB
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L8B71		; Room to Left
+	.WORD	RM8B71		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L8AF4		; Room to Down
+	.WORD	RM8AF4		; Room to Down
 	.BYTE	002, 074, 377, 000,000	; Fill horz 60 tiles with FF at 6590
 	.BYTE	003, 377, 002, 016, 130,000	; Rect 2x14 tiles with FF at 65E8
 	.BYTE	002, 011, 377, 340,001	; Fill horz 9 tiles with FF at 6770
@@ -1177,13 +1177,13 @@ L8BAB:	; Room 8BAB
 	.BYTE	005, 004, 004, 3., 166,013	; Block 4x4 tiles from 71A9 to 7106
 	.BYTE	377			; End of sequence
 	.EVEN
-L8BF0:	; Room 8BF0
+RM8BF0:	; Room 8BF0
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L890E		; Room to Left
-	.WORD	L8CC8		; Room to Right
+	.WORD	RM890E		; Room to Left
+	.WORD	RM8CC8		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L9005		; Room to Down
+	.WORD	RM9005		; Room to Down
 	.BYTE	001, 020, 072, 003,000	; Fill vert 16 tiles with 3A at 6593
 	.BYTE	001, 010, 072, 010,000	; Fill vert 8 tiles with 3A at 6598
 	.BYTE	001, 010, 072, 014,000	; Fill vert 8 tiles with 3A at 659C
@@ -1204,13 +1204,13 @@ L8BF0:	; Room 8BF0
 	.BYTE	001, 001, 377, 371,000	; Fill vert 1 tiles with FF at 6689
 	.BYTE	377			; End of sequence
 	.EVEN
-L8C5A:	; Room 8C5A
+RM8C5A:	; Room 8C5A
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L8AF4		; Room to Left
-	.WORD	L8D18		; Room to Right
+	.WORD	RM8AF4		; Room to Left
+	.WORD	RM8D18		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L8BF0		; Room to Down
+	.WORD	RM8BF0		; Room to Down
 	.BYTE	001, 005, 072, 115,001	; Fill vert 5 tiles with 3A at 66DD
 	.BYTE	001, 015, 072, 142,000	; Fill vert 13 tiles with 3A at 65F2
 	.BYTE	001, 017, 072, 110,000	; Fill vert 15 tiles with 3A at 65D8
@@ -1232,11 +1232,11 @@ L8C5A:	; Room 8C5A
 	.BYTE	002, 005, 372, 237,001	; Fill horz 5 tiles with FA at 672F
 	.BYTE	377			; End of sequence
 	.EVEN
-L8CC8:	; Room 8CC8
+RM8CC8:	; Room 8CC8
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L8BF0		; Room to Left
-	.WORD	L8E9C		; Room to Right
+	.WORD	RM8BF0		; Room to Left
+	.WORD	RM8E9C		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	001, 014, 072, 006,000	; Fill vert 12 tiles with 3A at 6596
@@ -1253,13 +1253,13 @@ L8CC8:	; Room 8CC8
 	.BYTE	005, 004, 007, 9., 160,012	; Block 4x7 tiles from 79AA to 7000
 	.BYTE	377			; End of sequence
 	.EVEN
-L8D18:	; Room 8D18
+RM8D18:	; Room 8D18
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L8C5A		; Room to Left
-	.WORD	L8EE1		; Room to Right
-	.WORD	L8D5C		; Room to Up
-	.WORD	L8CC8		; Room to Down
+	.WORD	RM8C5A		; Room to Left
+	.WORD	RM8EE1		; Room to Right
+	.WORD	RM8D5C		; Room to Up
+	.WORD	RM8CC8		; Room to Down
 	.BYTE	001, 003, 072, 252,001	; Fill vert 3 tiles with 3A at 673A
 	.BYTE	001, 003, 072, 262,001	; Fill vert 3 tiles with 3A at 6742
 	.BYTE	001, 003, 072, 276,001	; Fill vert 3 tiles with 3A at 674E
@@ -1272,13 +1272,13 @@ L8D18:	; Room 8D18
 	.BYTE	005, 002, 004, 5., 021,013	; Block 2x4 tiles from 71BB to 70A1
 	.BYTE	377			; End of sequence
 	.EVEN
-L8D5C:	; Room 8D5C
+RM8D5C:	; Room 8D5C
 	.WORD	LB483		; Room procedure
 	.WORD	LA1A1		; Initialization
-	.WORD	L8DCA		; Room to Left
+	.WORD	RM8DCA		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L8D18		; Room to Down
+	.WORD	RM8D18		; Room to Down
 	.BYTE	004, 001		; Fill entire screen with 01
 	.BYTE	002, 076, 377, 000,000	; Fill horz 62 tiles with FF at 6590
 	.BYTE	003, 377, 002, 004, 132,000	; Rect 2x4 tiles with FF at 65EA
@@ -1299,11 +1299,11 @@ L8DBB:	.BYTE	001, 001, 377, 324,000	; Fill vert 1 tiles with FF at 6664
 	.BYTE	377			; End of sequence
 	.EVEN
 L8DBC = L8DBB + 1		; trigger "C"
-L8DCA:	; Room 8DCA
+RM8DCA:	; Room 8DCA
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L8D5C		; Room to Right
+	.WORD	RM8D5C		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 001		; Fill entire screen with 01
@@ -1328,13 +1328,13 @@ L8DCA:	; Room 8DCA
 	.BYTE	003, 033, 004, 004, 373,000	; Rect 4x4 tiles with 1B at 668B
 	.BYTE	377			; End of sequence
 	.EVEN
-L8E9C:	; Room 8E9C
+RM8E9C:	; Room 8E9C
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L8CC8		; Room to Left
+	.WORD	RM8CC8		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L8EE1		; Room to Up
-	.WORD	L8F20		; Room to Down
+	.WORD	RM8EE1		; Room to Up
+	.WORD	RM8F20		; Room to Down
 	.BYTE	001, 020, 072, 001,000	; Fill vert 16 tiles with 3A at 6591
 	.BYTE	001, 020, 072, 011,000	; Fill vert 16 tiles with 3A at 6599
 	.BYTE	001, 020, 072, 014,000	; Fill vert 16 tiles with 3A at 659C
@@ -1348,13 +1348,13 @@ L8E9C:	; Room 8E9C
 	.BYTE	003, 377, 002, 021, 034,000	; Rect 2x17 tiles with FF at 65AC
 	.BYTE	377			; End of sequence
 	.EVEN
-L8EE1:	; Room 8EE1
+RM8EE1:	; Room 8EE1
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L8D18		; Room to Left
+	.WORD	RM8D18		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L8E9C		; Room to Down
+	.WORD	RM8E9C		; Room to Down
 	.BYTE	001, 003, 072, 245,001	; Fill vert 3 tiles with 3A at 6735
 	.BYTE	001, 017, 072, 105,000	; Fill vert 15 tiles with 3A at 65D5
 	.BYTE	016, 072, 354,001	; Put tile 3A at 677C
@@ -1367,13 +1367,13 @@ L8EE1:	; Room 8EE1
 	.BYTE	002, 004, 143, 120,001	; Fill horz 4 tiles with 63 at 66E0
 	.BYTE	377			; End of sequence
 	.EVEN
-L8F20:	; Room 8F20
+RM8F20:	; Room 8F20
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L8FBD		; Room to Left
+	.WORD	RM8FBD		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L8E9C		; Room to Up
-	.WORD	L8F84		; Room to Down
+	.WORD	RM8E9C		; Room to Up
+	.WORD	RM8F84		; Room to Down
 	.BYTE	002, 016, 377, 000,000	; Fill horz 14 tiles with FF at 6590
 L8F31:	.BYTE	001, 001, 377, 006,000	; Fill vert 1 tiles with FF at 6596
 	.BYTE	016, 052, 032,012	; Put tile 2A at 6FAA
@@ -1393,13 +1393,13 @@ L8F31:	.BYTE	001, 001, 377, 006,000	; Fill vert 1 tiles with FF at 6596
 	.BYTE	377			; End of sequence
 	.EVEN
 L8F32 = L8F31 + 1		; trigger "B"
-L8F84:	; Room 8F84
+RM8F84:	; Room 8F84
 	.WORD	L7918		; Room procedure
 	.WORD	LA0F7		; Initialization
-	.WORD	L9053		; Room to Left
+	.WORD	RM9053		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L8F20		; Room to Up
-	.WORD	L91BA		; Room to Down
+	.WORD	RM8F20		; Room to Up
+	.WORD	RM91BA		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 000, 034, 010, 226,000	; Rect 28x8 tiles with 00 at 6626
 	.BYTE	010, 000, 004, 065,000	; Triangle with 00, count=4 at 65C5
@@ -1410,13 +1410,13 @@ L8F84:	; Room 8F84
 	.BYTE	005, 002, 004, 7., 232,001	; Block 2x4 tiles from 7984 to 672A
 	.BYTE	377			; End of sequence
 	.EVEN
-L8FBD:	; Room 8FBD
+RM8FBD:	; Room 8FBD
 	.WORD	LB483		; Room procedure
 	.WORD	LA16A		; Initialization
-	.WORD	L9005		; Room to Left
-	.WORD	L8F20		; Room to Right
+	.WORD	RM9005		; Room to Left
+	.WORD	RM8F20		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L9053		; Room to Down
+	.WORD	RM9053		; Room to Down
 	.BYTE	003, 377, 036, 010, 016,001	; Rect 30x8 tiles with FF at 669E
 	.BYTE	003, 071, 007, 007, 065,001	; Rect 7x7 tiles with 39 at 66C5
 	.BYTE	002, 005, 070, 030,001	; Fill horz 5 tiles with 38 at 66A8
@@ -1430,12 +1430,12 @@ L8FBD:	; Room 8FBD
 	.BYTE	005, 002, 004, 5., 241,012	; Block 2x4 tiles from 71BB to 7031
 	.BYTE	377			; End of sequence
 	.EVEN
-L9005:	; Room 9005
+RM9005:	; Room 9005
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L92A7		; Room to Left
-	.WORD	L8FBD		; Room to Right
-	.WORD	L8BF0		; Room to Up
+	.WORD	RM92A7		; Room to Left
+	.WORD	RM8FBD		; Room to Right
+	.WORD	RM8BF0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 036, 377, 000,000	; Fill horz 30 tiles with FF at 6590
 	.BYTE	005, 002, 004, 5., 243,012	; Block 2x4 tiles from 71BB to 7033
@@ -1450,13 +1450,13 @@ L9005:	; Room 9005
 	.BYTE	005, 004, 007, 8., 224,012	; Block 4x7 tiles from 798E to 7024
 	.BYTE	377			; End of sequence
 	.EVEN
-L9053:	; Room 9053
+RM9053:	; Room 9053
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L909F		; Room to Left
-	.WORD	L8F84		; Room to Right
-	.WORD	L8FBD		; Room to Up
-	.WORD	L90DB		; Room to Down
+	.WORD	RM909F		; Room to Left
+	.WORD	RM8F84		; Room to Right
+	.WORD	RM8FBD		; Room to Up
+	.WORD	RM90DB		; Room to Down
 	.BYTE	003, 377, 036, 011, 000,000	; Rect 30x9 tiles with FF at 6590
 	.BYTE	003, 000, 012, 004, 252,000	; Rect 10x4 tiles with 00 at 663A
 	.BYTE	002, 047, 377, 327,001	; Fill horz 39 tiles with FF at 6767
@@ -1470,11 +1470,11 @@ L9053:	; Room 9053
 	.BYTE	002, 004, 070, 371,000	; Fill horz 4 tiles with 38 at 6689
 	.BYTE	377			; End of sequence
 	.EVEN
-L909F:	; Room 909F
+RM909F:	; Room 909F
 	.WORD	LB47A		; Room procedure
 	.WORD	LA15F		; Initialization
-	.WORD	L92EF		; Room to Left
-	.WORD	L9053		; Room to Right
+	.WORD	RM92EF		; Room to Left
+	.WORD	RM9053		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 036, 377, 000,000	; Fill horz 30 tiles with FF at 6590
@@ -1487,12 +1487,12 @@ L909F:	; Room 909F
 	.BYTE	005, 004, 007, 9., 124,012	; Block 4x7 tiles from 79AA to 6FE4
 	.BYTE	377			; End of sequence
 	.EVEN
-L90DB:	; Room 90DB
+RM90DB:	; Room 90DB
 	.WORD	LB452		; Room procedure
 	.WORD	LA370		; Initialization
-	.WORD	L913F		; Room to Left
-	.WORD	L91BA		; Room to Right
-	.WORD	L9053		; Room to Up
+	.WORD	RM913F		; Room to Left
+	.WORD	RM91BA		; Room to Right
+	.WORD	RM9053		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 000, 026, 006, 104,000	; Rect 22x6 tiles with 00 at 65D4
@@ -1512,13 +1512,13 @@ L90DB:	; Room 90DB
 	.BYTE	005, 004, 007, 8., 204,012	; Block 4x7 tiles from 798E to 7014
 	.BYTE	377			; End of sequence
 	.EVEN
-L913F:	; Room 913F
+RM913F:	; Room 913F
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L90DB		; Room to Right
+	.WORD	RM90DB		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L83ED		; Room to Down
+	.WORD	RM83ED		; Room to Down
 	.BYTE	011, 377, 011, 035,000	; Triangle with FF, count=9 at 65AD
 	.BYTE	002, 047, 377, 327,001	; Fill horz 39 tiles with FF at 6767
 	.BYTE	002, 005, 377, 000,000	; Fill horz 5 tiles with FF at 6590
@@ -1538,13 +1538,13 @@ L913F:	; Room 913F
 	.BYTE	005, 002, 001, 25., 263,013	; Block 2x1 tiles from 7E8A to 7143
 	.BYTE	377			; End of sequence
 	.EVEN
-L91BA:	; Room 91BA
+RM91BA:	; Room 91BA
 	.WORD	LB452		; Room procedure
 	.WORD	LA36B		; Initialization
-	.WORD	L90DB		; Room to Left
+	.WORD	RM90DB		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L8F84		; Room to Up
-	.WORD	L924E		; Room to Down
+	.WORD	RM8F84		; Room to Up
+	.WORD	RM924E		; Room to Down
 	.BYTE	002, 004, 377, 000,000	; Fill horz 4 tiles with FF at 6590
 	.BYTE	016, 052, 025,012	; Put tile 2A at 6FA5
 	.BYTE	001, 007, 053, 063,012	; Fill vert 7 tiles with 2B at 6FC3
@@ -1560,11 +1560,11 @@ L91BA:	; Room 91BA
 	.BYTE	000, 035,013		; Barrel at 70AD
 	.BYTE	377			; End of sequence
 	.EVEN
-L920A:	; Room 920A
+RM920A:	; Room 920A
 	.WORD	L7918		; Room procedure
 	.WORD	LA0F2		; Initialization
-	.WORD	L83ED		; Room to Left
-	.WORD	L924E		; Room to Right
+	.WORD	RM83ED		; Room to Left
+	.WORD	RM924E		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
@@ -1580,12 +1580,12 @@ L920A:	; Room 920A
 	.BYTE	005, 004, 003, 23., 220,013	; Block 4x3 tiles from 7E7B to 7120
 	.BYTE	377			; End of sequence
 	.EVEN
-L924E:	; Room 924E
+RM924E:	; Room 924E
 	.WORD	LB452		; Room procedure
 	.WORD	LA366		; Initialization
-	.WORD	L920A		; Room to Left
+	.WORD	RM920A		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L91BA		; Room to Up
+	.WORD	RM91BA		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 020, 377, 016,000	; Fill horz 16 tiles with FF at 659E
 	.BYTE	014, 26., 002, 016, 072,000	; Block 2 tiles from 81E3 to 65CA copy 14 times
@@ -1605,11 +1605,11 @@ L924E:	; Room 924E
 	.BYTE	000, 210,013		; Barrel at 7118
 	.BYTE	377			; End of sequence
 	.EVEN
-L92A7:	; Room 92A7
+RM92A7:	; Room 92A7
 	.WORD	LB483		; Room procedure
 	.WORD	LA16F		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L9005		; Room to Right
+	.WORD	RM9005		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 040, 377, 000,000	; Fill horz 32 tiles with FF at 6590
@@ -1623,11 +1623,11 @@ L92A7:	; Room 92A7
 	.BYTE	005, 002, 004, 5., 116,013	; Block 2x4 tiles from 71BB to 70DE
 	.BYTE	377			; End of sequence
 	.EVEN
-L92EF:	; Room 92EF
+RM92EF:	; Room 92EF
 	.WORD	L7918		; Room procedure
 	.WORD	L791B		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L909F		; Room to Right
+	.WORD	RM909F		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
@@ -1651,12 +1651,12 @@ L92EF:	; Room 92EF
 	.BYTE	005, 002, 004, 5., 142,012	; Block 2x4 tiles from 71BB to 6FF2
 	.BYTE	377			; End of sequence
 	.EVEN
-L9376:	; Room 9376
+RM9376:	; Room 9376
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L93DF		; Room to Left
+	.WORD	RM93DF		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L8384		; Room to Up
+	.WORD	RM8384		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 002, 014, 006, 360,000	; Rect 12x6 tiles with 02 at 6680
@@ -1676,12 +1676,12 @@ L9376:	; Room 9376
 	.BYTE	005, 001, 003, 10., 256,001	; Block 1x3 tiles from 7B4F to 673E
 	.BYTE	377			; End of sequence
 	.EVEN
-L93DF:	; Room 93DF
+RM93DF:	; Room 93DF
 	.WORD	LB41F		; Room procedure
 	.WORD	LC671		; Initialization
-	.WORD	L7C9C		; Room to Left
-	.WORD	L9376		; Room to Right
-	.WORD	L9431		; Room to Up
+	.WORD	RM7C9C		; Room to Left
+	.WORD	RM9376		; Room to Right
+	.WORD	RM9431		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 002		; Fill entire screen with 02
 	.BYTE	003, 041, 005, 002, 206,001	; Rect 5x2 tiles with 21 at 6716
@@ -1698,26 +1698,26 @@ L93DF:	; Room 93DF
 	.BYTE	005, 001, 003, 10., 273,001	; Block 1x3 tiles from 7B4F to 674B
 	.BYTE	377			; End of sequence
 	.EVEN
-L9431:	; Room 9431
+RM9431:	; Room 9431
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L9451		; Room to Up
-	.WORD	L93DF		; Room to Down
+	.WORD	RM9451		; Room to Up
+	.WORD	RM93DF		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	014, 4., 002, 021, 006,000	; Block 2 tiles from 71B9 to 6596 copy 17 times
 	.BYTE	001, 021, 375, 016,000	; Fill vert 17 tiles with FD at 659E
 	.BYTE	001, 021, 375, 027,000	; Fill vert 17 tiles with FD at 65A7
 	.BYTE	377			; End of sequence
 	.EVEN
-L9451:	; Room 9451
+RM9451:	; Room 9451
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L9431		; Room to Down
+	.WORD	RM9431		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	005, 002, 004, 7., 214,001	; Block 2x4 tiles from 7984 to 671C
 	.BYTE	001, 021, 375, 016,000	; Fill vert 17 tiles with FD at 659E
@@ -1726,11 +1726,11 @@ L9451:	; Room 9451
 	.BYTE	002, 030, 003, 267,000	; Fill horz 24 tiles with 03 at 6647
 	.BYTE	377			; End of sequence
 	.EVEN
-L947C:	; Room 947C
+RM947C:	; Room 947C
 	.WORD	LB41F		; Room procedure
 	.WORD	LC671		; Initialization
-	.WORD	L94AB		; Room to Left
-	.WORD	L7C9C		; Room to Right
+	.WORD	RM94AB		; Room to Left
+	.WORD	RM7C9C		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
@@ -1742,11 +1742,11 @@ L947C:	; Room 947C
 	.BYTE	002, 007, 041, 273,001	; Fill horz 7 tiles with 21 at 674B
 	.BYTE	377			; End of sequence
 	.EVEN
-L94AB:	; Room 94AB
+RM94AB:	; Room 94AB
 	.WORD	L7918		; Room procedure
 	.WORD	LA0DF		; Initialization
-	.WORD	L95D6		; Room to Left
-	.WORD	L947C		; Room to Right
+	.WORD	RM95D6		; Room to Left
+	.WORD	RM947C		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
@@ -1756,11 +1756,11 @@ L94AB:	; Room 94AB
 	.BYTE	001, 006, 053, 305,012	; Fill vert 6 tiles with 2B at 7055
 	.BYTE	377			; End of sequence
 	.EVEN
-L94CF:	; Room 94CF
+RM94CF:	; Room 94CF
 	.WORD	L7918		; Room procedure
 	.WORD	LA11A		; Initialization
-	.WORD	L9552		; Room to Left
-	.WORD	L9A9A		; Room to Right
+	.WORD	RM9552		; Room to Left
+	.WORD	RM9A9A		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 074, 377, 302,001	; Fill horz 60 tiles with FF at 6752
@@ -1778,11 +1778,11 @@ L94CF:	; Room 94CF
 	.BYTE	005, 003, 006, 47., 116,000	; Block 3x6 tiles from 9540 to 65DE
 	.BYTE	377			; End of sequence
 	.EVEN
-L9552:	; Room 9552
+RM9552:	; Room 9552
 	.WORD	LB483		; Room procedure
 	.WORD	LA197		; Initialization
-	.WORD	L9A5A		; Room to Left
-	.WORD	L94CF		; Room to Right
+	.WORD	RM9A5A		; Room to Left
+	.WORD	RM94CF		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 074, 377, 302,001	; Fill horz 60 tiles with FF at 6752
@@ -1801,11 +1801,11 @@ L9552:	; Room 9552
 	.BYTE	005, 003, 006, 50., 105,000	; Block 3x6 tiles from 95C4 to 65D5
 	.BYTE	377			; End of sequence
 	.EVEN
-L95D6:	; Room 95D6
+RM95D6:	; Room 95D6
 	.WORD	LB483		; Room procedure
 	.WORD	LA183		; Initialization
-	.WORD	L95F8		; Room to Left
-	.WORD	L94AB		; Room to Right
+	.WORD	RM95F8		; Room to Left
+	.WORD	RM94AB		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 226, 377, 000,000	; Fill horz 150 tiles with FF at 6590
@@ -1814,13 +1814,13 @@ L95D6:	; Room 95D6
 	.BYTE	002, 020, 372, 206,001	; Fill horz 16 tiles with FA at 6716
 	.BYTE	377			; End of sequence
 	.EVEN
-L95F8:	; Room 95F8
+RM95F8:	; Room 95F8
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L95D6		; Room to Right
+	.WORD	RM95D6		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L9634		; Room to Down
+	.WORD	RM9634		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 000, 027, 010, 235,000	; Rect 23x8 tiles with 00 at 662D
 	.BYTE	006, 377, 003, 235,000	; Triangle with FF, count=3 at 662D
@@ -1832,13 +1832,13 @@ L95F8:	; Room 95F8
 	.BYTE	005, 002, 001, 35., 224,001	; Block 2x1 tiles from 889D to 6724
 	.BYTE	377			; End of sequence
 	.EVEN
-L9634:	; Room 9634
+RM9634:	; Room 9634
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L968A		; Room to Right
-	.WORD	L95F8		; Room to Up
-	.WORD	L990D		; Room to Down
+	.WORD	RM968A		; Room to Right
+	.WORD	RM95F8		; Room to Up
+	.WORD	RM990D		; Room to Down
 	.BYTE	003, 377, 004, 015, 000,000	; Rect 4x13 tiles with FF at 6590
 	.BYTE	003, 377, 030, 004, 214,001	; Rect 24x4 tiles with FF at 671C
 	.BYTE	007, 377, 005, 364,000	; Triangle with FF, count=5 at 6684
@@ -1853,13 +1853,13 @@ L9634:	; Room 9634
 	.BYTE	005, 002, 001, 35., 275,001	; Block 2x1 tiles from 889D to 674D
 	.BYTE	377			; End of sequence
 	.EVEN
-L968A:	; Room 968A
+RM968A:	; Room 968A
 	.WORD	LB483		; Room procedure
 	.WORD	LA188		; Initialization
-	.WORD	L9634		; Room to Left
-	.WORD	L96CC		; Room to Right
+	.WORD	RM9634		; Room to Left
+	.WORD	RM96CC		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L9715		; Room to Down
+	.WORD	RM9715		; Room to Down
 	.BYTE	003, 377, 020, 005, 016,000	; Rect 16x5 tiles with FF at 659E
 	.BYTE	001, 014, 072, 260,000	; Fill vert 12 tiles with 3A at 6640
 	.BYTE	003, 377, 013, 002, 302,001	; Rect 11x2 tiles with FF at 6752
@@ -1871,13 +1871,13 @@ L968A:	; Room 968A
 	.BYTE	005, 002, 001, 35., 260,001	; Block 2x1 tiles from 889D to 6740
 	.BYTE	377			; End of sequence
 	.EVEN
-L96CC:	; Room 96CC
+RM96CC:	; Room 96CC
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L968A		; Room to Left
+	.WORD	RM968A		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L96F3		; Room to Down
+	.WORD	RM96F3		; Room to Down
 	.BYTE	002, 226, 377, 000,000	; Fill horz 150 tiles with FF at 6590
 	.BYTE	003, 377, 017, 014, 245,000	; Rect 15x12 tiles with FF at 6635
 	.BYTE	011, 377, 011, 244,000	; Triangle with FF, count=9 at 6634
@@ -1885,39 +1885,39 @@ L96CC:	; Room 96CC
 	.BYTE	002, 004, 372, 302,001	; Fill horz 4 tiles with FA at 6752
 	.BYTE	377			; End of sequence
 	.EVEN
-L96F3:	; Room 96F3
+RM96F3:	; Room 96F3
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L9715		; Room to Left
+	.WORD	RM9715		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L976E		; Room to Down
+	.WORD	RM976E		; Room to Down
 	.BYTE	003, 377, 017, 021, 017,000	; Rect 15x17 tiles with FF at 659F
 	.BYTE	001, 021, 072, 001,000	; Fill vert 17 tiles with 3A at 6591
 	.BYTE	001, 012, 072, 330,000	; Fill vert 10 tiles with 3A at 6668
 	.BYTE	002, 011, 372, 360,000	; Fill horz 9 tiles with FA at 6680
 	.BYTE	377			; End of sequence
 	.EVEN
-L9715:	; Room 9715
+RM9715:	; Room 9715
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L96F3		; Room to Right
-	.WORD	L968A		; Room to Up
-	.WORD	L9739		; Room to Down
+	.WORD	RM96F3		; Room to Right
+	.WORD	RM968A		; Room to Up
+	.WORD	RM9739		; Room to Down
 	.BYTE	003, 377, 013, 021, 000,000	; Rect 11x17 tiles with FF at 6590
 	.BYTE	014, 6., 002, 021, 014,000	; Block 2 tiles from 7348 to 659C copy 17 times
 	.BYTE	001, 021, 072, 032,000	; Fill vert 17 tiles with 3A at 65AA
 	.BYTE	002, 010, 372, 006,001	; Fill horz 8 tiles with FA at 6696
 	.BYTE	377			; End of sequence
 	.EVEN
-L9739:	; Room 9739
+RM9739:	; Room 9739
 	.WORD	LB452		; Room procedure
 	.WORD	LA384		; Initialization
-	.WORD	L99A6		; Room to Left
-	.WORD	L976E		; Room to Right
-	.WORD	L9715		; Room to Up
-	.WORD	L97A6		; Room to Down
+	.WORD	RM99A6		; Room to Left
+	.WORD	RM976E		; Room to Right
+	.WORD	RM9715		; Room to Up
+	.WORD	RM97A6		; Room to Down
 	.BYTE	003, 377, 013, 012, 000,000	; Rect 11x10 tiles with FF at 6590
 	.BYTE	010, 000, 006, 202,000	; Triangle with 00, count=6 at 6612
 	.BYTE	002, 042, 377, 334,001	; Fill horz 34 tiles with FF at 676C
@@ -1928,10 +1928,10 @@ L9755:	.BYTE	001, 001, 344, 020,001	; Fill vert 1 tiles with E4 at 66A0
 	.BYTE	377			; End of sequence
 	.EVEN
 L9756 = L9755 + 1		; trigger "D": height 1 or 7.
-L976E:	; Room 976E
+RM976E:	; Room 976E
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L9739		; Room to Left
+	.WORD	RM9739		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
@@ -1946,12 +1946,12 @@ L976E:	; Room 976E
 	.BYTE	016, 372, 120,001	; Put tile FA at 66E0
 	.BYTE	377			; End of sequence
 	.EVEN
-L97A6:	; Room 97A6
+RM97A6:	; Room 97A6
 	.WORD	LB483		; Room procedure
 	.WORD	LB368		; Initialization
-	.WORD	L9876		; Room to Left
-	.WORD	L97F8		; Room to Right
-	.WORD	L9739		; Room to Up
+	.WORD	RM9876		; Room to Left
+	.WORD	RM97F8		; Room to Right
+	.WORD	RM9739		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	003, 377, 011, 007, 360,000	; Rect 9x7 tiles with FF at 6680
 	.BYTE	002, 074, 377, 302,001	; Fill horz 60 tiles with FF at 6752
@@ -1968,13 +1968,13 @@ L97CF:	.BYTE	016, 000, 241,001	; Put tile 00 at 6731
 	.BYTE	377			; End of sequence
 	.EVEN
 L97D0 = L97CF + 1		; trigger "E": 000 or 377
-L97F8:	; Room 97F8
+RM97F8:	; Room 97F8
 	.WORD	L7918		; Room procedure
 	.WORD	LA115		; Initialization
-	.WORD	L97A6		; Room to Left
+	.WORD	RM97A6		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L982B		; Room to Down
+	.WORD	RM982B		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 002, 034, 007, 360,000	; Rect 28x7 tiles with 02 at 6680
 	.BYTE	003, 002, 020, 004, 176,000	; Rect 16x4 tiles with 02 at 660E
@@ -1984,12 +1984,12 @@ L97F8:	; Room 97F8
 	.BYTE	005, 002, 001, 7., 333,001	; Block 2x1 tiles from 7984 to 676B
 	.BYTE	377			; End of sequence
 	.EVEN
-L982B:	; Room 982B
+RM982B:	; Room 982B
 	.WORD	LB41F		; Room procedure
 	.WORD	LC681		; Initialization
-	.WORD	L7C9C		; Room to Left
+	.WORD	RM7C9C		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L97F8		; Room to Up
+	.WORD	RM97F8		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 002, 023, 006, 047,000	; Rect 19x6 tiles with 02 at 65B7
@@ -2004,11 +2004,11 @@ L982B:	; Room 982B
 	.BYTE	005, 004, 007, 8., 145,012	; Block 4x7 tiles from 798E to 6FF5
 	.BYTE	377			; End of sequence
 	.EVEN
-L9876:	; Room 9876
+RM9876:	; Room 9876
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L98C0		; Room to Left
-	.WORD	L97A6		; Room to Right
+	.WORD	RM98C0		; Room to Left
+	.WORD	RM97A6		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
@@ -2024,11 +2024,11 @@ L9876:	; Room 9876
 	.BYTE	005, 004, 007, 8., 204,012	; Block 4x7 tiles from 798E to 7014
 	.BYTE	377			; End of sequence
 	.EVEN
-L98C0:	; Room 98C0
+RM98C0:	; Room 98C0
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L9A9A		; Room to Left
-	.WORD	L9876		; Room to Right
+	.WORD	RM9A9A		; Room to Left
+	.WORD	RM9876		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 360, 377, 000,000	; Fill horz 240 tiles with FF at 6590
@@ -2041,12 +2041,12 @@ L98C0:	; Room 98C0
 	.BYTE	014, 52., 002, 007, 376,000	; Block 2 tiles from 9901 to 668E copy 7 times
 	.BYTE	377			; End of sequence
 	.EVEN
-L990D:	; Room 990D
+RM990D:	; Room 990D
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L9634		; Room to Up
+	.WORD	RM9634		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	003, 377, 024, 021, 012,000	; Rect 20x17 tiles with FF at 659A
 	.BYTE	003, 000, 021, 014, 013,000	; Rect 17x12 tiles with 00 at 659B
@@ -2069,11 +2069,11 @@ L990D:	; Room 990D
 	.BYTE	005, 004, 002, 57., 000,000	; Block 4x2 tiles from 999E to 6590
 	.BYTE	377			; End of sequence
 	.EVEN
-L99A6:	; Room 99A6
+RM99A6:	; Room 99A6
 	.WORD	L7918		; Room procedure
 	.WORD	LA110		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L9739		; Room to Right
+	.WORD	RM9739		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 036, 377, 340,001	; Fill horz 30 tiles with FF at 6770
@@ -2095,12 +2095,12 @@ L99A6:	; Room 99A6
 	.BYTE	005, 004, 002, 57., 000,000	; Block 4x2 tiles from 999E to 6590
 	.BYTE	377			; End of sequence
 	.EVEN
-L9A1E:	; Room 9A1E
+RM9A1E:	; Room 9A1E
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L7C9C		; Room to Right
-	.WORD	L9A5A		; Room to Up
+	.WORD	RM7C9C		; Room to Right
+	.WORD	RM9A5A		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 002, 006, 010, 002,000	; Rect 6x8 tiles with 02 at 6592
@@ -2113,13 +2113,13 @@ L9A1E:	; Room 9A1E
 	.BYTE	002, 016, 041, 264,001	; Fill horz 14 tiles with 21 at 6744
 	.BYTE	377			; End of sequence
 	.EVEN
-L9A5A:	; Room 9A5A
+RM9A5A:	; Room 9A5A
 	.WORD	LB452		; Room procedure
 	.WORD	LA389		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L9552		; Room to Right
-	.WORD	L9B51		; Room to Up
-	.WORD	L9A1E		; Room to Down
+	.WORD	RM9552		; Room to Right
+	.WORD	RM9B51		; Room to Up
+	.WORD	RM9A1E		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 000, 034, 013, 002,000	; Rect 28x11 tiles with 00 at 6592
 	.BYTE	003, 000, 007, 004, 141,001	; Rect 7x4 tiles with 00 at 66F1
@@ -2131,12 +2131,12 @@ L9A5A:	; Room 9A5A
 	.BYTE	014, 6., 002, 013, 011,000	; Block 2 tiles from 7348 to 6599 copy 11 times
 	.BYTE	377			; End of sequence
 	.EVEN
-L9A9A:	; Room 9A9A
+RM9A9A:	; Room 9A9A
 	.WORD	LB483		; Room procedure
 	.WORD	LA192		; Initialization
-	.WORD	L94CF		; Room to Left
-	.WORD	L98C0		; Room to Right
-	.WORD	L9ADC		; Room to Up
+	.WORD	RM94CF		; Room to Left
+	.WORD	RM98C0		; Room to Right
+	.WORD	RM9ADC		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 012, 377, 001,000	; Fill horz 10 tiles with FF at 6591
 	.BYTE	002, 074, 377, 302,001	; Fill horz 60 tiles with FF at 6752
@@ -2149,13 +2149,13 @@ L9A9A:	; Room 9A9A
 	.BYTE	005, 004, 004, 3., 120,013	; Block 4x4 tiles from 71A9 to 70E0
 	.BYTE	377			; End of sequence
 	.EVEN
-L9ADC:	; Room 9ADC
+RM9ADC:	; Room 9ADC
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L9B19		; Room to Up
-	.WORD	L9A9A		; Room to Down
+	.WORD	RM9B19		; Room to Up
+	.WORD	RM9A9A		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 000, 030, 010, 002,000	; Rect 24x8 tiles with 00 at 6592
 	.BYTE	003, 000, 017, 007, 373,000	; Rect 15x7 tiles with 00 at 668B
@@ -2167,13 +2167,13 @@ L9ADC:	; Room 9ADC
 	.BYTE	005, 002, 001, 35., 327,001	; Block 2x1 tiles from 889D to 6767
 	.BYTE	377			; End of sequence
 	.EVEN
-L9B19:	; Room 9B19
+RM9B19:	; Room 9B19
 	.WORD	L7918		; Room procedure
 	.WORD	LA133		; Initialization
 	.WORD	0		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L9BE7		; Room to Up
-	.WORD	L9ADC		; Room to Down
+	.WORD	RM9BE7		; Room to Up
+	.WORD	RM9ADC		; Room to Down
 	.BYTE	003, 377, 002, 021, 000,000	; Rect 2x17 tiles with FF at 6590
 	.BYTE	003, 377, 004, 021, 032,000	; Rect 4x17 tiles with FF at 65AA
 	.BYTE	014, 6., 002, 021, 025,000	; Block 2 tiles from 7348 to 65A5 copy 17 times
@@ -2183,13 +2183,13 @@ L9B19:	; Room 9B19
 	.BYTE	005, 002, 001, 35., 175,001	; Block 2x1 tiles from 889D to 670D
 	.BYTE	377			; End of sequence
 	.EVEN
-L9B51:	; Room 9B51
+RM9B51:	; Room 9B51
 	.WORD	L7918		; Room procedure
 	.WORD	LA11F		; Initialization
 	.WORD	0		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L9B9D		; Room to Up
-	.WORD	L9A5A		; Room to Down
+	.WORD	RM9B9D		; Room to Up
+	.WORD	RM9A5A		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 000, 032, 016, 002,000	; Rect 26x14 tiles with 00 at 6592
 	.BYTE	001, 007, 000, 357,000	; Fill vert 7 tiles with 00 at 667F
@@ -2203,13 +2203,13 @@ L9B51:	; Room 9B51
 	.BYTE	005, 003, 003, 2., 131,013	; Block 3x3 tiles from 71A0 to 70E9
 	.BYTE	377			; End of sequence
 	.EVEN
-L9B9D:	; Room 9B9D
+RM9B9D:	; Room 9B9D
 	.WORD	LB458		; Room procedure
 	.WORD	LA1D6		; Initialization
 	.WORD	0		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L9F3A		; Room to Up
-	.WORD	L9B51		; Room to Down
+	.WORD	RM9F3A		; Room to Up
+	.WORD	RM9B51		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 000, 032, 007, 020,001	; Rect 26x7 tiles with 00 at 66A0
 	.BYTE	003, 000, 030, 010, 004,000	; Rect 24x8 tiles with 00 at 6594
@@ -2224,13 +2224,13 @@ L9B9D:	; Room 9B9D
 	.BYTE	000, 211,013		; Barrel at 7119
 	.BYTE	377			; End of sequence
 	.EVEN
-L9BE7:	; Room 9BE7
+RM9BE7:	; Room 9BE7
 	.WORD	LB483		; Room procedure
 	.WORD	LA19C		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L9DF5		; Room to Right
-	.WORD	L9E73		; Room to Up
-	.WORD	L9B19		; Room to Down
+	.WORD	RM9DF5		; Room to Right
+	.WORD	RM9E73		; Room to Up
+	.WORD	RM9B19		; Room to Down
 	.BYTE	003, 377, 002, 014, 226,000	; Rect 2x12 tiles with FF at 6626
 	.BYTE	003, 377, 011, 005, 006,000	; Rect 9x5 tiles with FF at 6596
 	.BYTE	010, 377, 005, 005,000	; Triangle with FF, count=5 at 6595
@@ -2245,12 +2245,12 @@ L9BE7:	; Room 9BE7
 	.BYTE	001, 004, 371, 025,001	; Fill vert 4 tiles with F9 at 66A5
 	.BYTE	377			; End of sequence
 	.EVEN
-L9DF5:	; Room 9DF5
+RM9DF5:	; Room 9DF5
 	.WORD	L7918		; Room procedure
 	.WORD	LA138		; Initialization
-	.WORD	L9BE7		; Room to Left
+	.WORD	RM9BE7		; Room to Left
 	.WORD	0		; Room to Right
-	.WORD	L9E22		; Room to Up
+	.WORD	RM9E22		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 007, 377, 000,000	; Fill horz 7 tiles with FF at 6590
 	.BYTE	003, 377, 002, 014, 034,000	; Rect 2x12 tiles with FF at 65AC
@@ -2260,13 +2260,13 @@ L9DF5:	; Room 9DF5
 	.BYTE	001, 013, 053, 065,012	; Fill vert 11 tiles with 2B at 6FC5
 	.BYTE	377			; End of sequence
 	.EVEN
-L9E22:	; Room 9E22
+RM9E22:	; Room 9E22
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L9DF5		; Room to Down
+	.WORD	RM9DF5		; Room to Down
 	.BYTE	004, 377		; Fill entire screen with FF
 	.BYTE	003, 000, 024, 002, 312,001	; Rect 20x2 tiles with 00 at 675A
 	.BYTE	003, 002, 032, 014, 040,000	; Rect 26x12 tiles with 02 at 65B0
@@ -2280,13 +2280,13 @@ L9E22:	; Room 9E22
 	.BYTE	005, 003, 004, 27., 006,013	; Block 3x4 tiles from 849C to 7096
 	.BYTE	377			; End of sequence
 	.EVEN
-L9E73:	; Room 9E73
+RM9E73:	; Room 9E73
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L9EB8		; Room to Left
+	.WORD	RM9EB8		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L9BE7		; Room to Down
+	.WORD	RM9BE7		; Room to Down
 	.BYTE	002, 170, 377, 000,000	; Fill horz 120 tiles with FF at 6590
 	.BYTE	003, 377, 006, 015, 220,000	; Rect 6x13 tiles with FF at 6620
 	.BYTE	003, 377, 006, 006, 124,001	; Rect 6x6 tiles with FF at 66E4
@@ -2299,11 +2299,11 @@ L9E73:	; Room 9E73
 	.BYTE	005, 002, 001, 35., 134,001	; Block 2x1 tiles from 889D to 66EC
 	.BYTE	377			; End of sequence
 	.EVEN
-L9EB8:	; Room 9EB8
+RM9EB8:	; Room 9EB8
 	.WORD	L7918		; Room procedure
 	.WORD	LA12E		; Initialization
-	.WORD	L9ED9		; Room to Left
-	.WORD	L9E73		; Room to Right
+	.WORD	RM9ED9		; Room to Left
+	.WORD	RM9E73		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 170, 377, 000,000	; Fill horz 120 tiles with FF at 6590
@@ -2312,11 +2312,11 @@ L9EB8:	; Room 9EB8
 	.BYTE	001, 007, 050, 203,012	; Fill vert 7 tiles with 28 at 7013
 	.BYTE	377			; End of sequence
 	.EVEN
-L9ED9:	; Room 9ED9
+RM9ED9:	; Room 9ED9
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L9EFA		; Room to Left
-	.WORD	L9EB8		; Room to Right
+	.WORD	RM9EFA		; Room to Left
+	.WORD	RM9EB8		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	002, 170, 377, 000,000	; Fill horz 120 tiles with FF at 6590
@@ -2325,13 +2325,13 @@ L9ED9:	; Room 9ED9
 	.BYTE	001, 007, 050, 201,012	; Fill vert 7 tiles with 28 at 7011
 	.BYTE	377			; End of sequence
 	.EVEN
-L9EFA:	; Room 9EFA
+RM9EFA:	; Room 9EFA
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L9ED9		; Room to Right
+	.WORD	RM9ED9		; Room to Right
 	.WORD	0		; Room to Up
-	.WORD	L9F3A		; Room to Down
+	.WORD	RM9F3A		; Room to Down
 	.BYTE	002, 175, 377, 000,000	; Fill horz 125 tiles with FF at 6590
 	.BYTE	003, 377, 005, 014, 226,000	; Rect 5x12 tiles with FF at 6626
 	.BYTE	003, 377, 024, 005, 161,001	; Rect 20x5 tiles with FF at 6701
@@ -2343,13 +2343,13 @@ L9EFA:	; Room 9EFA
 	.BYTE	005, 002, 001, 35., 120,001	; Block 2x1 tiles from 889D to 66E0
 	.BYTE	377			; End of sequence
 	.EVEN
-L9F3A:	; Room 9F3A
+RM9F3A:	; Room 9F3A
 	.WORD	L7918		; Room procedure
 	.WORD	LA124		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L9F7E		; Room to Right
-	.WORD	L9EFA		; Room to Up
-	.WORD	L9B9D		; Room to Down
+	.WORD	RM9F7E		; Room to Right
+	.WORD	RM9EFA		; Room to Up
+	.WORD	RM9B9D		; Room to Down
 	.BYTE	003, 377, 005, 017, 000,000	; Rect 5x15 tiles with FF at 6590
 	.BYTE	002, 074, 377, 302,001	; Fill horz 60 tiles with FF at 6752
 	.BYTE	003, 377, 024, 002, 011,000	; Rect 20x2 tiles with FF at 6599
@@ -2361,11 +2361,11 @@ L9F3A:	; Room 9F3A
 	.BYTE	005, 002, 001, 6., 366,001	; Block 2x1 tiles from 7348 to 6786
 	.BYTE	377			; End of sequence
 	.EVEN
-L9F7E:	; Room 9F7E
+RM9F7E:	; Room 9F7E
 	.WORD	L7918		; Room procedure
 	.WORD	LA129		; Initialization
-	.WORD	L9F3A		; Room to Left
-	.WORD	LA022		; Room to Right
+	.WORD	RM9F3A		; Room to Left
+	.WORD	RMA022		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	003, 377, 002, 002, 302,001	; Rect 2x2 tiles with FF at 6752
@@ -2389,10 +2389,10 @@ L9F7E:	; Room 9F7E
 	.BYTE	003, 015, 004, 002, 032,000	; Rect 4x2 tiles with 0D at 65AA
 	.BYTE	377			; End of sequence
 	.EVEN
-LA022:	; Room A022
+RMA022:	; Room A022
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
-	.WORD	L9F7E		; Room to Left
+	.WORD	RM9F7E		; Room to Left
 	.WORD	0		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
@@ -2417,11 +2417,11 @@ LA022:	; Room A022
 	.BYTE	005, 001, 002, 63., 335,001	; Block 1x2 tiles from A0AB to 676D
 	.BYTE	377			; End of sequence
 	.EVEN
-LB513:	; Room B513
+RMB513:	; Room B513
 	.WORD	LB446		; Room procedure
 	.WORD	LB422		; Initialization
 	.WORD	0		; Room to Left
-	.WORD	L791E		; Room to Right
+	.WORD	RM791E		; Room to Right
 	.WORD	0		; Room to Up
 	.WORD	0		; Room to Down
 	.BYTE	004, 015		; Fill entire screen with 0D
