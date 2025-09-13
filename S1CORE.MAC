@@ -2072,8 +2072,9 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	MOVB	#4, <LD486+15.>		; set tile in Sprite Ninja/Guard standing sprite
 	MOVB	#250., LB2FD		; $FA set counter for head animation
 	MOVB	#310, LBD7A		; $C8 Shuriken - set HELD tile
-	;MOVB	#324, LBD7A ;DEBUG
-	CALL	L7472
+	;MOVB	#322, LBD7A ;DEBUG Grenade
+	;MOVB	#324, LBD7A ;DEBUG Diskette
+	CALL	L7472			; Initial Energy fill
 	;DI
 	MOV	#LB513, L7184		; set Current Room = Initial room
 	MOV	#LB532, LB8CE		; set movement handler = movement handler for initial room
@@ -2121,7 +2122,7 @@ LB696 = LB695 + 2
 ;
 LB6A6:	CLR	LB674			; set current Dog data address = no dog
 	CLR	LB696			; set current Guard data address = no guard
-	CLRB	LBAB2
+	CLR	LBAB2			; clear Explosion counter
 ; Clear 3 objects at LA39F
 	MOV	#LA39F, R3		; Three objects start address
 	MOV	#3, R1
@@ -2189,7 +2190,7 @@ LB422 = LB724
 	CALL	LB148			; Draw tile map on the screen
 ;
 	MOV	#LD34D, R3		; Table of objects address
-	MOV	#35., R1		; 35 objects
+	MOV	#29., R1		; 29 objects
 LB753:	PUSH	R3			; save address in Table of objects
 	CMP	(R3)+, L7184		; is it current room?
 	BNE	LB768			; no =>
@@ -2417,16 +2418,20 @@ LB98D:	MOV	2(R4), R3
 	ADD	R2, R3
 	MOV	R3, 2(R4)
 	MOVB	6(R4), R0		; get object Y
-	CMPB	R0, #-1
-	BEQ	LBBA7
-	CMPB	R0, #17.
-	BEQ	LBBA7
-	MOVB	7(R4), R0		; get object X
+	CMPB	R0, #377
+	BNE	LB9A2
+	JMP	LBBA7
+LB9A2:	CMPB	R0, #17.
+	BNE	LB9A7
+	JMP	LBBA7
+LB9A7:	MOVB	7(R4), R0		; get object X
 	CMPB	R0, #30.
-	BEQ	LBBA7
-	CMPB	R0, #-1
-	BEQ	LBBA7
-	MOV	R3, R5
+	BNE	LB9AF
+	JMP	LBBA7
+LB9AF:	CMPB	R0, #377
+	BNE	LB9B4
+	JMP	LBBA7
+LB9B4:	MOV	R3, R5
 	ADD	#L6590, R5		; Tile screen 0 start address
 	CMPB	#144, (R5)		; $64
 	BLO	LBAD5
@@ -2472,44 +2477,126 @@ LBA21:	ADD	#8., R4			; next object record
 	BEQ	LBA2A
 	JMP	LB93D
 ;
+; Fill "need update" marks
 LBA2A:	MOV	#<L678E+165.>, R3	; !!MUT-ARG!! Tile screen 1 + 5 rows + 15.
-LBA2B = LBA2A + 2
-	MOV	#3, R1
-	MOV	#1, R0
-LBA2F:	MOV	R3, R5
-	MOVB	R0, (R5)+
-	MOVB	R0, (R5)+
-	MOVB	R0, (R5)+
+LBA2D:	MOV	#3, R1			; !!MUT-ARG!! height
+LBA2F:	MOV	#3, R4			; !!MUT-ARG!! width
+	MOV	R3, R5
+LBA32:	MOVB	#1, (R5)+
+	SOB	R4, LBA32		; loop by horz
 	ADD	#30., R3
 	SOB	R1, LBA2F
 ;
 	CALL	LB148			; Draw tile map on the screen
 	;TODO: Restore drawing of Dog and Guard tiles
 	TSTB	LBAB2
-	BNE	LBA52
-	JMP	LB77B			; => Game loop start
+	BEQ	LBA4F
+	CALL	LBA52			; Draw Explosion
+LBA4F:	JMP	LB77B			; => Game loop start
 
-; Draw Explosion image on the screen and make some noise
-LBA52:
-	;TODO: Draw Explosion and make noise
-	JMP	LB77B			; => Game loop start
-
-LBAB2:	.BYTE	0	; ??
-	.EVEN
+;NOTE: LBA52, LBAB2 and LBAB3 table moved lower
 
 ; Called from logic in Standard room procedure, see B937
 ; R4 = object address in LA39F table
 LBAD5:
 	CMP	#L8DCA, L7184		; current room = 8DCA (room with helicopter) ?
-	BEQ	LBBA7			; yes =>
+	BEQ	LBBA7			; yes => delete the object
 ;
 LBAE4:	MOVB	(R4), R0
-	;TODO
+	CMPB	#322, R0		; $D2 ? Granade
+	BEQ	LBAF0			; yes =>
+	CMPB	#323, R0		; $D3 ?
+	BNE	LBBA7			; no =>
+LBAF0:	MOV	#LBAB2, R3		; Explosion counter address
+	TSTB	(R3)			; have Explosion already?
+	BNE	LBBA7			; yes =>
+	MOV	#12, (R3)		; $0A
+	MOV	2(R4), R3		; get object offset
+	ADD	#<L678E-31.>, R3	; + Tile screen 1 - 33.
+	MOV	R3, <LBA2A+2>		; set Tile screen 1 address
+	MOVB	6(R4), R0		; get object Y
+	ADD	R0, R0
+	MOV	LBAB3(R0), R3		; now R3 = screen address
+	MOVB	7(R4), R2		; get object X
+	ADD	R2, R3			; + object X
+	MOV	#3, R1			; width
+	MOV	#3, R0			; height
+	MOV	#LABE5, R5		; Explosion image address
+	CMPB	#16., 6(R4)		; object Y = 16. ?
+	BNE	LBB59
+	DEC	R0			; decrease height
+LBB59:	TSTB	6(R4)			; object Y = 0 ?
+	BNE	LBB6A
+	DEC	R0			; decrease height
+	ADD	#24., R5		; Explosion image address + 24.
+	ADD	#30., <LBA2A+2>		; Tile screen 1 address + 30.
+LBB6A:	CMPB	#29., 7(R4)		; object X = 29. ?
+	BNE	LBB72
+	DEC	R1			; decrease width
+LBB72:	TSTB	7(R4)			; object X = 0 ?
+	BNE	LBB7C
+	DEC	R1			; decrease width
+	INC	R3			; screen address + 1
+	INC	R5			; Explosion image address + 1
+	INC	<LBA2A+2>		; Tile screen 1 address + 1
+LBB7C:
+	MOV	R3, <LBA57+2>		; set screen address
+	MOV	R5, <LBA5A+2>		; set Explosion image address
+	MOV	R1, <LBA5D+2>		; set width
+	MOV	R1, <LBA2F+2>		; set width
+	MOV	R0, <LBA5F+2>		; set height
+	MOV	R0, <LBA2D+2>		; set height
 
+LBBA7:	CLR	(R4)			; delete the object
 	BR	LBA20
 
-LBBA7:	CLRB	(R4)			; delete the object
-	BR	LBA20
+; Procedure: Draw Explosion image on the screen and make some noise
+LBA52:	;TODO: Sound
+	DECB	LBAB2			; decrease Explosion counter
+LBA57:	MOV	#<SCRTOP+1200+1>, R3	; !!MUT-ARG!! address on the screen
+LBA5A:	MOV	#LABE5, R2		; !!MUT-ARG!! Explosion image address
+LBA5F:	MOV	#3, R4			; !!MUT-ARG!! height
+	ADD	R4, R4
+	ADD	R4, R4
+	ADD	R4, R4			; * 8.
+LBA61:	PUSH	R3
+	PUSH	R2
+LBA5D:	MOV	#3, R1			; !!MUT-ARG!! width
+10$:	MOV	R3, @#176640		; set UKNC indirect address
+	CLR	R0
+	BISB	(R2)+, R0		; get pixels
+	SWAB	R0 ;DEBUG color adjustment
+	MOV	R0, @#176642		; write pixels to UKNC screen
+	INC	@#176640		; next column
+	SOB	R1, 10$			; continue loop by horz
+	POP	R2
+	POP	R3
+	ADD	#120, R3		; next line
+	ADD	#3, R2
+	SOB	R4, LBA61		; continue loop by lines
+	;TODO: Sound off
+	RETURN
+
+LBAB2:	.BYTE	0	; Explosion counter 10. to 0
+	.EVEN
+; Screen addresses for every 17. rows
+LBAB3:	.WORD	SCRTOP+<1200*1>+1
+	.WORD	SCRTOP+<1200*2>+1
+	.WORD	SCRTOP+<1200*3>+1
+	.WORD	SCRTOP+<1200*4>+1
+	.WORD	SCRTOP+<1200*5>+1
+	.WORD	SCRTOP+<1200*6>+1
+	.WORD	SCRTOP+<1200*7>+1
+	.WORD	SCRTOP+<1200*8.>+1
+	.WORD	SCRTOP+<1200*9.>+1
+	.WORD	SCRTOP+<1200*10.>+1
+	.WORD	SCRTOP+<1200*11.>+1
+	.WORD	SCRTOP+<1200*12.>+1
+	.WORD	SCRTOP+<1200*13.>+1
+	.WORD	SCRTOP+<1200*14.>+1
+	.WORD	SCRTOP+<1200*15.>+1
+	.WORD	SCRTOP+<1200*16.>+1
+	.WORD	SCRTOP+<1200*17.>+1
 
 ; Set "need update" mark for object R4
 LBBAE:	MOV	2(R4), R3		; get object position
@@ -2758,7 +2845,7 @@ LBDE2:	MOV	L9C42, R2		; get Ninja position in tilemap
 	MOV	#<L6590+44.>, R3	; Tile screen 0 + 1 row + 14.
 	MOV	R3, LBE0E
 	MOV	R3, LBE1D
-	MOV	#<L678E+302.>, LBA2B	; Tile screen 1 + 10. rows + 2
+	MOV	#<L678E+302.>, <LBA2A+2>	; Tile screen 1 + 10. rows + 2
 	MOV	#LBE0D, R3		; Movement handler
 	MOV	#LD486, R2		; Sprite Ninja/Guard standing
 	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
@@ -3649,7 +3736,7 @@ LD344:	.WORD	000324		; Object 34: Brick
 	.BYTE	173,004,316, 0
 	.WORD	0
 
-; Table of objects, 35 records, 6 bytes each
+; Table of objects, 29 records, 6 bytes each
 ;   +$00/$01: room address
 ;   +$02/$03: offset in Tile screen 0
 ;   +$04: tile byte
