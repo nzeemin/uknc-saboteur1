@@ -13,36 +13,36 @@ echo REV.%REVISION% %DATESTAMP%
 
 echo 	.ASCII /REV.%REVISION% %DATESTAMP%/ > VERSIO.MAC
 
-@if exist S1CORE.LST del S1CORE.LST
-@if exist S1CORE.OBJ del S1CORE.OBJ
-@if exist S1CORE.MAP del S1CORE.MAP
-@if exist S1CORE.SAV del S1CORE.SAV
+@if exist SABOT1.LST del SABOT1.LST
+@if exist SABOT1.OBJ del SABOT1.OBJ
+@if exist SABOT1.MAP del SABOT1.MAP
+@if exist SABOT1.SAV del SABOT1.SAV
 @if exist SABOT1.SAV del SABOT1.SAV
 
-%rt11exe% MACRO/LIST:DK: S1CORE.MAC
+%rt11exe% MACRO/LIST:DK: SABOT1.MAC
 
-for /f "delims=" %%a in ('findstr /B "Errors detected" S1CORE.LST') do set "errdet=%%a"
+for /f "delims=" %%a in ('findstr /B "Errors detected" SABOT1.LST') do set "errdet=%%a"
 if "%errdet%"=="Errors detected:  0" (
-  echo S1CORE COMPILED SUCCESSFULLY
+  echo SABOT1 COMPILED SUCCESSFULLY
 ) ELSE (
-  findstr /RC:"^[ABDEILMNOPQRTUZ] " S1CORE.LST
+  findstr /RC:"^[ABDEILMNOPQRTUZ] " SABOT1.LST
   echo ======= %errdet% =======
   goto :Failed
 )
 
-%rt11exe% LINK S1CORE /MAP:S1CORE.MAP
+%rt11exe% LINK SABOT1 /MAP:SABOT1.MAP
 
-for /f "delims=" %%a in ('findstr /B "Undefined globals" S1CORE.MAP') do set "undefg=%%a"
+for /f "delims=" %%a in ('findstr /B "Undefined globals" SABOT1.MAP') do set "undefg=%%a"
 if "%undefg%"=="" (
-  type S1CORE.MAP
+  type SABOT1.MAP
   echo.
-  echo S1CORE LINKED SUCCESSFULLY
+  echo SABOT1 LINKED SUCCESSFULLY
 ) ELSE (
   echo ======= LINK FAILED =======
   goto :Failed
 )
 
-dir /-c S1CORE.SAV|findstr /R /C:"S1CORE.SAV"
+dir /-c SABOT1.SAV|findstr /R /C:"SABOT1.SAV"
 
 echo %ESCchar%[92mSUCCESS%ESCchar%[0m
 exit

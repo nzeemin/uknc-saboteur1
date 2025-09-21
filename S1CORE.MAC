@@ -1,5 +1,3 @@
-	.TITLE	S1CORE
-	.ASECT
 
 ; Special comments-warnings in the code:
 ; !!MUT-CMD!! - the command mutable, means other code changes it
@@ -24,162 +22,6 @@ SCRTOP = SCREEN + 1200 + 4	; Where the game screen starts
 SCRIND = SCRTOP + <1200*19.>	; Screen address for first indicators line
 
 TIMERI = 200.		; Fast timer reset value, see TIMECN
-
-;------------------------------------------------------------------------------
-
-	.=001000
-STCORE::
-	CLR	@#177560
-	MTPS	#000340			; Disable interrupts
-	MOV	SP, OSTACK		; Save initial SP address
-	MOV	#1000, SP
-	CALL	STPAL			; Set up the game palette
-	MOV	#GAMESC, R1		; String for game screen preparing
-	CALL	PRINT
-	CALL	PAUSE			; wait while screen updates
-K01220:	JMP	LBC0D ;START		; => title picture and Menu
-;
-OSTACK:	.WORD	01000			; Saved initial SP
-;
-FNCORE:	CALL	STPALD			; Select default palette
-	MOV	OSTACK, SP
-	MOV	#EXITSC, R1		; String for screen cleanup before the exit
-	CALL	PRINT
-	EMT	350			; .EXIT
-;
-;------------------------------------------------------------------------------
-
-; Procedure: Print string: R1 = string address, string ends with zero; utilizes R0
-PRINT:
-10$:	MOVB	(R1)+, R0		; End of line?
-	BEQ	RETN			; yes => exit
-20$:	TSTB	@#177564		; Channel 0 source ready?
-	BPL	20$			; no => wait
-	MOV	R0, @#177566		; send symbol into Channel 0
-	BR	10$
-
-; Procedure: Pause after screen cleanup, so PPU will finish the work
-PAUSE:	; Pause to let PPU finish the previous commands
-	MOV	#177777, R5
-1$:	NOP
-	SOB	R5, 1$
-RETN:	RETURN
-
-; Procedure: Clear key buffer
-WAITUP:	TSTB	@#177560
-	BPL	RETN
-	MOVB	@#177562, R0
-	BR	WAITUP
-
-; Procedure: Wait for a key from the keyboard: R0 = key received
-WTKEY:	TSTB	@#177560
-	BPL	WTKEY
-	CLR	R0
-	MOVB	@#177562, R0		; symbol to R0
-	CMPB	R0, #33
-	BNE	RETN
-ESCKEY:	TSTB	@#177560
-	BPL	ESCKEY
-	MOVB	@#177562, R0		; symbol to R0
-	BIS	#15400,R0		; #33 to higher byte
-	RETURN
-; Procedure: Receive a symbol from keyboard: flag Z=0 = have a symbol, R0 = key received
-GETKEY:	TSTB	@#177560		; have a symbol?
-	BPL	10$			; nothing => exiting
-	MOVB	@#177562, R0		; symbol to R0
-	CMPB	R0, #33			; Esc ?
-	BEQ	ESCKEY
-	RETURN
-10$:	CLR	R0			; return zero for key received
-	RETURN
-
-; Procedure: Clear screen with Blue color, for Menu screen
-CLSRNM:	MOV	#377, @#<CLSRN+2>
-	BR	CLSRN
-
-; Procedure: Clear screen with Black color, for Game screen
-CLSRNB:	CLR	@#<CLSRN+2>
-
-CLSRN:	MOV	#377, R0		; Blue color filler
-	MOV	#SCREEN + 2, @#176640
-	MOV	#208., R4
-10$:	MOV	#36., R1
-20$:	MOV	R0, @#176642
-	INC	@#176640
-	SOB	R1, 20$
-	ADD	#<120-36.>, @#176640
-	SOB	R4, 10$
-	RETURN
-
-GAMESC:	; String for game screen preparing
-	.BYTE	33,246,62		; Screen format 40x24
-	.BYTE	33,240,63		; Ink color
-	.BYTE	33,241,60		; Place color
-	.BYTE	33,242,60		; Back color
-	.BYTE	14			; Clear screen
-	.BYTE	33,247,60		; Cursor color
-	.BYTE	033,131,61,40		; Cursor position
-	.BYTE	0
-EXITSC:	; String for screen cleanup before the exit
-	.BYTE	33,246,061		; Screen format 80x24
-	.BYTE	33,240,67		; Ink color
-	.BYTE	33,241,61		; Place color 1
-	.BYTE	33,242,61		; Back color 1
-	.BYTE	33,247,67		; Cursor color
-	.BYTE	14			; Clear screen
-	.BYTE	0
-
-	.EVEN
-
-;------------------------------------------------------------------------------
-
-PALNO:	.WORD	0		; Current palette number
-; Palette to set up in the PPU memory
-;		 |____....____....|
-PALETD:	.WORD	^B1011101010011000	; Default UKNC palette
-	.WORD	^B1111111011011100	;
-PALETT:	.WORD	^B1010100111000000	; Game palette 0 - for GRB
-	.WORD	^B1100110011011010	;   black / blue / red / green
-	.WORD	^B1010100111010000	; Game palette 1 - for RGB
-	.WORD	^B1010101011011100	;   black / blue / green / red
-	.WORD	^B1011111110011001	; Game palette 2
-	.WORD	^B1111111111011100	;   black on blue
-	.WORD	^B0100000001101111	; Game palette 3
-	.WORD	^B0000001100100001	;   black on white
-
-; Parameters block used to exchange with PPU using Channel 2
-PPBLCK:	.BYTE	0		; This byte will have error code or zero
-PPBCMD:	.BYTE	20		; Command (01-get memory, 02-free memory 10-read, 20-write, 30-start)
-	.WORD	32		; Device - PPU
-PPBAPP:	.WORD	002470		; Address in PPU RAM - two words for the new palette
-PPBACP:	.WORD	PALETT		; Address in PPU RAM - address for the palette
-	.WORD	2		; Block length in bytes
-PPBADR:	.WORD	PPBLCK		; Start address of the parameters block
-	.WORD	401		; Stop element (used in the exchange)
-
-; Restore the default palette
-STPALD:
-	MOV	#PALETD, R0
-	BR	STPAL1
-; Set up the palette
-STPAL:	MOV	@#PALNO, R0
-	BIC	#177774, R0		; 0..3
-	ASL	R0
-	ASL	R0			; x4
-	ADD	#PALETT, R0
-STPAL1:	MOV	R0, @#PPBACP
-;	BR	PPSEND
-; Procedure used to send parameters block for PPU using Channel 2
-PPSEND:	MOV	#PPBADR, R0
-	MOV	#5, R1
-	MTPS	#200
-	BR	1$
-2$:	MOVB	(R0)+, @#176676
-1$:	TSTB	@#176674
-	BPL	1$
-	SOB	R1, 2$
-	MTPS	#0
-	RETURN
 
 ;------------------------------------------------------------------------------
 
@@ -251,6 +93,7 @@ DOGY:	.BYTE	6	; Dog Y position
 L71D4:	.BYTE
 L71D5:	.BYTE	1
 L71D6:	.BYTE	172,000,000,002,000,001,026,000,375	; Room 79C6 dog data
+	.EVEN
 
 L7232:	.BYTE	0	; Input bits: 000FUDLR
 	.EVEN
@@ -2603,19 +2446,22 @@ LBBD4:	CALL	LBBDF			; Read input
 LBBDC:	JMP	LC226			; no FIRE => Ninja standing
 
 ; Read Input
-LBBDF:	TSTB	@#177560		; do we have an unprocessed key?
-	BPL	K41276			; no => jump
-	MOVB	@#177562, R0		; get the key
-	MOV	#KEYMAP, R3		; table address
-	MOV	#7., R1			; table size
-K41256:	CMPB	(R3)+, R0		; <  matches the key?
-	BNE	K41270			; |  no => jump
-	MOVB	(R3), R0		; |  get the result byte
-	BR	K41300			; |  break the loop
-K41270:	INC	R3			; |  to next key probe
-	SOB	R1, K41256		; repeat
-K41276:	CLR	R0			; not found - result is empty
-K41300:	MOVB	R0, L7232		; store input bits
+LBBDF:
+;	TSTB	@#177560		; do we have an unprocessed key?
+;	BPL	K41276			; no => jump
+;	MOVB	@#177562, R0		; get the key
+;	MOV	#KEYMAP, R3		; table address
+;	MOV	#7., R1			; table size
+;K41256:	CMPB	(R3)+, R0		; <  matches the key?
+;	BNE	K41270			; |  no => jump
+;	MOVB	(R3), R0		; |  get the result byte
+;	BR	K41300			; |  break the loop
+;K41270:	INC	R3			; |  to next key probe
+;	SOB	R1, K41256		; repeat
+;K41276:	CLR	R0			; not found - result is empty
+;K41300:	MOVB	R0, L7232		; store input bits
+	MOV	@#PPUKEY, R0
+	MOV	R0, L7232
 	RETURN
 
 ; Game controls
@@ -2623,16 +2469,16 @@ K41300:	MOVB	R0, L7232		; store input bits
 ;              Fr  Up  Dn  Lt  Rt
 ;
 ; Key mappings
-KEYMAP:	.BYTE	070, 010		; '8' - up
-	.BYTE	062, 004		; '2' - down
-	.BYTE	064, 002		; '4' - left
-	.BYTE	066, 001		; '6' - right
-	.BYTE	065, 020		; '5' - fire
-	.BYTE	061, 012		; '1' - up + left
-	.BYTE	063, 011		; '3' - up + right
+;KEYMAP:	.BYTE	070, 010		; '8' - up
+;	.BYTE	062, 004		; '2' - down
+;	.BYTE	064, 002		; '4' - left
+;	.BYTE	066, 001		; '6' - right
+;	.BYTE	065, 020		; '5' - fire
+;	.BYTE	061, 012		; '1' - up + left
+;	.BYTE	063, 011		; '3' - up + right
 ;	.BYTE	067, 000		; '7' - down + fire
 ;	.BYTE	071, 000		; '9' - down + fire
-	.EVEN
+;	.EVEN
 
 ; Routine: Get pseudo-random number, result in R3
 ; Uses: R0, R2, R3
@@ -4157,6 +4003,7 @@ LE2A7:
 	MOVB	#TIMERI, TIMECN		; set initial value for the fast timer
 
 	CALL	WAITUP			; clear keyboard buffer
+	CALL	RUNPPU
 	;BR	LF913
 LF913:
 	JMP	LB3B0
@@ -4210,7 +4057,4 @@ TLSCR4:	.BLKB	510.
 ; Tile screen 5 30x17 tiles, 510 bytes - front
 TLSCR5:	.BLKB	510.
 
-STACK::	.BLKW	20		; Initial stack
-
 ;------------------------------------------------------------------------------
-	.END	STCORE
