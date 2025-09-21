@@ -17,6 +17,7 @@
 ;------------------------------------------------------------------------------
 
 CHELTH=1		; Cheat code for no damage
+CVERT =0		; Cheat code for short route to Helicopter
 
 SCREEN = 100000		; Screen start, indirect address for UKNC
 SCRTOP = SCREEN + 1200 + 4	; Where the game screen starts
@@ -1852,7 +1853,6 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	MOVB	#250., LB2FD		; $FA set counter for head animation
 	MOVB	#310, LBD7A		; $C8 Shuriken - set HELD tile
 	;MOVB	#322, LBD7A ;DEBUG Grenade
-	;MOVB	#324, LBD7A ;DEBUG Diskette
 	CALL	L7472			; Initial Energy fill
 	;DI
 	MOV	#RMB513, ROOM		; set Current Room = Initial room
@@ -1862,6 +1862,11 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	MOVB	#5, NJAY		; set Ninja Y = 5
 	MOV	#151., NJAPOS		; set Ninja position in tilemap = Y * 30. + X
 	MOVB	#19., L7343		; set counter = 19.
+.IF NE CVERT		; Cheat code for short route to Helicopter
+	MOVB	#324, LBD7A		; Diskette -> HELD
+	MOV	#RM8D5C, <RM791E+6>	; Right from room 791E -> room 8D5C
+.ENDC
+	;JMP	LBE80 ;DEBUG: Bomb explodes
 
 ; Current Room changed, entering the new Room
 LB66A:	MOVB	L71D4, R0
@@ -2480,15 +2485,17 @@ LBAE4:	MOVB	(R4), R0
 LBAF0:	MOV	#LBAB2, R3		; Explosion counter address
 	TSTB	(R3)			; have Explosion already?
 	BNE	LBBA7			; yes =>
-	MOV	#12, (R3)		; $0A
+	MOV	#6., (R3)		; set Explosion counter
 	MOV	2(R4), R3		; get object offset
 	ADD	#<TLSCR1-31.>, R3	; + Tile screen 1 - 33.
 	MOV	R3, <LBA2A+2>		; set Tile screen 1 address
 	MOVB	6(R4), R0		; get object Y
+	DEC	R0
 	ADD	R0, R0
 	MOV	LBAB3(R0), R3		; now R3 = screen address
 	MOVB	7(R4), R2		; get object X
 	ADD	R2, R3			; + object X
+	DEC	R3
 	MOV	#3, R1			; width
 	MOV	#3, R0			; height
 	MOV	#LABE5, R5		; Explosion image address
@@ -2526,23 +2533,23 @@ LBA52:	;TODO: Sound
 LBA57:	MOV	#<SCRTOP+1200+1>, R3	; !!MUT-ARG!! address on the screen
 LBA5A:	MOV	#LABE5, R2		; !!MUT-ARG!! Explosion image address
 LBA5F:	MOV	#3, R4			; !!MUT-ARG!! height
-	ADD	R4, R4
-	ADD	R4, R4
-	ADD	R4, R4			; * 8.
 LBA61:	PUSH	R3
 	PUSH	R2
 LBA5D:	MOV	#3, R1			; !!MUT-ARG!! width
 10$:	MOV	R3, @#176640		; set UKNC indirect address
-	CLR	R0
+	MOV	#8., R5
+20$:	CLR	R0
 	BISB	(R2)+, R0		; get pixels
 	SWAB	R0 ;DEBUG color adjustment
 	MOV	R0, @#176642		; write pixels to UKNC screen
-	INC	@#176640		; next column
+	ADD	#120, @#176640		; next line
+	SOB	R5, 20$
+	INC	R3			; next column
 	SOB	R1, 10$			; continue loop by horz
 	POP	R2
 	POP	R3
-	ADD	#120, R3		; next line
-	ADD	#3, R2
+	ADD	#24., R2
+	ADD	#1200, R3
 	SOB	R4, LBA61		; continue loop by lines
 	;TODO: Sound off
 	RETURN
@@ -2626,6 +2633,30 @@ KEYMAP:	.BYTE	070, 010		; '8' - up
 ;	.BYTE	067, 000		; '7' - down + fire
 ;	.BYTE	071, 000		; '9' - down + fire
 	.EVEN
+
+; Routine: Get pseudo-random number, result in R3
+; Uses: R0, R2, R3
+; From Highway Encounter game code
+RANDOM:	MOV	RNDSED, R2	; A270	LD DE,($5C76)	; Read RND SEED variable
+	MOV	R2, R3		; A274	LD H,E
+	SWAB	R3
+	BIC	#377, R3
+	ADD	#375, R3	; A275	LD L,$FD
+	MOV	R2, R0		; A277	LD A,D
+	SWAB	R0
+	BIC	#177400, R0	; A278	OR A
+	SUB	R2, R3		; A279	SBC HL,DE
+	SBCB	R0		; A27B	SBC A,$00
+	SUB	R2, R3		; A27D	SBC HL,DE
+	SBCB	R0		; A27F	SBC A,$00
+				; A281	LD E,A
+	BIC	#177400, R0	; A282	LD D,$00
+	SUB	R0, R3		; A284	SBC HL,DE
+	BHIS	89$		; A286	JR NC,$A289
+	INC	R3		; A288	INC HL
+89$:	MOV	R3, RNDSED	; A289	LD ($5C76),HL	; Write RND SEED variable
+	RETURN			; A28C	RET
+RNDSED:	.WORD	123456	; Pseudo-random seed
 
 LBC0D:
 ; Clear the screen
@@ -2806,8 +2837,9 @@ LBDE2:	MOV	NJAPOS, R2		; get Ninja position in tilemap
 	MOV	#<TLSCR0+30.>, R3	; Tile screen 0 + 1 row
 	ADD	R2, R3
 	CMPB	#332, (R3)		; = $DA ?
-	BNE	LBF7B
-	MOVB	#11., L7343		; set counter = 11.
+	BEQ	LBDF0
+	JMP	LBF7B
+LBDF0:	MOVB	#11., L7343		; set counter = 11.
 	MOV	#<TLSCR0+44.>, R3	; Tile screen 0 + 1 row + 14.
 	MOV	R3, LBE0E
 	MOV	R3, LBE1D
@@ -2835,7 +2867,7 @@ LBE1D = LBE1C + 2
 	DECB	(R3)			; decrease counter
 	BEQ	LBE30
 	JMP	LB8D0			; => Update Ninja on tilemap
-LBE30:	MOVB	#20., (R3)		; reset the counter
+LBE30:	MOVB	#34., (R3)		; set the counter for Helicopter moving up
 	MOV	#<TLSCR0+458.>, R3	; = (Tile screen 0) + 15. rows + 8.
 	MOV	#<TLSCR1+458.>, R2
 	MOV	#10., R1
@@ -2847,9 +2879,9 @@ LBE3A:	MOVB	R0, (R3)+
 	MOV	#210., R1		; 7 rows
 LBE4F:	MOVB	R0, (R3)+
 	SOB	R1, LBE4F
-	MOV	#LC094, R3		; Movement handler: helicopter moving up
+	MOV	#LC094, R3		; Movement handler: Helicopter moving up
 	MOV	#LC0E6, R2		; Empty sprite
-LBE57:	BR	LBFB0			; Set movement handler = R3, Ninja sprite = R2
+LBE57:	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 ; Ninja sit, and then fall and DIE
 LBE5A:	MOV	#LBE63, R3		; Movement handler: Ninja dead
@@ -2874,9 +2906,37 @@ LBE71:	CMPB	TIMODE, #2		; Time mode = BOMB ticking mode?
 	BR	LBE63			; => Ninja dead
 ; BOMB time is out, BOMB explodes
 LBE80:
-	HALT
-	;TODO: BOMB explodes
-	PUSH	R3
+	MOV	#3, <LBA5F+2>		; set height
+	MOV	#3, <LBA2D+2>		; set height
+	MOV	#LABE5, <LBA5A+2>	; set Explosion image address
+	MOV	#500., R1
+10$:	PUSH	R1
+; Randomize explosion position
+	CALL	RANDOM
+	MOV	R3, R0
+	BIC	#177740, R0		; 0..31.
+	CMPB	R0, #28.
+	BLO	20$
+	SUB	#28., R0		; 0..4
+20$:	SWAB	R3
+	BIC	#177760, R3		; 0..15.
+	CMPB	R3, #15.
+	BLO	30$
+	MOV	#7, R3
+30$:	ADD	R3, R3
+	MOV	LBAB3(R3), R3		; now R3 = screen address
+	ADD	R0, R3
+	MOV	R3, <LBA57+2>		; set screen address
+	CALL	LBA52			; Draw Explosion
+	MOV	#500., R0
+; Delay
+40$:	NOP
+	SOB	R0, 40$
+	POP	R1
+	SOB	R1, 10$
+;
+	MOV	#LBF58, LBEB4		; set two-line Game Over message = "SABOTEUR DEAD" / "MISSION FAILURE"
+	;BR	LBEAA
 
 ; Movement handler: Game Over
 LBEB3:	MOV	#LBF12, R3		; !!MUT-ARG!! two-line message address
@@ -2981,7 +3041,7 @@ LC056:	MOV	#LBF12, LBEB4		; "ESCAPE" / "MISSION SUCCESSFUL"
 
 ; Movement handler: helicopter moving up
 ;NOTE: Scrolling block of 17x16 tiles, scroll 4 lines up
-LC094:	DECB	#L7343			; decrease counter
+LC094:	DECB	L7343			; decrease counter
 	BEQ	LBFD5			; => zero => Escaped; final messages, then Game Over
 	MOV	#<SCRTOP+1200+500+7>, R3	; from
 	MOV	#<SCRTOP+1200+7>, R2	; to
@@ -3904,6 +3964,7 @@ LDF8E:	MOV	#LC082, R3		; "LEVEL X"
 	BR	10$			; continue menu loop
 22$:	CMPB	R0, #123		; 'S' ?
 	BNE	24$
+	CALL	LEVSEL			; apply level variables
 	JMP	LE2A7			; => Start Mission
 24$:	CMPB	R0, #130		; 'X' ?
 	BNE	26$
@@ -3911,12 +3972,15 @@ LDF8E:	MOV	#LC082, R3		; "LEVEL X"
 26$:	CMPB	R0, #061		; '1'
 	BLO	30$
 	CMPB	R0, #072		; '9'+1
-	BLO	LEVSEL
+	BHIS	30$
+	MOVB	R0, LE1EC		; set current level digit 1..9
+	CALL	LEVSEL			; apply level variables
+	BR	LDF8E			; return to Menu, redraw LEVEL sign
 30$:
 	BR	10$			; continue menu loop
 ;
-; Selected a level digit in Menu
-LEVSEL:	MOVB	R0, LE1EC		; set current level digit 1..9
+; Procedure: Apply level variables
+LEVSEL:	MOVB	LE1EC, R0		; get current level digit 1..9
 	SUB	#061, R0		; 0..8
 	ADD	R0, R0
 	ADD	R0, R0
@@ -3929,7 +3993,7 @@ LEVSEL:	MOVB	R0, LE1EC		; set current level digit 1..9
 ; Prepare level variables, see E325
 	MOVB	(R3)+, LA3BF		; set Guard counter value
 	MOVB	(R3)+, L9C57		; set Dog counter value
-	MOVB	(R3)+, <LB4C3+1>	; set Turret counter value
+	MOVB	(R3)+, <LB4C3+2>	; set Turret counter value
 	MOV	#LAD57, R1		; address for Indicator Time value
 	MOVB	(R3)+, (R1)+		; set Indicator Time value, lower digit
 	MOVB	(R3)+, (R1)		; set Indicator Time value, higher digit
@@ -3947,9 +4011,37 @@ LEVSEL:	MOVB	R0, LE1EC		; set current level digit 1..9
 	MOV	#LD357, R1		; address for BOMB in Table of objects D34D
 	MOV	(R3)+, (R1)+		; Copy last 4 bytes: BOMB placement
 	MOV	(R3)+, (R1)
-
-	BR	LDF8E			; return to Menu, redraw LEVEL sign
-	;JMP	LBC3B
+; Room changes according to the Level selected, see F913
+	MOVB	#4, <L89B3+1>		; patch length
+	MOVB	#144, <L89B3+3>		; patch offset low byte
+	MOV	#13., R0		; H = length
+	MOV	#213, R3		; L = offset low byte
+	MOV	#5, R4			; B = length
+	MOV	R4, R1			; C = length
+	MOV	R4, R5			; D = length
+	MOV	#6, R2			; E = length
+	CMPB	#64, LE1EC		; compare Level to '4'
+	BHIS	LF94D
+	MOV	#11., R2		; E = length
+	MOVB	#027, <L89B3+1>		; patch length
+	MOVB	#121, <L89B3+3>		; patch offset low byte
+	CMPB	#63, LE1EC		; compare Level to '3'
+	BHIS	LF94D
+	MOV	#15., R1		; C = length
+	MOV	#11., R5		; D = length
+	CMPB	#62, LE1EC		; compare Level to '2'
+	BHIS	LF94D
+	MOV	#10., R4		; B = length
+	MOV	#022, R0		; H = length
+	MOV	#206, R3		; L = offset low byte
+LF94D:
+	MOVB	R0, <L8D45+1>		; H - patch length
+	MOVB	R4, <L8CAE+1>		; B - patch length
+	MOVB	R1, <L8A52+1>		; C - patch length
+	MOVB	R5, <L8A00+1>		; D - patch length
+	MOVB	R2, <L88EB+1>		; E - patch length
+	MOVB	R3, <L8D45+3>		; L - patch offset low byte
+	RETURN
 
 ; Level descriptions and data addresses
 LE217:	.ASCII	/EXTREMELY EASY/
@@ -4067,7 +4159,6 @@ LE2A7:
 	CALL	WAITUP			; clear keyboard buffer
 	;BR	LF913
 LF913:
-	;TODO: Changing rooms based on current Skill Level in LE1EC
 	JMP	LB3B0
 
 ; Sound ??

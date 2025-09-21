@@ -977,7 +977,7 @@ RM889F:	; Room 889F
 	.BYTE	002, 004, 372, 022,001	; Fill horz 4 tiles with FA at 66A2
 	.BYTE	002, 012, 372, 112,001	; Fill horz 10 tiles with FA at 66DA
 	.BYTE	002, 003, 372, 164,001	; Fill horz 3 tiles with FA at 6704
-	.BYTE	002, 013, 372, 317,001	; Fill horz 11 tiles with FA at 675F
+L88EB:	.BYTE	002, 013, 372, 317,001	; Fill horz 11 tiles with FA at 675F
 	.BYTE	002, 006, 372, 010,001	; Fill horz 6 tiles with FA at 6698
 	.BYTE	002, 003, 372, 277,001	; Fill horz 3 tiles with FA at 674F
 	.BYTE	002, 006, 372, 332,001	; Fill horz 6 tiles with FA at 676A
@@ -1028,7 +1028,7 @@ RM8953:	; Room 8953
 	.BYTE	002, 003, 372, 354,001	; Fill horz 3 tiles with FA at 677C
 	.BYTE	002, 005, 372, 036,001	; Fill horz 5 tiles with FA at 66AE
 	.BYTE	002, 006, 372, 267,001	; Fill horz 6 tiles with FA at 6747
-	.BYTE	002, 027, 372, 121,001	; Fill horz 23 tiles with FA at 66E1
+L89B3:	.BYTE	002, 027, 372, 121,001	; Fill horz 23 tiles with FA at 66E1
 	.BYTE	377			; End of sequence
 	.EVEN
 RM89B9:	; Room 89B9
@@ -1049,7 +1049,7 @@ RM89B9:	; Room 89B9
 	.BYTE	014, 26., 002, 010, 016,001	; Block 2 tiles from 81E3 to 669E copy 8 times
 	.BYTE	014, 6., 002, 013, 233,000	; Block 2 tiles from 7348 to 662B copy 11 times
 	.BYTE	005, 002, 001, 35., 345,001	; Block 2x1 tiles from 889D to 6775
-	.BYTE	002, 013, 372, 347,001	; Fill horz 11 tiles with FA at 6777
+L8A00:	.BYTE	002, 013, 372, 347,001	; Fill horz 11 tiles with FA at 6777
 	.BYTE	002, 004, 372, 373,000	; Fill horz 4 tiles with FA at 668B
 	.BYTE	002, 005, 372, 264,001	; Fill horz 5 tiles with FA at 6744
 	.BYTE	002, 010, 372, 006,001	; Fill horz 8 tiles with FA at 6696
@@ -1071,7 +1071,7 @@ RM8A2D:	; Room 8A2D
 	.BYTE	001, 010, 072, 041,001	; Fill vert 8 tiles with 3A at 66B1
 	.BYTE	001, 005, 072, 164,001	; Fill vert 5 tiles with 3A at 6704
 	.BYTE	002, 003, 377, 000,000	; Fill horz 3 tiles with FF at 6590
-	.BYTE	002, 017, 372, 360,000	; Fill horz 15 tiles with FA at 6680
+L8A52:	.BYTE	002, 017, 372, 360,000	; Fill horz 15 tiles with FA at 6680
 	.BYTE	002, 005, 372, 377,000	; Fill horz 5 tiles with FA at 668F
 	.BYTE	014, 6., 002, 010, 021,000	; Block 2 tiles from 7348 to 65A1 copy 8 times
 	.BYTE	002, 010, 372, 305,001	; Fill horz 8 tiles with FA at 6755
@@ -1225,7 +1225,7 @@ RM8C5A:	; Room 8C5A
 	.BYTE	001, 003, 371, 213,001	; Fill vert 3 tiles with F9 at 671B
 	.BYTE	002, 007, 372, 343,001	; Fill horz 7 tiles with FA at 6773
 	.BYTE	016, 370, 345,001	; Put tile F8 at 6775
-	.BYTE	002, 012, 372, 055,001	; Fill horz 10 tiles with FA at 66BD
+L8CAE:	.BYTE	002, 012, 372, 055,001	; Fill horz 10 tiles with FA at 66BD
 	.BYTE	002, 004, 372, 125,001	; Fill horz 4 tiles with FA at 66E5
 	.BYTE	002, 004, 372, 036,001	; Fill horz 4 tiles with FA at 66AE
 	.BYTE	002, 003, 372, 137,001	; Fill horz 3 tiles with FA at 66EF
@@ -1266,7 +1266,7 @@ RM8D18:	; Room 8D18
 	.BYTE	001, 021, 072, 023,000	; Fill vert 17 tiles with 3A at 65A3
 	.BYTE	003, 377, 012, 004, 000,000	; Rect 10x4 tiles with FF at 6590
 	.BYTE	014, 6., 002, 015, 012,000	; Block 2 tiles from 7348 to 659A copy 13 times
-	.BYTE	002, 022, 372, 206,001	; Fill horz 18 tiles with FA at 6716
+L8D45:	.BYTE	002, 022, 372, 206,001	; Fill horz 18 tiles with FA at 6716
 	.BYTE	002, 006, 372, 236,001	; Fill horz 6 tiles with FA at 672E
 	.BYTE	002, 005, 143, 344,000	; Fill horz 5 tiles with 63 at 6674
 	.BYTE	005, 002, 004, 5., 021,013	; Block 2x4 tiles from 71BB to 70A1
