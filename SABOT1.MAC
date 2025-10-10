@@ -1,6 +1,16 @@
 	.TITLE	SABOT1
 	.ASECT
 
+; Set PPU command
+.MACRO	PPUCMD	X
+	MOV	X, @#PPUCOM
+.ENDM
+; Set PPU command and wait for acknowledgement
+.MACRO	PPUCMW	X
+	MOV	X, @#PPUCOM
+	TST	@#PpuComm
+	BNE	.-4
+.ENDM
 
 ;------------------------------------------------------------------------------
 
@@ -166,6 +176,16 @@ RUNPPU:
 	SOB	R0, .			; wait a bit
 	RETURN
 
+; Stop PPU procedure and remove the code
+STOPPU:	PPUCMW	#177777			; command PPU to exit
+; free PPU memory
+	MOVB	#2, PPCMD		; set command to free PP memory
+	MOV	PPUADR, PPAPP
+	CALL	PPSEN
+;
+	CLR	PPUKEY
+	RETURN
+
 ;------------------------------------------------------------------------------
 
 ; Start of PPU code block
@@ -189,7 +209,7 @@ PPSTA:
 	MOV	#2, (R3)		; set RTI at @#0
 
 ; setup other
-	;MOV	@#177054, BKP054
+	MOV	@#177054, BKP054
 ; timers
 	BIC	#^B0000001000000000, @#177054	; enable vsync in CPU
 	BIC	#^B0000000100000000, @#177054	; enable vsync in PPU
@@ -205,20 +225,35 @@ PPSTA:
 	ADD	#VSYINT-., R0
 	MOV	R0, @#100
 	MOV	#200, @#102
-; Done
+PDONE:
 	MTPS	#0
 	MOV	#<PPUCOM/2>, @#177010	; ackn of command execution
 	CLR	@#177014
-
+; Main loop of the PPU procedure
 PMAIN:	MOV	#<PPUCOM/2>, @#177010	; get command from CPU
 	MOV	@#177014, R0
-	BEQ	PMAIN			; no command
-	;BMI	Exit			; exit PPU command
+	BMI	PEXIT			; exit PPU command
 	ASL	R0
 	ASL	R0
 	ADD	R0, PC
-	JMP	PMAIN			; 0
+	JMP	PMAIN			; 0 - no command
+	JMP	PSOUND			; 1 - play sound 1
 	;TODO
+; Exit command
+PEXIT:	MTPS	#200
+; restore block 0..1000
+	MOV	PC, R0
+	ADD	#BKP-., R0
+	CLR	R1
+	MOV	#400, R3
+	MOV	(R0)+, (R1)+
+	SOB	R3, .-2
+	MOV	BKP054, @#177054
+; signal to CPU: we're finished
+	MOV	#PpuComm/2, @#177010
+	CLR	@#177014
+	MTPS	#0
+	RETURN
 
 ; Keyboard interrupt handler
 KEYINT:	MOV	@#177010, -(SP)
@@ -276,6 +311,72 @@ KEYINT:	MOV	@#177010, -(SP)
 VSYINT:
 	RTI
 
+SNDADR:	.WORD	0
+
+; Start to play sound; R0 = sound number multiplied by 4
+PSOUND:	CALL	TIMRIN
+	ASR	R0			; divide by 2
+	ADD	PC, R0
+	ADD	#SNDTAB-., R0
+	ADD	(R0), R0
+	BEQ	99$
+	MOV	(R0)+, R1
+	BEQ	99$
+	MOV	R0, SNDADR
+	MOV	R1, @#177712		; load counter
+	TST	@#177714
+	TST	@#177714
+	BIC	#200, @#177716		; sound to LO
+	MOV	PC, R0
+	ADD	#SNINTH+2-., R0		; set sound interrupt to HI
+	MOV	R0, @#304
+	MOV	#^B01000111, @#177710	; allow int, start, timer = (..FFS) FF = 00 - 2mks, 01 - 4mks, 10 - 8mks, 11 - 16mks
+99$:	JMP	PDONE			; return to PPU main loop
+
+; sound timer interrupt (LO)
+SNINTL:	MOV	R0, -(SP)
+	BIC	#200, @#177716
+	MOV	PC, R0
+	ADD	#SNINTH+2-., R0
+	MOV	R0, @#304
+	BR	SNINTN
+; sound timer interrupt (HI)
+SNINTH:	MOV	R0, -(SP)
+	BIS	#200, @#177716
+	MOV	PC, R0
+	ADD	#SNINTL+2-., R0
+	MOV	R0, @#304
+;
+SNINTN:	MOV	(SP)+, R0
+	MOV	@SNDADR, @#177712	; update timer
+	BEQ	90$			; end of sound?
+	ADD	#2, SNDADR
+	TST	@#177714
+	TST	@#177714
+	RTI
+90$:	CLR	@#177710		; stop timer and ints
+	TST	@#177714
+	TST	@#177714
+	RTI
+
+; timer init (stop, clear counter)
+TIMRIN:
+	CLR	@#177710		; clear control, stop
+	CLR	@#177712		; clear buffer
+	TST	@#177714
+	TST	@#177714
+	RETURN
+
+SNDTAB:	.WORD	0			; stub for sound 0
+	.WORD	SND001-.		; 1
+;
+	.RADIX	10
+; Sound: punch/hit
+SND001:	.WORD	30,30, 30,30, 20,20
+	.WORD	0
+	.RADIX	8
+
+BKP054:	.WORD	0
 BKP:	.BLKW	400			; 0-1000 addrs backup
 
 PPEND:	; End of PPU code block

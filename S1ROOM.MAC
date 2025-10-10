@@ -1,4 +1,5 @@
 ; Start of S1ROOM.MAC
+	.EVEN
 
 RM791E:	; Room 791E
 	.WORD	LB446		; Room procedure

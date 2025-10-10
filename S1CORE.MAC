@@ -14,7 +14,7 @@
 
 ;------------------------------------------------------------------------------
 
-CHELTH=1		; Cheat code for no damage
+CHELTH=0		; Cheat code for no damage
 CVERT =0		; Cheat code for short route to Helicopter
 
 SCREEN = 100000		; Screen start, indirect address for UKNC
@@ -24,10 +24,661 @@ SCRIND = SCRTOP + <1200*19.>	; Screen address for first indicators line
 TIMERI = 200.		; Fast timer reset value, see TIMECN
 
 ;------------------------------------------------------------------------------
+; Variables
 
-.INCLUDE /S1ROOM.MAC/
+; Game controls
+;  7   6   5   4   3   2   1   0
+;              Fr  Up  Dn  Lt  Rt
+INPUTB:	.BYTE	0	; Input bits: 000FUDLR
+	.EVEN
 
-.INCLUDE /S1FONT.MAC/
+ROOM:	.WORD	RM791E	; Current Room address
+NJASPR:	.WORD	LA0B5	; Ninja sprite address
+
+GARDPO:	.WORD	257.	; Guard position in tilemap
+GARDX:	.BYTE	17.	; Guard X position
+GARDY:	.BYTE	8.	; Guard Y position
+
+DOGPOS:	.WORD	398.	; Dog position in tilemap
+DOGDIR:	.BYTE	0	; Dog direction
+DOGX:	.BYTE	8.	; Dog X position
+DOGST:	.BYTE	0	; Dog state: 0 = run, 1 = changing direction, >= $42 is dead
+L71D0:	.BYTE	7	; Dog's left limit
+L71D1:	.BYTE	23.	; Dog's right limit
+L71D2:	.BYTE	0	; Dog changing direction: 0 = right to left, 1 = left to right
+DOGY:	.BYTE	6	; Dog Y position
+	.EVEN
+
+L71D4:	.BYTE	0
+L71D5:	.BYTE	1
+L71D6:	.BYTE	172,000,000,002,000,001,026,000,375	; Room 79C6 dog data
+	.EVEN
+
+NJADIR:	.BYTE	0	; Ninja direction: 0 = left, 1 = right
+	.EVEN
+
+NJAWLK:	.BYTE	0	; Ninja walking phase
+	.EVEN
+
+L7343:	.BYTE	7	; Counter used in movement handlers
+	.EVEN
+L7344:	.BYTE	0	; Dog's flag: 1 = ignore left/right limit
+	.EVEN
+L7345:	.BYTE	20.	; Dog ??
+	.EVEN
+GARDST:	.BYTE	10.	; Guard walking phase $00..$03 or other state: $09 = dead; $0A = standing; ...
+GARDDI:	.BYTE	1	; Guard direction
+	.EVEN
+
+NRJ:	.BYTE	19.	; Energy 0..14.
+	.EVEN
+NRJLO:	.BYTE	1	; Energy lower, running bit 0,1..377
+	.EVEN
+
+NJAFAL:	.BYTE	0	; Ninja falling count, to decrease Energy on hit
+	.EVEN
+NJAY:	.BYTE	8.	; Ninja Y within the room, 0 at the top
+	.EVEN
+NJAX:	.BYTE	6	; Ninja X within the room
+	.EVEN
+NJAPOS:	.WORD	246.	; Ninja position in tilemap: Y * 30. + X
+
+LA39E:	.BYTE	0	; ?? 0 / 1
+	.EVEN
+
+; Three objects, 8. bytes each
+; 1st object - object thrown by Ninja
+LA39F:	.BYTE	0	; Thrown object tile
+	.EVEN
+LA3A0:	.WORD	304	; Thrown object position
+LA3A2:	.BYTE	0
+LA3A3:	.BYTE	3
+LA3A4:	.BYTE	6	; Thrown object Y
+LA3A5:	.BYTE	4	; Thrown object X
+; 2nd object - knife thrown by Guard
+LA3A6:	.BYTE	0
+	.BLKB	7
+; 3rd object - Turett
+LA3AD:	.BYTE	0
+	.EVEN
+LA3AE:	.WORD	105.	; Turret offset in tilemap
+LA3B0:	.BYTE	6
+LA3B1:	.BYTE	6
+TURGY:	.BYTE	3	; Turret Y
+TURGX:	.BYTE	15.	; Turret X
+
+LA3B4:	.BYTE	1	; ?? Guard counter
+	.EVEN
+
+LB2FD:	.BYTE	195.	; Counter for Ninja/Guard head tile change
+	.EVEN
+
+TIMECN:	.BYTE	25	; Time fast counter 50..0
+LB5C5:	.BYTE	1	; Ninja standing counter
+TIMODE:	.BYTE	0	; Time mode: 0 = time ticking; 1 = Time stopped; 2 = BOMB ticking mode
+	.EVEN
+
+LB84A:	.WORD	0	; Object address + 4, in table LD256
+LB84C:	.BYTE	0	; Object tile
+	.EVEN
+LB84D:	.WORD	0	; Object procedure address
+LB84F:	.BYTE	0	; NEAR item
+	.EVEN
+LB850:	.BYTE	0	; HELD tile
+	.EVEN
+
+LBAB2:	.BYTE	0	; Explosion counter 10. to 0
+	.EVEN
+
+LE1ED:	.WORD	LE217	; Current level description address, 14-char string
+
+;------------------------------------------------------------------------------
+; Tables
+
+; Mirror table
+L723A:	.BYTE	001,201,101,301,041,241,141,341,021,221,121,321,061,261,161,361
+	.BYTE	011,211,111,311,051,251,151,351,031,231,131,331,071,271,171,371
+	.BYTE	005,205,105,305,045,245,145,345,025,225,125,325,065,265,165,365
+	.BYTE	015,215,115,315,055,255,155,355,035,235,135,335,075,275,175,375
+	.BYTE	003,203,103,303,043,243,143,343,023,223,123,323,063,263,163,363
+	.BYTE	013,213,113,313,053,253,153,353,033,233,133,333,073,273,173,373
+	.BYTE	007,207,107,307,047,247,147,347,027,227,127,327,067,267,167,367
+	.BYTE	017,217,117,317,057,257,157,357,037,237,137,337,077,277,177,377
+L72BA:	.BYTE	000,200,100,300,040,240,140,340,020,220,120,320,060,260,160,360
+	.BYTE	010,210,110,310,050,250,150,350,030,230,130,330,070,270,170,370
+	.BYTE	004,204,104,304,044,244,144,344,024,224,124,324,064,264,164,364
+	.BYTE	014,214,114,314,054,254,154,354,034,234,134,334,074,274,174,374
+	.BYTE	002,202,102,302,042,242,142,342,022,222,122,322,062,262,162,362
+	.BYTE	012,212,112,312,052,252,152,352,032,232,132,332,072,272,172,372
+	.BYTE	006,206,106,306,046,246,146,346,026,226,126,326,066,266,166,366
+	.BYTE	016,216,116,316,056,256,156,356,036,236,136,336,076,276,176,376
+REFBFH = L72BA
+
+L733B:	; Table of four addresses of Ninja/Guard walking sprites
+	.WORD	LD3DE	; Sprite Ninja/Guard walking 1
+	.WORD	LD408	; Sprite Ninja/Guard walking 2
+	.WORD	LD432	; Sprite Ninja/Guard walking 3
+	.WORD	LD45C	; Sprite Ninja/Guard walking 4
+
+; Table for Dog sprites
+L9CA4:	.WORD	L71F2	; Sprite Dog 1
+	.WORD	L71FE	; Sprite Dog 2
+	.WORD	L720A	; Sprite Dog 3
+
+; Table of items: addresses for NEAR/HELD items
+LB5B0:	.WORD	LA7AD	; #0 Nothing
+	.WORD	LA819	; #1 Shuriken
+	.WORD	LA885	; #2 Knife
+	.WORD	LA8F1	; #3 ??
+	.WORD	LA95D	; #4 Brick
+	.WORD	LA9C9	; #5 Pipe
+	.WORD	LAA35	; #6 Granade
+	.WORD	LAAA1	; #7 Disk
+	.WORD	LAB0D	; #8 Bomb
+	.WORD	LAB79	; #9 Console
+
+; Guards data, 23 records, 6 bytes each
+; +$04: Guard state, initially $0A
+; +$05: Guard direction
+LA1E1:	.BYTE	235,000,007,005,012,001	; Room 94AB guard
+LA1E7:	.BYTE	030,001,012,011,012,000	; Room 7DA9 guard
+LA1ED:	.BYTE	024,001,006,011,012,000	; Room 7E8C guard
+LA1F3:	.BYTE	023,001,005,011,012,000	; Room 920A guard
+LA1F9:	.BYTE	310,000,024,006,012,000	; Room 8F84 guard
+LA1FF:	.BYTE	040,001,022,011,012,001	; Room 8B71 guard
+LA205:	.BYTE	120,000,024,002,012,001	; Room 8739 guard
+LA20B:	.BYTE	036,001,020,011,012,000	; Room 858F guard
+LA211:	.BYTE	001,001,021,010,012,001	; Room 84EE guard
+;LA217:	.BYTE	030,001,012,011,012,000	; UNUSED, see A13D
+LA21D:	.BYTE	042,001,024,011,012,001	; Room 99A6 guard
+LA223:	.BYTE	371,000,011,010,012,000	; Room 97F8 guard
+LA229:	.BYTE	002,001,022,010,012,001	; Room 94CF guard
+LA22F:	.BYTE	337,000,015,007,012,001	; Room 9B51 guard
+LA235:	.BYTE	367,000,007,010,012,001	; Room 9F3A guard
+LA23B:	.BYTE	370,000,010,010,012,000	; Room 9F7E guard
+LA241:	.BYTE	206,000,016,004,012,001	; Room 9EB8 guard
+LA247:	.BYTE	242,000,014,005,012,000	; Room 9B19 guard
+LA24D:	.BYTE	273,000,007,006,012,000	; Room 9DF5 guard
+LA253:	.BYTE	302,000,016,006,012,000	; Room 7C2E guard
+LA259:	.BYTE	324,000,002,007,012,000	; Room 7F9C guard
+LA25F:	.BYTE	013,000,013,000,012,001	; Room 8162 guard
+LA265:	.BYTE	040,001,022,011,012,001	; Room 80A7 guard
+LA26B:	.BYTE	060,000,022,001,012,001	; Room 9B9D guard
+
+LC66B:	; Guard data for rooms 7C9C/92EF
+	.BYTE	016,000,016,000,004,000
+
+; Dogs data, 19 records, 10 bytes each
+; +$00/$01: Dog position in tilemap
+; +$02: Dog direction
+; +$03: Dog X position
+; +$04: ??
+; +$05: Dog left limit
+; +$06: Dog right limit
+; +$07: ??
+; +$08: Dog Y position
+LA271:	.BYTE	074,001,000,020,000,003,026,000,003,001	; Room 7C2E dog
+LA27B:	.BYTE	136,001,001,024,000,003,026,001,004,001	; Room 7F9C dog
+LA285:	.BYTE	245,000,000,017,000,005,017,000,376,001	; Room 81E5 dog
+LA28F:	.BYTE	172,000,001,002,000,000,030,001,375,001	; Room 8162 dog
+LA299:	.BYTE	217,001,001,011,000,003,030,001,006,001	; Room 7EF2 dog
+LA2A3:	.BYTE	212,001,001,004,000,002,032,001,006,001	; Room 7E05 dog
+LA2AD:	.BYTE	232,001,000,024,001,003,025,001,006,001	; Room 80A7 dog
+LA2B7:	.BYTE	222,001,000,014,000,005,031,000,006,001	; Room 83ED dog
+LA2C1:	.BYTE	214,001,001,006,001,001,027,000,006,001	; Room 80F6 dog
+LA2CB:	.BYTE	220,001,000,012,000,004,027,000,006,001	; Room 924E dog
+LA2D5:	.BYTE	033,001,001,015,000,006,030,001,002,001	; Room 91BA dog
+LA2DF:	.BYTE	166,001,001,016,000,000,017,001,005,001	; Room 90DB dog
+LA2E9:	.BYTE	227,001,001,021,000,015,032,001,006,001	; Room 909F dog
+LA2F3:	.BYTE	274,000,000,010,000,001,016,000,377,001	; Room 8802 dog
+LA2FD:	.BYTE	244,000,000,016,000,002,016,000,376,001	; Room 8608 dog
+LA307:	.BYTE	216,001,000,010,000,007,027,000,006,001	; Room 844E dog
+LA311:	.BYTE	215,001,001,007,000,003,025,001,006,001	; Room 9739 dog
+LA31B:	.BYTE	366,000,000,006,000,002,017,000,001,001	; Room 9A5A dog
+LA325:	.BYTE	214,001,001,006,000,004,030,001,006,001	; Room 9B9D dog
+
+; Turrets data, 11 records, 3 bytes each
+LA32F:	.BYTE	304,000,016	; Room 7A17 turret
+LA332:	.BYTE	047,000,007	; Room 7F48/9A9A turret
+LA335:	.BYTE	021,000,017	; Room 8FBD turret
+LA338:	.BYTE	053,000,012	; Room 7EF2/909F/92A7 turret
+LA33B:	.BYTE	113,000,015	; Room 8B25/8D5C turret
+LA33E:	.BYTE	057,000,017	; Room 7A17/8526 turret
+;LA341:	.BYTE	062,000,022	; UNUSED, see A17E
+LA344:	.BYTE	235,000,005	; Room 95D6 turret
+LA347:	.BYTE	246,000,016	; Room 968A turret
+LA34A:	.BYTE	012,001,030	; Room 968A turret
+LA34D:	.BYTE	077,000,001	; Room 9552 turret
+LA350:	.BYTE	243,000,013	; Room 9BE7 turret
+	.EVEN
+
+; Table of game screen rows addresses, 10 rows, for auto-gun drawings
+LA747:	.WORD	SCRTOP+<1200*3>+<120*5>+1
+	.WORD	SCRTOP+<1200*4>+<120*5>+1
+	.WORD	SCRTOP+<1200*5>+<120*5>+1
+	.WORD	SCRTOP+<1200*6>+<120*5>+1
+	.WORD	SCRTOP+<1200*7>+<120*5>+1
+	.WORD	SCRTOP+<1200*8.>+<120*5>+1
+	.WORD	SCRTOP+<1200*9.>+<120*5>+1
+	.WORD	SCRTOP+<1200*11.>+<120*5>+1
+	.WORD	SCRTOP+<1200*12.>+<120*5>+1
+	.WORD	SCRTOP+<1200*13.>+<120*5>+1
+
+; Screen addresses for every 17. rows
+LBAB3:	.WORD	SCRTOP+<1200*1>+1
+	.WORD	SCRTOP+<1200*2>+1
+	.WORD	SCRTOP+<1200*3>+1
+	.WORD	SCRTOP+<1200*4>+1
+	.WORD	SCRTOP+<1200*5>+1
+	.WORD	SCRTOP+<1200*6>+1
+	.WORD	SCRTOP+<1200*7>+1
+	.WORD	SCRTOP+<1200*8.>+1
+	.WORD	SCRTOP+<1200*9.>+1
+	.WORD	SCRTOP+<1200*10.>+1
+	.WORD	SCRTOP+<1200*11.>+1
+	.WORD	SCRTOP+<1200*12.>+1
+	.WORD	SCRTOP+<1200*13.>+1
+	.WORD	SCRTOP+<1200*14.>+1
+	.WORD	SCRTOP+<1200*15.>+1
+	.WORD	SCRTOP+<1200*16.>+1
+	.WORD	SCRTOP+<1200*17.>+1
+
+; Table used to translate Ninja tiles to Guard tiles, 19. records
+LA787:	.BYTE	120,307,121,334,124,335,352,336,023,337,025,340,026,341,000,342
+	.BYTE	001,343,003,344,004,345,115,346,042,347,057,350,060,351,364,342
+	.BYTE	365,343,344,344,366,345
+	.BYTE	377,377
+
+; Table of Guard data addresses, 23. records
+LAC72:	.WORD	LA26B,LA265,LA25F,LA259
+	.WORD	LA253
+	;.WORD	LA217	;UNUSED
+	.WORD	LA24D,LA247
+	.WORD	LA241,LA23B,LA235,LA22F
+	.WORD	LA229,LA223,LA21D,LA211
+	.WORD	LA20B,LA205,LA1FF,LA1F9
+	.WORD	LA1F3,LA1ED,LA1E7,LA1E1
+
+; Table of Dog data addresses, 20. records
+LACA2:	.WORD	LA31B,LA311,LA307,LA2FD
+	.WORD	LA2F3,LA2DF,LA2D5,LA2CB
+	.WORD	LA2C1,LA2B7,LA2A3,LA285
+	.WORD	LA325,LA2AD,LA28F,LA27B
+	.WORD	LA271,LA2E9,LA299,L71D6
+
+; Table of 35. records, 2 bytes each, see LB851
+LD210:	.BYTE	004,316,011,143,011,143,011,143,011,143,011,143,011,143,011,324
+	.BYTE	005,320,005,320,005,320,006,322,010,326,002,312,003,314,005,320
+	.BYTE	005,320,005,320,003,314,002,312,002,312,003,314,002,312,006,322
+	.BYTE	002,312,006,322,002,312,003,314,003,314,003,314,004,316,004,316
+	.BYTE	004,316,004,316,004,316
+
+; Table of objects, 35. records, 8. bytes each
+;   +$00/$01: Object tile offset
+;   +$02: Object tile unique, to identify the object
+;   +$03: Object item, for NEAR indicator
+;   +$04: Object tile as object type
+;   +$04: Even filler = 0
+;   +$06/$07: Object procedure, or 0
+LD256:	.WORD	004562		; Object 00: Brick
+	.BYTE	130,004,316, 0
+	.WORD	0
+LD25D:	.WORD	000324		; Object 01: Console in room 80F6
+	.BYTE	174,011,143, 0
+	.WORD	LB320
+LD264:	.WORD	000324		; Object 02: Console in room 99A6
+	.BYTE	175,011,143, 0
+	.WORD	LB32A
+LD26B:	.WORD	000324		; Object 03: Console in room 92A7
+	.BYTE	176,011,143, 0
+	.WORD	LB348
+LD272:	.WORD	000324		; Object 04: Console in room 92EF
+	.BYTE	177,011,143, 0
+	.WORD	LB334
+LD279:	.WORD	000324		; Object 05: Console in room 9005
+	.BYTE	200,011,143, 0
+	.WORD	LB33E
+LD280:	.WORD	005122		; Object 06
+	.BYTE	037,011,143, 0
+	.WORD	LB8D0
+LD287:	.WORD	000331		; Object 07: Diskette
+	.BYTE	234,011,324, 0
+	.WORD	0
+LD28E:	.WORD	000013		; Object 08: Pipe
+	.BYTE	232,005,320, 0
+	.WORD	0
+LD295:	.WORD	000700		; Object 09: Pipe
+	.BYTE	070,005,320, 0
+	.WORD	0
+LD29C:	.WORD	000324		; Object 10: Pipe
+	.BYTE	201,005,320, 0
+	.WORD	0
+LD2A3:	.WORD	000324		; Object 11: Granade
+	.BYTE	145,006,322, 0
+	.WORD	0
+LD2AA:	.WORD	000324		; Object 12: BOMB
+	.BYTE	146,010,326, 0
+	.WORD	0
+LD2B1:	.WORD	000324		; Object 13: Knife
+	.BYTE	147,002,312, 0
+	.WORD	0
+LD2B8:	.WORD	000324		; Object ?? 14
+	.BYTE	150,003,314, 0
+	.WORD	0
+LD2BF:	.WORD	000324		; Object 15: Pipe
+	.BYTE	151,005,320, 0
+	.WORD	0
+LD2C6:	.WORD	000324		; Object 16: Pipe
+	.BYTE	152,005,320, 0
+	.WORD	0
+LD2CD:	.WORD	000324		; Object 17: Pipe
+	.BYTE	153,005,320, 0
+	.WORD	0
+LD2D4:	.WORD	000324		; Object ?? 18
+	.BYTE	154,003,314, 0
+	.WORD	0
+LD2DB:	.WORD	000324		; Object 19: Knife
+	.BYTE	155,002,312, 0
+	.WORD	0
+LD2E2:	.WORD	000324		; Object 20: Knife
+	.BYTE	155,002,312, 0
+	.WORD	0
+LD2E9:	.WORD	000324		; Object ?? 21
+	.BYTE	156,003,314, 0
+	.WORD	0
+LD2F0:	.WORD	000324		; Object 22: Knife
+	.BYTE	157,002,312, 0
+	.WORD	0
+LD2F7:	.WORD	000324		; Object 23: Granade
+	.BYTE	160,006,322, 0
+	.WORD	0
+LD2FE:	.WORD	000324		; Object 24: Knife
+	.BYTE	161,002,312, 0
+	.WORD	0
+LD305:	.WORD	000324		; Object 25: Granade
+	.BYTE	162,006,322, 0
+	.WORD	0
+LD30C:	.WORD	000324		; Object 26: Knife
+	.BYTE	163,002,312, 0
+	.WORD	0
+LD313:	.WORD	000324		; Object ?? 27
+	.BYTE	164,003,314, 0
+	.WORD	0
+LD31A:	.WORD	000324		; Object ?? 28
+	.BYTE	165,003,314, 0
+	.WORD	0
+LD321:	.WORD	000324		; Object ?? 29
+	.BYTE	166,003,314, 0
+	.WORD	0
+LD328:	.WORD	000324		; Object 30: Brick
+	.BYTE	167,004,316, 0
+	.WORD	0
+LD32F:	.WORD	000324		; Object 31: Brick
+	.BYTE	170,004,316, 0
+	.WORD	0
+LD336:	.WORD	000324		; Object 32: Brick
+	.BYTE	171,004,316, 0
+	.WORD	0
+LD33D:	.WORD	000324		; Object 33: Brick
+	.BYTE	172,004,316, 0
+	.WORD	0
+LD344:	.WORD	000324		; Object 34: Brick
+	.BYTE	173,004,316, 0
+	.WORD	0
+
+; Table of objects, 29 records, 6 bytes each
+;   +$00/$01: room address
+;   +$02/$03: offset in Tile screen 0
+;   +$04: tile byte
+LD34D:	.WORD	RM9ED9, 000517		; Object L00: Pipe
+	.BYTE	201, 0
+LD352:	.WORD	RM9E22, 000614		; Object L01: Granade
+	.BYTE	145, 0
+LD357:	.WORD	RM9E22, 000636		; Object L02: BOMB
+	.BYTE	146, 0
+LD35C:	.WORD	RM990D, 000767		; Object L03: Knife
+	.BYTE	147, 0
+LD361:	.WORD	RM8D5C, 000727		; Object L04
+	.BYTE	150, 0
+LD366:	.WORD	RM8EE1, 000716		; Object L05: Pipe
+	.BYTE	151, 0
+LD36B:	.WORD	RM889F, 000514		; Object L06: Pipe
+	.BYTE	152, 0
+LD370:	.WORD	RM890E, 000411		; Object L07: Pipe
+	.BYTE	153, 0
+LD375:	.WORD	RM8CC8, 000762		; Object L08
+	.BYTE	154, 0
+LD37A:	.WORD	RM8739, 000432		; Object L09: Knife
+	.BYTE	155, 0
+LD37F:	.WORD	RM8799, 000707		; Object L10
+	.BYTE	156, 0
+LD384:	.WORD	RM913F, 000762		; Object L11: Knife
+	.BYTE	157, 0
+LD389:	.WORD	RM8321, 000747		; Object L12: Granade
+	.BYTE	160, 0
+LD38E:	.WORD	RM8162, 000762		; Object L13: Knife
+	.BYTE	161, 0
+LD393:	.WORD	RM7EF2, 000770		; Object L14: Granade
+	.BYTE	162, 0
+LD398:	.WORD	RM7F48, 000664		; Object L15: Knife in room 7F48
+	.BYTE	163, 0
+LD39D:	.WORD	RM7C6D, 000667		; Object L16
+	.BYTE	164, 0
+LD3A2:	.WORD	RM7A9E, 000715		; Object L17
+	.BYTE	165, 0
+LD3A7:	.WORD	RM7A9E, 000727		; Object L18
+	.BYTE	166, 0
+LD3AC:	.WORD	RM7A9E, 000731		; Object L19: Brick
+	.BYTE	167, 0
+LD3B1:	.WORD	RM7AF8, 000765		; Object L20: Brick
+	.BYTE	170, 0
+LD3B6:	.WORD	RM7AF8, 000766		; Object L21: Brick
+	.BYTE	171, 0
+LD3BB:	.WORD	RM9376, 000653		; Object L22: Brick
+	.BYTE	172, 0
+LD3C0:	.WORD	RM79C6, 000765		; Object L23: Brick in room 79C6
+	.BYTE	173, 0
+LD3C5:	.WORD	RM80F6, 000743		; Object L24: Console in room 80F6
+	.BYTE	174, 0
+LD3CA:	.WORD	RM99A6, 000763		; Object L25: Console in room 99A6
+	.BYTE	175, 0
+LD3CF:	.WORD	RM92A7, 000715		; Object L26: Console in room 92A7
+	.BYTE	176, 0
+LD3D4:	.WORD	RM92EF, 000330		; Object L27: Console in room 92EF
+	.BYTE	177, 0
+LD3D9:	.WORD	RM9005, 000445		; Object L28: Console in room 9005
+	.BYTE	200, 0
+
+; Dog rooms/flags ?? 20. records, 4 bytes each
+;   +$00/$01: room address
+LDE84:	.WORD	RM79C6
+	.BYTE	000, 0
+	.WORD	RM7C2E
+	.BYTE	000, 0
+	.WORD	RM7F9C
+	.BYTE	001, 0
+	.WORD	RM81E5
+	.BYTE	000, 0
+	.WORD	RM8162
+	.BYTE	001, 0
+	.WORD	RM7EF2
+	.BYTE	001, 0
+	.WORD	RM7E05
+	.BYTE	001, 0
+	.WORD	RM80A7
+	.BYTE	000, 0
+	.WORD	RM83ED
+	.BYTE	000, 0
+	.WORD	RM80F6
+	.BYTE	000, 0
+	.WORD	RM924E
+	.BYTE	000, 0
+	.WORD	RM91BA
+	.BYTE	001, 0
+	.WORD	RM90DB
+	.BYTE	001, 0
+	.WORD	RM909F
+	.BYTE	000, 0
+	.WORD	RM8802
+	.BYTE	000, 0
+	.WORD	RM8608
+	.BYTE	000, 0
+	.WORD	RM844E
+	.BYTE	000, 0
+	.WORD	RM9739
+	.BYTE	001, 0
+	.WORD	RM9A5A
+	.BYTE	000, 0
+	.WORD	RM9B9D
+	.BYTE	001, 0
+
+; Level descriptions and data addresses
+LE217:	.ASCII	/EXTREMELY EASY/
+	.WORD	LE38C
+	.ASCII	/  VERY  EASY  /
+	.WORD	LE3A0
+	.ASCII	/     EASY     /
+	.WORD	LE3B4
+	.ASCII	/SLIGHTLY  EASY/
+	.WORD	LE3C8
+	.ASCII	/   MODERATE   /
+	.WORD	LE3DC
+	.ASCII	/SLIGHTLY  HARD/
+	.WORD	LE3F0
+	.ASCII	/     HARD     /
+	.WORD	LE404
+	.ASCII	/  VERY HARD   /
+	.WORD	LE418
+	.ASCII	/EXTREMELY HARD/
+	.WORD	LE42C
+
+; Levels data
+;   +$00: Guard counter value
+;   +$01: Dog counter value
+;   +$02: Turret counter value
+;   +$03/$04: two digits for TIME value
+;   +$05/$06: two digits for BOMB timer
+;   +$07: flag for wall in room 97A6
+;   +$08: count for wall in room 9739: $01 = no wall, $07 = put wall
+;   +$09: count for wall in room 7F48
+;   +$0A: count for wall in room 8D5C
+;   +$0B: count for wall in room 8F20: $01 = no wall, $09 = put wall
+;   +$10/$11: room for BOMB placement
+;   +$12/$13: address in Tile screen 0 for BOMB placement
+; Level 1 "EXTREMELY EASY"
+LE38C:	.BYTE	20.,25.,50.
+	.ASCII	/9999/
+	.BYTE	000,001,001,001,001
+	.ASCII	/ 10/
+	.BYTE	10.
+	.WORD	RM9E22
+	.WORD	414.
+; Level 2 "VERY EASY"
+LE3A0:	.BYTE	18.,15.,45.
+	.ASCII	/9995/
+	.BYTE	000,001,001,001,001
+	.ASCII	/ 20/
+	.BYTE	024
+	.WORD	RM9E22
+	.WORD	414.
+; Level 3 "EASY"
+LE3B4:	.BYTE	16.,12.,40.
+	.ASCII	/9590/
+	.BYTE	000,007,001,001,001
+	.ASCII	/ 30/
+	.BYTE	036
+	.WORD	RM924E
+	.WORD	504.
+; Level 4 "SLIGHTLY EASY"
+LE3C8:	.BYTE	14.,10.,35.
+	.ASCII	/9080/
+	.BYTE	377,001,001,001,011
+	.ASCII	/ 50/
+	.BYTE	062
+	.WORD	RM8608
+	.WORD	503.
+; Level 5 "MODERATE"
+LE3DC:	.BYTE	12.,9.,30.
+	.ASCII	/9070/
+	.BYTE	377,001,001,007,001
+	.ASCII	/ 70/
+	.BYTE	106
+	.WORD	RM8689
+	.WORD	322.
+; Level 6 "SLIGHTLY HARD"
+LE3F0:	.BYTE	10.,7.,25.
+	.ASCII	/8560/
+	.BYTE	377,007,001,007,001
+	.ASCII	/100/
+	.BYTE	144
+	.WORD	RM8BAB
+	.WORD	496.
+; Level 7 "HARD"
+LE404:	.BYTE	8.,6.,20.
+	.ASCII	/8550/
+	.BYTE	377,007,010,007,001
+	.ASCII	/130/
+	.BYTE	202
+	.WORD	RM8D5C
+	.WORD	455.
+; Level 8 "VERY HARD"
+LE418:	.BYTE	5.,5.,15.
+	.ASCII	/8050/
+	.BYTE	377,007,010,007,011
+	.ASCII	/170/
+	.BYTE	252
+	.WORD	RM8279
+	.WORD	467.
+; Level 9 "EXTREMELY HARD"
+LE42C:	.BYTE	2.,3.,10.
+	.ASCII	/7040/
+	.BYTE	377,007,010,007,011
+	.ASCII	/250/
+	.BYTE	372
+	.WORD	RM8608
+	.WORD	503.
+
+; Indicator messages
+LAD4A:	.ASCII	/PAY : $ /
+LAD52:	.ASCII	/00000/			; Pay value text
+LAD57:	.ASCII	/99/			; Indicator time value
+LAD59:	.ASCII	/HELDTIMENEAR/
+LBD2F:	.ASCII	/BOMB/			; "BOMB" message
+
+;LDEE6:	.ASCII	/                /	; String 18 spaces
+
+TITLE:	.ASCII	/SABOTEUR 1 UKNC/
+VERSIO:
+.INCLUDE /VERSIO.MAC/
+	.ASCII	/P  PALETTE/
+LDF27:	.ASCII	/S  START MISSION/
+	.ASCII	/X  EXIT/
+LE1FE:	.ASCII	/1-9 SELECT LEVEL/
+
+; Game Over 2-line messages
+LBEEF:	.ASCII	/     SEPUKU    /
+	.ASCII	/  MISSION ABORTED   /
+LBF12:	.ASCII	/     ESCAPE    /
+	.ASCII	/ MISSION SUCCESSFUL /
+LBF35:	.ASCII	/    TIME OUT   /
+	.ASCII	/ MISSION TERMINATED /
+LBF58:	.ASCII	/ SABOTEUR DEAD /
+	.ASCII	/  MISSION FAILURE   /
+
+; Final screen messages
+LC062:	.ASCII	/DISK RETRIEVED/
+LC070:	.ASCII	/DISK /			; "DISK BONUS:"
+LC075:	.ASCII	/BONUS: $05000/
+LC082:	.ASCII	/LEVEL /
+LE1EC:	.ASCII	/1/	; Current Level digit
+LC087:	.ASCII	/TOTAL PAY : $/
+
+LE388:	.ASCII	/ 10/
+	.BYTE	10.
+
+;LB061:	.ASCII	/00  $/
+
+;LB0E8:	.ASCII	/          /		; String 10 spaces
 
 ;------------------------------------------------------------------------------
 
@@ -67,90 +718,7 @@ L62B4:	MOVB	(R2)+, R0
 	SOB	R4, L62B1		; continue loop for columns
 	RETURN
 
-; Title picture (two ninjas), RLE encoded
-.INCLUDE /S1PICT.MAC/
-	.EVEN
-
 ;------------------------------------------------------------------------------
-
-ROOM:	.WORD	RM791E	; Current Room address
-NJASPR:	.WORD	LA0B5	; Ninja sprite address
-
-GARDPO:	.WORD	257.	; Guard position in tilemap
-GARDX:	.BYTE	17.	; Guard X position
-GARDY:	.BYTE	8.	; Guard Y position
-
-DOGPOS:	.WORD	398.	; Dog position in tilemap
-DOGDIR:	.BYTE	0	; Dog direction
-DOGX:	.BYTE	8.	; Dog X position
-DOGST:	.BYTE	0	; Dog state: 0 = run, 1 = changing direction, >= $42 is dead
-L71D0:	.BYTE	7	; Dog's left limit
-L71D1:	.BYTE	23.	; Dog's right limit
-L71D2:	.BYTE	0	; Dog changing direction: 0 = right to left, 1 = left to right
-DOGY:	.BYTE	6	; Dog Y position
-	.EVEN
-
-L71D4:	.BYTE
-L71D5:	.BYTE	1
-L71D6:	.BYTE	172,000,000,002,000,001,026,000,375	; Room 79C6 dog data
-	.EVEN
-
-L7232:	.BYTE	0	; Input bits: 000FUDLR
-	.EVEN
-
-NJADIR:	.BYTE	0	; Ninja direction: 0 = left, 1 = right
-	.EVEN
-
-; Mirror table
-L723A:	.BYTE	001,201,101,301,041,241,141,341,021,221,121,321,061,261,161,361
-	.BYTE	011,211,111,311,051,251,151,351,031,231,131,331,071,271,171,371
-	.BYTE	005,205,105,305,045,245,145,345,025,225,125,325,065,265,165,365
-	.BYTE	015,215,115,315,055,255,155,355,035,235,135,335,075,275,175,375
-	.BYTE	003,203,103,303,043,243,143,343,023,223,123,323,063,263,163,363
-	.BYTE	013,213,113,313,053,253,153,353,033,233,133,333,073,273,173,373
-	.BYTE	007,207,107,307,047,247,147,347,027,227,127,327,067,267,167,367
-	.BYTE	017,217,117,317,057,257,157,357,037,237,137,337,077,277,177,377
-L72BA:	.BYTE	000,200,100,300,040,240,140,340,020,220,120,320,060,260,160,360
-	.BYTE	010,210,110,310,050,250,150,350,030,230,130,330,070,270,170,370
-	.BYTE	004,204,104,304,044,244,144,344,024,224,124,324,064,264,164,364
-	.BYTE	014,214,114,314,054,254,154,354,034,234,134,334,074,274,174,374
-	.BYTE	002,202,102,302,042,242,142,342,022,222,122,322,062,262,162,362
-	.BYTE	012,212,112,312,052,252,152,352,032,232,132,332,072,272,172,372
-	.BYTE	006,206,106,306,046,246,146,346,026,226,126,326,066,266,166,366
-	.BYTE	016,216,116,316,056,256,156,356,036,236,136,336,076,276,176,376
-REFBFH = L72BA
-
-L733A:	.BYTE	0	; Ninja walking phase
-	.EVEN
-L733B:	; Table of four addresses of Ninja/Guard walking sprites
-	.WORD	LD3DE	; Sprite Ninja/Guard walking 1
-	.WORD	LD408	; Sprite Ninja/Guard walking 2
-	.WORD	LD432	; Sprite Ninja/Guard walking 3
-	.WORD	LD45C	; Sprite Ninja/Guard walking 4
-
-L7343:	.BYTE	7	; Counter used in movement handlers
-	.EVEN
-L7344:	.BYTE	0	; Dog's flag: 1 = ignore left/right limit
-	.EVEN
-L7345:	.BYTE	20.	; Dog ??
-	.EVEN
-GARDST:	.BYTE	10.	; Guard walking phase $00..$03 or other state: $09 = dead; $0A = standing; ...
-GARDDI:	.BYTE	1	; Guard direction
-	.EVEN
-
-NRJ:	.BYTE	19.			; Energy 0..14.
-	.EVEN
-NRJLO:	.BYTE	1			; Energy lower, running bit 0,1..377
-	.EVEN
-
-NJAFAL:	.BYTE	0			; Ninja falling count, to decrease Energy on hit
-	.EVEN
-
-NJAY:	.BYTE	8.			; Ninja Y within the room, 0 at the top
-	.EVEN
-NJAX:	.BYTE	6			; Ninja X within the room
-	.EVEN
-NJAPOS:	.WORD	246.			; Ninja position in tilemap: Y * 30. + X
 
 ; Initial Energy fill
 L7472:	MOV	#<SCRTOP+<1200*21.>+6>, R2	; screen address
@@ -174,11 +742,11 @@ L749E:	TST	NRJLO
 	BR	20$
 10$:	CLC
 	RORB	NRJLO
-20$:	CALL	L74CC			; Draw Energy column
-	RETURN
+20$:	;CALL	DRNRJC			; Draw Energy column
+	;RETURN
 
 ; Draw Energy column
-L74CC:	MOV	NRJ, R2			; 0..14.
+DRNRJC:	MOV	NRJ, R2			; 0..14.
 	ADD	#<SCRTOP+<1200*21.>+6>, R2	; screen address
 	MOV	NRJLO, R1
 	SWAB	R1 ;DEBUG Color adjustment
@@ -190,16 +758,11 @@ L74CC:	MOV	NRJ, R2			; 0..14.
 	RETURN
 
 ; Draw NEAR/HELD item
-; R3 = address on the screen
-DRITEM:	MOV	#002, R0		; !!MUT-ARG!! item number 0..9
-L74CE = DRITEM + 2
-	ASL	R0
-L74D3:	MOV	#LB5B0, R2		; !!MUT-ARG!! address for Table of items
-L74D4 = L74D3 + 2	; address for Table of items
-	ADD	R0, R2
-	MOV	(R2), R2		; get item address from the table
+; R3 = address on the screen; R0 = item number 0..9.
+DRITEM:	ASL	R0
+L74D3:	MOV	LB5B0(R0), R2		; !!MUT-ARG!! get item address from the table
 	MOV	#176640, R5
-	MOV	R3, (R5)		; UKNC indirect address
+	MOV	R3, (R5)		; set UKNC indirect address
 	MOV	#24., R1
 L74E4:	CLR	R3			; <
 	BISB	(R2)+, R3
@@ -234,8 +797,7 @@ L9C44:	MOV	#DOGY, R3		; Dog Y position address
 	MOV	#L7345, R3
 	TSTB	(R3)
 	BNE	L9C5A
-L9C56:	MOVB	#031, (R3)		; !!MUT-ARG!! ??
-L9C57 = L9C56 + 2	; Dog counter value
+L9C56:	MOVB	#031, (R3)		; !!MUT-ARG!! Dog counter value
 	BR	L9C80
 L9C5A:	DECB	(R3)
 	BNE	L9C80
@@ -260,12 +822,7 @@ L9C81 = L9C80 + 2	; Dog direction address
 	CMPB	R0, #102		; $42, dead?
 	BLO	L9CA8
 	MOV	#L9C9C, R3		; Sprite Dog dead
-	BR	L9D31			; => Set Dog sprite = HL, Draw Dog in tilemap
-
-; Table for Dog sprites
-L9CA4:	.WORD	L71F2	; Sprite Dog 1
-	.WORD	L71FE	; Sprite Dog 2
-	.WORD	L720A	; Sprite Dog 3
+	BR	L9D31			; => Set Dog sprite = R3, Draw Dog in tilemap
 
 ; Part of Dog processing, Dog is alive
 ; R0 = Dog state
@@ -318,8 +875,8 @@ L9D1F:	MOVB	R0, (R3)		; save sprite counter
 	ADD	R0, R0			; * 2
 	MOV	L9CA4(R0), R3		; get sprite address from the table
 ;
-; Set Dog sprite = HL, Draw Dog in tilemap
-L9D31:	MOV	R3, DOGSPR		; set Dog sprite = HL
+; Set Dog sprite = R3, Draw Dog in tilemap
+L9D31:	MOV	R3, DOGSPR		; set Dog sprite
 ;
 ; Draw Dog in tilemap
 DRDOG:	MOV	DOGPOS, R3		; get Dog position in tilemap
@@ -555,81 +1112,6 @@ LA1D6:	; Room 9B9D initialization
 	MOV	#LA26B, R3		; Guard data address
 	BR	LA1AF			; Initialize a guard, then Standard room initialization
 
-; Guards data, 23 records, 6 bytes each
-; +$04: Guard state, initially $0A
-; +$05: Guard direction
-LA1E1:	.BYTE	235,000,007,005,012,001	; Room 94AB guard
-LA1E7:	.BYTE	030,001,012,011,012,000	; Room 7DA9 guard
-LA1ED:	.BYTE	024,001,006,011,012,000	; Room 7E8C guard
-LA1F3:	.BYTE	023,001,005,011,012,000	; Room 920A guard
-LA1F9:	.BYTE	310,000,024,006,012,000	; Room 8F84 guard
-LA1FF:	.BYTE	040,001,022,011,012,001	; Room 8B71 guard
-LA205:	.BYTE	120,000,024,002,012,001	; Room 8739 guard
-LA20B:	.BYTE	036,001,020,011,012,000	; Room 858F guard
-LA211:	.BYTE	001,001,021,010,012,001	; Room 84EE guard
-;LA217:	.BYTE	030,001,012,011,012,000	; UNUSED, see A13D
-LA21D:	.BYTE	042,001,024,011,012,001	; Room 99A6 guard
-LA223:	.BYTE	371,000,011,010,012,000	; Room 97F8 guard
-LA229:	.BYTE	002,001,022,010,012,001	; Room 94CF guard
-LA22F:	.BYTE	337,000,015,007,012,001	; Room 9B51 guard
-LA235:	.BYTE	367,000,007,010,012,001	; Room 9F3A guard
-LA23B:	.BYTE	370,000,010,010,012,000	; Room 9F7E guard
-LA241:	.BYTE	206,000,016,004,012,001	; Room 9EB8 guard
-LA247:	.BYTE	242,000,014,005,012,000	; Room 9B19 guard
-LA24D:	.BYTE	273,000,007,006,012,000	; Room 9DF5 guard
-LA253:	.BYTE	302,000,016,006,012,000	; Room 7C2E guard
-LA259:	.BYTE	324,000,002,007,012,000	; Room 7F9C guard
-LA25F:	.BYTE	013,000,013,000,012,001	; Room 8162 guard
-LA265:	.BYTE	040,001,022,011,012,001	; Room 80A7 guard
-LA26B:	.BYTE	060,000,022,001,012,001	; Room 9B9D guard
-
-LC66B:	; Guard data for rooms 7C9C/92EF
-	.BYTE	016,000,016,000,004,000
-
-; Dogs data, 19 records, 10 bytes each
-; +$00/$01: Dog position in tilemap
-; +$02: Dog direction
-; +$03: Dog X position
-; +$04: ??
-; +$05: Dog left limit
-; +$06: Dog right limit
-; +$07: ??
-; +$08: Dog Y position
-LA271:	.BYTE	074,001,000,020,000,003,026,000,003,001	; Room 7C2E dog
-LA27B:	.BYTE	136,001,001,024,000,003,026,001,004,001	; Room 7F9C dog
-LA285:	.BYTE	245,000,000,017,000,005,017,000,376,001	; Room 81E5 dog
-LA28F:	.BYTE	172,000,001,002,000,000,030,001,375,001	; Room 8162 dog
-LA299:	.BYTE	217,001,001,011,000,003,030,001,006,001	; Room 7EF2 dog
-LA2A3:	.BYTE	212,001,001,004,000,002,032,001,006,001	; Room 7E05 dog
-LA2AD:	.BYTE	232,001,000,024,001,003,025,001,006,001	; Room 80A7 dog
-LA2B7:	.BYTE	222,001,000,014,000,005,031,000,006,001	; Room 83ED dog
-LA2C1:	.BYTE	214,001,001,006,001,001,027,000,006,001	; Room 80F6 dog
-LA2CB:	.BYTE	220,001,000,012,000,004,027,000,006,001	; Room 924E dog
-LA2D5:	.BYTE	033,001,001,015,000,006,030,001,002,001	; Room 91BA dog
-LA2DF:	.BYTE	166,001,001,016,000,000,017,001,005,001	; Room 90DB dog
-LA2E9:	.BYTE	227,001,001,021,000,015,032,001,006,001	; Room 909F dog
-LA2F3:	.BYTE	274,000,000,010,000,001,016,000,377,001	; Room 8802 dog
-LA2FD:	.BYTE	244,000,000,016,000,002,016,000,376,001	; Room 8608 dog
-LA307:	.BYTE	216,001,000,010,000,007,027,000,006,001	; Room 844E dog
-LA311:	.BYTE	215,001,001,007,000,003,025,001,006,001	; Room 9739 dog
-LA31B:	.BYTE	366,000,000,006,000,002,017,000,001,001	; Room 9A5A dog
-LA325:	.BYTE	214,001,001,006,000,004,030,001,006,001	; Room 9B9D dog
-
-; Turrets data, 11 records, 3 bytes each
-LA32F:	.BYTE	304,000,016	; Room 7A17 turret
-LA332:	.BYTE	047,000,007	; Room 7F48/9A9A turret
-LA335:	.BYTE	021,000,017	; Room 8FBD turret
-LA338:	.BYTE	053,000,012	; Room 7EF2/909F/92A7 turret
-LA33B:	.BYTE	113,000,015	; Room 8B25/8D5C turret
-LA33E:	.BYTE	057,000,017	; Room 7A17/8526 turret
-;LA341:	.BYTE	062,000,022	; UNUSED, see A17E
-LA344:	.BYTE	235,000,005	; Room 95D6 turret
-LA347:	.BYTE	246,000,016	; Room 968A turret
-LA34A:	.BYTE	012,001,030	; Room 968A turret
-LA34D:	.BYTE	077,000,001	; Room 9552 turret
-LA350:	.BYTE	243,000,013	; Room 9BE7 turret
-	.EVEN
-
 LA353:	; Room 81E5 initialization
 	MOV	#LA285, R3		; Dog data address
 ; Initialize a dog, then Standard room initialization
@@ -668,33 +1150,6 @@ LA389:	; Room 9A5A initialization
 LA38E:	; Room 80F6 initialization
 	MOV	#LA2C1, R3		; Dog data address
 	BR	LA356			; Initialize a dog, then Standard room initialization
-
-LA39E:	.BYTE	0	; ?? 0 / 1
-	.EVEN
-
-; Three objects, 8. bytes each
-; 1st object - object thrown by Ninja
-LA39F:	.BYTE	0			; Thrown object tile
-	.EVEN
-LA3A0:	.WORD	304			; Thrown object position
-LA3A2:	.BYTE	0
-LA3A3:	.BYTE	3
-LA3A4:	.BYTE	6			; Thrown object Y
-LA3A5:	.BYTE	4			; Thrown object X
-; 2nd object - knife thrown by Guard
-LA3A6:	.BYTE	0
-	.BLKB	7
-; 3rd object - Turett
-LA3AD:	.BYTE	0
-	.EVEN
-LA3AE:	.WORD	105.			; Turret offset in tilemap
-LA3B0:	.BYTE	6
-LA3B1:	.BYTE	6
-LA3B2:	.BYTE	3			; Turret Y
-LA3B3:	.BYTE	15.			; Turret X
-
-LA3B4:	.BYTE	1			; ?? Guard counter
-	.EVEN
 
 ; Ninja and Guard in 12. tiles by X
 LA3B5:	CMPB	NJAY, GARDY		; compare Ninja Y to Guard Y
@@ -760,7 +1215,7 @@ LA434:	CALL	UPGARD			; Set update flags for Guard, 6x7 tiles
 	CMPB	(R3), #6
 	BLO	LA44A
 	JMP	DRGARD			; => Draw Guard on tilemap
-LA44A:	;TODO: Sound?
+LA44A:	PPUCMD	#1			; Sound
 	MOVB	GARDY, R0		; get Guard Y = 0..9
 	ADD	R0, R0			; Guard Y * 2
 	MOV	LA747(R0), R3		; now R3 = screen address
@@ -1043,18 +1498,6 @@ LA732:	MOVB	(R2)+, R0		; get tile
 	SOB	R1, LA732
 	RETURN
 
-; Table of game screen rows addresses, 10 rows, for auto-gun drawings
-LA747:	.WORD	SCRTOP+<1200*3>+<120*5>+1
-	.WORD	SCRTOP+<1200*4>+<120*5>+1
-	.WORD	SCRTOP+<1200*5>+<120*5>+1
-	.WORD	SCRTOP+<1200*6>+<120*5>+1
-	.WORD	SCRTOP+<1200*7>+<120*5>+1
-	.WORD	SCRTOP+<1200*8.>+<120*5>+1
-	.WORD	SCRTOP+<1200*9.>+<120*5>+1
-	.WORD	SCRTOP+<1200*11.>+<120*5>+1
-	.WORD	SCRTOP+<1200*12.>+<120*5>+1
-	.WORD	SCRTOP+<1200*13.>+<120*5>+1
-
 ; Set update flags for Guard, 6x7 tiles
 UPGARD:	MOV	GARDPO, R3		; get Guard position in tilemap
 	ADD	#TLSCR1, R3		; Tile screen 1 start address
@@ -1082,12 +1525,6 @@ LA775:	CMPB	#377, R0
 20$:	MOVB	(R4), R0
 99$:	RETURN
 
-; Table used to translate Ninja tiles to Guard tiles, 19. records
-LA787:	.BYTE	120,307,121,334,124,335,352,336,023,337,025,340,026,341,000,342
-	.BYTE	001,343,003,344,004,345,115,346,042,347,057,350,060,351,364,342
-	.BYTE	365,343,344,344,366,345
-	.BYTE	377,377
-
 ; Reset Guard data and Dog data
 LAC44:	MOV	#LAC72, R3		; address for Table of Guard data addresses
 	MOV	#23., R1		; 23. Guard records
@@ -1106,26 +1543,6 @@ LAC5C:	MOV	(R3)+, R2		; now R2 = Dog data address
 	MOVB	R0, (R2)
 LAC6E:	SOB	R1, LAC5C
 	RETURN
-
-; Table of Guard data addresses, 23. records
-LAC72:	.WORD	LA26B,LA265,LA25F,LA259
-	.WORD	LA253
-	;.WORD	LA217	;UNUSED
-	.WORD	LA24D,LA247
-	.WORD	LA241,LA23B,LA235,LA22F
-	.WORD	LA229,LA223,LA21D,LA211
-	.WORD	LA20B,LA205,LA1FF,LA1F9
-	.WORD	LA1F3,LA1ED,LA1E7,LA1E1
-
-; Table of Dog data addresses, 20. records
-LACA2:	.WORD	LA31B,LA311,LA307,LA2FD
-	.WORD	LA2F3,LA2DF,LA2D5,LA2CB
-	.WORD	LA2C1,LA2B7,LA2A3,LA285
-	.WORD	LA325,LA2AD,LA28F,LA27B
-	.WORD	LA271,LA2E9,LA299,L71D6
-
-; LA7AD:
-;NOTE: Pictures of NEAR/HELD items moved into S1INDS.MAC
 
 ; Draw game screen frames and indicator text
 LACCA:
@@ -1186,39 +1603,6 @@ LAD1D:
 	CALL	PRSTR			; Print string "NEAR"
 	RETURN
 
-; Indicator messages
-LAD4A:	.ASCII	/PAY : $ /
-LAD52:	.ASCII	/00000/			; Pay value text
-LAD57:	.ASCII	/99/			; Indicator time value
-LAD59:	.ASCII	/HELDTIMENEAR/
-; "BOMB" message
-LBD2F:	.ASCII	/BOMB/
-
-.INCLUDE /S1INDS.MAC/
-	.EVEN
-
-; Print string on the screen
-; Input: R1 = length, R2 = screen address, R3 = string address
-PRSTR:
-1$:	CLR	R0
-	BISB	(R3)+, R0		; get symbol byte
-	ASL	R0
-	ASL	R0
-	ASL	R0			; * 8
-	ADD	#<FONT-400>, R0	; + font base address
-	MOV	#8., R4
-10$:	CLR	R5
-	BISB	(R0)+, R5
-	SWAB	R5
-	BIS	#377, R5 ;DEBUG Color adjustment
-	MOV	R2, @#176640		; Set UKNC VRAM address
-	MOV	R5, @#176642		; Write to UKNC VRAM
-	ADD	#120, R2		; next screen line
-	SOB	R4, 10$
-	SUB	#<1200-1>, R2		; 8. lines up, plus one column right
-	SOB	R1, 1$
-	RETURN
-
 ;LAEF0:
 
 ;LAF7E:
@@ -1238,10 +1622,6 @@ PRSTR:
 
 ;LB040:
 ;	BR	LAFBE
-
-;LB061:	.ASCII	/00  $/
-
-;LB0E8:	.ASCII	/          /		; String 10 spaces
 
 ;------------------------------------------------------------------------------
 
@@ -1423,9 +1803,6 @@ LB29B:	CLR	R0
 	ADD	#<1-1200>, @#176640	; screen address +1
 	JMP	LB2A9			; continue the loop
 
-LB2FD:	.BYTE	195.			; Counter for Ninja/Guard head tile change
-	.EVEN
-
 ;------------------------------------------------------------------------------
 
 ; Object procedure: flip trigger "D": set/remove wall in room 9739
@@ -1559,8 +1936,8 @@ LB4B4:	SUB	R2, R3			; -30.
 	INC	R1
 	CMPB	R3, R2			; >= 30. ?
 	BHIS	LB4B4			; yes =>
-	MOVB	R3, LA3B3		; Turret X
-	MOVB	R1, LA3B2		; Turret Y
+	MOVB	R3, TURGX		; Turret X
+	MOVB	R1, TURGY		; Turret Y
 LB4C3:	MOV	#50., R0		; !!MUT-ARG!! ??
 	POP	R3
 LB4C6:	MOVB	R0, LB4DD		; update Turret counter
@@ -1582,7 +1959,7 @@ LB4D4 = LB4D3 + 2	; Turret X value
 LB4DD:	.BYTE	50.	; Turret counter 50..0
 	.EVEN
 
-; Increase PAY value by B * 100.
+; Increase PAY value by B * 100., print the PAY value
 INCPAY:	MOV	#<LAD52+2>, R3		; PAY value 3rd digit address
 LB4E3:	INCB	(R3)
 	CMPB	#072, (R3)		; ':' = '9' + 1
@@ -1594,7 +1971,28 @@ LB4ED:	SOB	R1, INCPAY
 	MOV	#LAD52, R3		; Pay value text address
 	MOV	#5, R1			; five digits
 	MOV	#<SCRTOP+<1200*19.>+15.>, R2	; Screen address
-	JMP	PRSTR			; => Print string, and RET
+	;JMP	PRSTR			; => Print string, and RET
+
+; Print string on the screen
+; Input: R1 = length, R2 = screen address, R3 = string address
+PRSTR:	CLR	R0
+	BISB	(R3)+, R0		; get symbol byte
+	ASL	R0
+	ASL	R0
+	ASL	R0			; * 8.
+	ADD	#<FONT-400>, R0		; + font base address
+	MOV	R2, @#176640		; Set UKNC VRAM address
+	MOV	#8., R4
+10$:	CLR	R5
+	BISB	(R0)+, R5
+	SWAB	R5
+	BIS	#377, R5 ;DEBUG Color adjustment
+	MOV	R5, @#176642		; Write to UKNC VRAM
+	ADD	#120, @#176640		; next screen line
+	SOB	R4, 10$
+	INC	R2			; one column right
+	SOB	R1, PRSTR
+	RETURN
 
 ; Processing in initial room - the boat moving
 LB4FA:
@@ -1623,7 +2021,7 @@ LB53E = LB53D + 2	; Boat position
 	MOVB	<LB5A7+1>, R0
 	XOR	R5, R0
 	MOVB	R0, <LB5A7+1>
-	;TODO: Sound ??
+	PPUCMD	#1			; Sound
 	DECB	L7343			; decrease counter
 	BEQ	LB577
 	JMP	LB8D0			; => Update Ninja on tilemap
@@ -1646,23 +2044,6 @@ LB598:	JMP	LF9A1
 LB59E:
 	;TODO: Sound ??
 	RETURN
-
-; Table of items: addresses for NEAR/HELD items
-LB5B0:	.WORD	LA7AD	; #0 Nothing
-	.WORD	LA819	; #1 Shuriken
-	.WORD	LA885	; #2 Knife
-	.WORD	LA8F1	; #3 ??
-	.WORD	LA95D	; #4 Brick
-	.WORD	LA9C9	; #5 Pipe
-	.WORD	LAA35	; #6 Granade
-	.WORD	LAAA1	; #7 Disk
-	.WORD	LAB0D	; #8 Bomb
-	.WORD	LAB79	; #9 Console
-
-TIMECN:	.BYTE	25	; Time fast counter 50..0
-LB5C5:	.BYTE	1	; Ninja standing counter
-TIMODE:	.BYTE	0	; Time mode: 0 = time ticking; 1 = Time stopped; 2 = BOMB ticking mode
-	.EVEN
 
 LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	;MOV	LB7CB, <LBC3B+2>	; NO NEED: the only assignment for <LBC3B+2>
@@ -1687,7 +2068,7 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	MOVB	#1, NJADIR		; set Ninja direction = 1 = right
 	MOVB	#1, LB84F		; set NEAR item = 1
 	MOV	#<TLSCR5+330.>, @#LB53E	; set initial position for boat
-	MOV	#LB5B0, L74D4
+	;MOV	#LB5B0, L74D4		; NO NEED: the only place we set L74D4
 	CALL	LB851			; Set initial data in Table of Objects
 	CLR	LB674			; set current Dog data address = no dog
 	CLR	LB696			; set current Guard data address = no guard
@@ -1750,12 +2131,10 @@ LB696 = LB695 + 2
 LB6A6:	CLR	LB674			; set current Dog data address = no dog
 	CLR	LB696			; set current Guard data address = no guard
 	CLR	LBAB2			; clear Explosion counter
-; Clear 3 objects at LA39F
-	MOV	#LA39F, R3		; Three objects start address
-	MOV	#3, R1
-LB6BB:	CLRB	(R3)
-	ADD	#8., R3
-	SOB	R1, LB6BB
+; Clear three objects at LA39F
+	CLR	@#LA39F
+	CLR	@#<LA39F+8.>
+	CLR	@#<LA39F+16.>
 ;
 	MOV	#TLSCR0, R3		; Tile screen 0 start address
 	MOV	#<510./2>, R1
@@ -1779,6 +2158,7 @@ LB6F4:	PUSH	R3			; Save address in the room sequence
 	ADD	#<LB706>, R0		; Table of Room tokens
 	MOV	(R0), R0		; get token procedure address
 	JMP	@R0			; => run token procedure
+;NOTE: Room token procedures return to LB702 to continue the loop
 
 ; Table of Room tokens
 LB706:	.WORD	RTOK00	; #00: Put 3x3 tiles $7C21; params: 2 bytes (address)
@@ -1797,12 +2177,6 @@ LB71E:	.WORD	RTOK0C	; #0C: Copy block of tiles N times; params: 5 bytes (source,
 LB720:	.WORD	RTOK0D	; #0D: Set border color; params: 1 byte
 LB722:	.WORD	RTOK0E	; #0E: Put one tile at the given address; params: 3 bytes (tile, address)
 ;
-; Proceed to the next room token
-LB702:
-	POP	R3			; Restore address in the room sequence
-	INC	R3			; to next token
-	BR	LB6EE			; => continue room sequence processing
-;
 ; Room token #0E: Put one tile at the given address; params: 3 bytes (tile, offset)
 RTOK0E:	POP	R3			; Restore token sequence address
 	INC	R3			; Skip token byte
@@ -1812,12 +2186,9 @@ RTOK0E:	POP	R3			; Restore token sequence address
 	SWAB	R2
 	BISB	(R3), R2		; get offset high byte
 	SWAB	R2
-	ADD	#TLSCR0, R2		; + Tile screen 0 address
 	PUSH	R3
-	MOVB	R0, (R2)		; put tile into tilemap
-	BR	LB702			; => B702 Proceed to the next room token
-; Room token #0D: Set border color; params: 1 byte
-RTOK0D:	HALT	; DO NOTHING, we're not processing this token
+	MOVB	R0, TLSCR0(R2)		; put tile into tilemap (Tile screen 0 address + offset)
+	BR	LB702			; => Proceed to the next room token
 ; Room token #01: Fill to down; params: 4 bytes (count, filler, offset)
 RTOK01:	MOV	#30., R4		; shift = 30.
 L7384:	POP	R3			; Restore token sequence address
@@ -1867,7 +2238,14 @@ L73BA:	MOVB	R0, (R2)		; put tile into tilemap
 	POP	R2
 	ADD	#30., R2		; next row
 	SOB	R1, L73B8		; continue loop by rows
-L734A:	BR	LB702			; => B702 Proceed to the next room token
+	;BR	LB702			; => Proceed to the next room token
+;
+; Proceed to the next room token
+LB702:
+	POP	R3			; Restore address in the room sequence
+	INC	R3			; to next token
+	BR	LB6EE			; => continue room sequence processing
+;
 ; Room token #07: Fill triangle from wide bottom; params: 4 bytes (filler, count, offset)
 RTOK07:	MOV	#1, R4			; shift = 1
 L73C7:	POP	R3			; Restore token sequence address
@@ -1892,7 +2270,7 @@ L73DD:	MOVB	R0, (R2)		; put tile into tilemap
 	INC	R3
 	ADD	#30., R2		; next row
 	SOB	R1, L73DB		; continue loop by rows
-	BR	LB702			; => B702 Proceed to the next room token
+	BR	LB702			; => Proceed to the next room token
 ; Room token #08: Fill triangle from wide bottom; params: 4 bytes (filler, count, offset)
 RTOK08:	MOV	#-1, R4			; shift = -1
 	BR	L73C7
@@ -1908,7 +2286,7 @@ RTOK04:	POP	R3			; Restore token sequence address
 	MOV	#510., R1		; count
 10$:	MOVB	R0, (R2)+
 	SOB	R1, 10$
-	BR	LB702			; => B702 Proceed to the next room token
+	BR	LB702			; => Proceed to the next room token
 ; Room token #05: Copy block of tiles; params: 5 bytes (width, height, source, offset)
 RTOK05:	POP	R3			; Restore token sequence address
 	INC	R3			; Skip token byte
@@ -1932,7 +2310,7 @@ L7416:	MOVB	(R0)+, (R2)+
 	POP	R4
 	ADD	#30., R2		; next row
 	SOB	R1, L7415
-	BR	L734A			; => B702 Proceed to the next room token
+	BR	LB702			; => Proceed to the next room token
 ; Room token #0C: Copy block of tiles N times; params: 5 bytes (source, width, count, offset)
 RTOK0C:	POP	R3			; Restore token sequence address
 	INC	R3			; Skip token byte
@@ -1951,14 +2329,14 @@ RTOK0C:	POP	R3			; Restore token sequence address
 L743A:	PUSH	R0
 	PUSH	R4
 	PUSH	R2
-L743D:	MOVB	(R0)+, (R2)+
+L743D:	MOVB	(R0)+, (R2)+		; copy tile
 	SOB	R4, L743D
 	POP	R2
 	ADD	#30., R2		; next row
 	POP	R4
 	POP	R0
 	SOB	R1, L743A
-	BR	L734A			; => B702 Proceed to the next room token
+	BR	LB702			; => Proceed to the next room token
 ; Room token #03: Fill rectangle; params: 5 bytes (filler, width, height, offset)
 RTOK03:	POP	R3			; Restore token sequence address
 	INC	R3			; Skip token byte
@@ -1980,7 +2358,7 @@ L7465:	MOVB	R0, (R2)+
 	POP	R2
 	ADD	#30., R2
 	SOB	R1, L7463
-	BR	L734A			; => B702 Proceed to the next room token
+	BR	LB702			; => Proceed to the next room token
 ; Room token #00: Barrel, 3x3 tiles 7C21; params: 2 bytes (offset)
 RTOK00:	POP	R3			; Restore token sequence address
 	INC	R3			; Skip token byte
@@ -1994,6 +2372,8 @@ RTOK00:	POP	R3			; Restore token sequence address
 	MOV	#3, R1			; 3 rows
 	MOV	#3, R4			; 3 columns
 	BR	L7414			; => Copy block of tiles
+; Room token #0D: Set border color; params: 1 byte
+RTOK0D:	HALT	; DO NOTHING, we're not processing this token
 
 ; Finish room initialization
 ; Called to finish room initialization from room initialization procedure
@@ -2101,7 +2481,7 @@ LB891:	MOV	#LB84F, R3		; NEAR item address
 	BEQ	LB8B0			; yes => skip
 ; NEAR item changed
 	MOVB	R1, (R3)		; set NEAR item
-	MOVB	R1, L74CE		; set item to draw
+	MOV	R1, R0			; NEAR item to draw
 	MOV	#<SCRIND+27.>, R3	; screen address for NEAR item
 	CALL	DRITEM			; Draw NEAR/HELD item
 LB8B0:	MOV	#LB850, R3		; HELD tile address
@@ -2109,15 +2489,16 @@ LB8B0:	MOV	#LB850, R3		; HELD tile address
 	BISB	LBD7A, R0		; get HELD tile
 	CMPB	R0, (R3)		; HELD changing?
 	BEQ	LB8C9			; no => skip
+; HELD item changed
 	MOVB	R0, (R3)		; set HELD tile
 	BEQ	LB8C2
 	SUB	#306, R0		; $C6
 	ASR	R0
-LB8C2:	MOVB	R0, L74CE		; set item to draw
+LB8C2:	MOVB	R0, R0			; HELD item to draw
 	MOV	#<SCRIND+1>, R3		; screen address for HELD item
 	CALL	DRITEM			; Draw NEAR/HELD item
 	;DI
-LB8C9:	CLRB	LA39E
+LB8C9:	CLR	LA39E
 LB8CD:	JMP	@#LBEB3			; !!MUT-ARG!! => run handler
 LB8CE = LB8CD + 2	; Movement handler address
 
@@ -2131,17 +2512,8 @@ LB83C:	CMPB	#377, NRJLO
 	BR	20$
 10$:	SEC
 	ROLB	NRJLO
-20$:	CALL	L74CC			; Draw Energy column
+20$:	CALL	DRNRJC			; Draw Energy column
 99$:	RETURN
-
-LB84A:	.WORD	0			; Object address + 4, in table LD256
-LB84C:	.BYTE	0			; Object tile
-	.EVEN
-LB84D:	.WORD	0			; Object procedure address
-LB84F:	.BYTE	0			; NEAR item
-	.EVEN
-LB850:	.BYTE	0			; HELD tile
-	.EVEN
 
 ; Set initial data in Table of Objects LD256
 LB851:	MOV	#35., R1		; 35 objects
@@ -2397,27 +2769,6 @@ LBA5D:	MOV	#3, R1			; !!MUT-ARG!! width
 	;TODO: Sound off
 	RETURN
 
-LBAB2:	.BYTE	0	; Explosion counter 10. to 0
-	.EVEN
-; Screen addresses for every 17. rows
-LBAB3:	.WORD	SCRTOP+<1200*1>+1
-	.WORD	SCRTOP+<1200*2>+1
-	.WORD	SCRTOP+<1200*3>+1
-	.WORD	SCRTOP+<1200*4>+1
-	.WORD	SCRTOP+<1200*5>+1
-	.WORD	SCRTOP+<1200*6>+1
-	.WORD	SCRTOP+<1200*7>+1
-	.WORD	SCRTOP+<1200*8.>+1
-	.WORD	SCRTOP+<1200*9.>+1
-	.WORD	SCRTOP+<1200*10.>+1
-	.WORD	SCRTOP+<1200*11.>+1
-	.WORD	SCRTOP+<1200*12.>+1
-	.WORD	SCRTOP+<1200*13.>+1
-	.WORD	SCRTOP+<1200*14.>+1
-	.WORD	SCRTOP+<1200*15.>+1
-	.WORD	SCRTOP+<1200*16.>+1
-	.WORD	SCRTOP+<1200*17.>+1
-
 ; Set "need update" mark for object R4
 LBBAE:	MOV	2(R4), R3		; get object position
 	MOVB	#1, TLSCR1(R3)		; set flag in Tile screen 1
@@ -2440,45 +2791,16 @@ UPNJA:	MOV	NJAPOS, R3		; get Ninja position in tilemap
 
 ; Movement handler: Ninja punching
 LBBD4:	CALL	LBBDF			; Read input
-	BIT	#20, R0			; check FIRE bit
+	BIT	#PKEYFR, R0		; check FIRE bit
 	BEQ	LBBDC
 	JMP	LB8D0			; => Update Ninja on tilemap
 LBBDC:	JMP	LC226			; no FIRE => Ninja standing
 
 ; Read Input
 LBBDF:
-;	TSTB	@#177560		; do we have an unprocessed key?
-;	BPL	K41276			; no => jump
-;	MOVB	@#177562, R0		; get the key
-;	MOV	#KEYMAP, R3		; table address
-;	MOV	#7., R1			; table size
-;K41256:	CMPB	(R3)+, R0		; <  matches the key?
-;	BNE	K41270			; |  no => jump
-;	MOVB	(R3), R0		; |  get the result byte
-;	BR	K41300			; |  break the loop
-;K41270:	INC	R3			; |  to next key probe
-;	SOB	R1, K41256		; repeat
-;K41276:	CLR	R0			; not found - result is empty
-;K41300:	MOVB	R0, L7232		; store input bits
 	MOV	@#PPUKEY, R0
-	MOV	R0, L7232
+	MOV	R0, INPUTB
 	RETURN
-
-; Game controls
-;  7   6   5   4   3   2   1   0
-;              Fr  Up  Dn  Lt  Rt
-;
-; Key mappings
-;KEYMAP:	.BYTE	070, 010		; '8' - up
-;	.BYTE	062, 004		; '2' - down
-;	.BYTE	064, 002		; '4' - left
-;	.BYTE	066, 001		; '6' - right
-;	.BYTE	065, 020		; '5' - fire
-;	.BYTE	061, 012		; '1' - up + left
-;	.BYTE	063, 011		; '3' - up + right
-;	.BYTE	067, 000		; '7' - down + fire
-;	.BYTE	071, 000		; '9' - down + fire
-;	.EVEN
 
 ; Routine: Get pseudo-random number, result in R3
 ; Uses: R0, R2, R3
@@ -2548,9 +2870,12 @@ LBC7E:	MOV	#<LD486+8.>, R2		; head tile address
 	;MOVB	R0, (R2)
 LBC98:	;CMPB	#210., (R3)
 	;BEQ	LBC7E
-;NOTE: Skipped code to check for suicide key combination
-;LBC9D:
-
+; Check for suicide key combination, LBC9D
+	CALL	LBBDF			; Read Input
+	BIT	#PKEYST, R0		; check for STOP key
+	BEQ	LBCB6			; not pressed => skip suicide
+	MOV	#LBEEF, LBEB4		; "SEPUKU" / "MISSION ABORTED"
+	JMP	LBE5A			; => Ninja sit, and then fall and DIE
 LBCB6:	CALL	LC5A3			; Check for falling
 	BNE	LBCBC
 	JMP	LC643			; => Ninja falling
@@ -2559,7 +2884,7 @@ LBCBC:	MOV	#LB595, R3
 	BEQ	LBCC4
 	DECB	(R3)
 LBCC4:	CALL	LBBDF			; Read Input
-	BIT	#20, R0			; check FIRE bit
+	BIT	#PKEYFR, R0		; check FIRE bit
 	BNE	LBCCC			; FIRE =>
 	JMP	LBDDD
 ; FIRE pressed, ninja standing
@@ -2646,7 +2971,7 @@ LBD7A = LBD79 + 2	; HELD tile
 	BEQ	LBD8D			; left =>
 	ADD	#2, R1
 LBD8D:	MOVB	R1, LA3A3
-	MOVB	L7232, R0		; get Input bits
+	MOVB	INPUTB, R0		; get Input bits
 	BIT	#10, R0			; check UP bit
 	BEQ	LBD9B
 	ADD	#-3, R1
@@ -2655,8 +2980,9 @@ LBD9B:	BIT	#4, R0			; check DOWN bit
 	ADD	#3, R1
 LBDA2:	MOVB	R1, LA3A2
 	CALL	LF9F9
+	PPUCMD	#1			; Sound
 	MOV	#LD504, R2		; Sprite Ninja/Guard punching
-	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 ; ?? Ninja action?
 LBDB2:	MOV	NJAPOS, R3		; get Ninja position in tilemap
@@ -2673,7 +2999,7 @@ LBDC2:	ADD	R2, R3			; now R3 = address in Guard tilemap
 	CALL	INCPAY			; Increase PAY value by 500. - Guard killed
 LBDD4:	MOV	#LBBD4, R3		; Movement handler address
 	MOV	#LD504, R2		; Sprite Ninja/Guard punching
-	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 LBDDD:	BIT	#10, R0			; bit 3 - up
 	BNE	LBDE2			; yes =>
@@ -2794,10 +3120,10 @@ LBEB4 = LBEB3 + 2
 	MOV	#20., R1
 	CALL	PRSTR			; Print string 1st line
 ;
+	CALL	STOPPU			; Remove PPU procedure
 	CALL	LF9B9			; Pause, then wait for any key pressed
-	;NOP
-;NOTE: Skipped code to set BEDF instruction
 ;
+
 	JMP	LBC0D			; => Title picture and music, then go to Main menu
 
 ; UP pressed (continued, see BDE2)
@@ -2811,7 +3137,7 @@ LBF85:	INC	R3
 	BHIS	LBF8A
 	JMP	LB8D0			; => Update Ninja on tilemap
 LBF8A:	MOVB	#3, L7343		; set counter = 3
-	MOVB	L7232, R0		; get Input bits
+	MOVB	INPUTB, R0		; get Input bits
 	TSTB	NJADIR			; check Ninja direction
 	BEQ	LBFA0			; left =>
 	BIT	#1, R0			; check RIGHT bit
@@ -2841,7 +3167,7 @@ LBFBF:	MOV	NJAPOS, R3		; get Ninja position in tilemap
 ; Switch Ninja to sitting
 LBFCC:	MOV	#LC22F, R3		; Movement handler: Ninja sitting
 	MOV	#LD558, R2		; Sprite Ninja sitting
-	BR	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+	BR	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 ; Escaped; clear screen, show final messages, then Game Over
 LBFD5:	MOV	#10., R1
@@ -2921,7 +3247,7 @@ LC13D:	BIT	#2, R0			; bit 1 - left
 	BR	LC16E			; => Update Ninja on tilemap
 LC14B:	MOV	#LC24B, R3		; Movement handler address
 	MOV	#LD3DE, R2		; Sprite Ninja/Guard walking 1
-	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 LC154:	BIT	#1, R0			; bit 0 - right
 	BEQ	LC16E			; no =>
@@ -3038,17 +3364,17 @@ LC2BB:	MOVB	#7, L7343		; set counter = 7
 	BIT	#10, R0			; check for UP bit
 	BEQ	LC2C5
 	CALL	LC4E8
-LC2C5:	MOVB	L733A, R0
+LC2C5:	MOV	NJAWLK, R0
 	INC	R0			; next walking phase
 	BIC	#177774, R0		; 0..3
-	MOVB	R0, L733A
+	MOV	R0, NJAWLK
 	ADD	R0, R0			; * 2
 	MOV	R0, R3
-	CLRB	LA39E
+	CLR	LA39E
 	TSTB	R0
 	BNE	LC2E8
 	INC	R0
-	MOVB	R0, LA39E
+	MOV	R0, LA39E
 	;TODO: Sound?
 
 LC2E8:	MOV	L733B(R3), NJASPR	; sprite address from table -> Ninja sprite
@@ -3105,7 +3431,7 @@ LC37D:	CMPB	#144, (R3)		; $64
 LC384:	MOV	#LC4A7, R3		; Movement handler
 	MOV	#LD4DA, R2		; Sprite Ninja/Guard jump-kick
 	MOVB	#3, L7343		; set counter = 3
-	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 ; Check if tile is a ladder
 LC392:	MOVB	(R3), R0		; get the tile
@@ -3137,7 +3463,7 @@ LC3BB:	DECB	NJAX			; decrease Ninja X
 ; Ninja on ladder now
 LC3C6:	MOV	#LC3D9, R3		; Movement handler for Ninja on ladder
 	MOV	#LD52E, R2		; Sprite Ninja on ladder
-	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 ; Move RIGHT one tile, Ninja on ladder
 LC3CF:	INCB	NJAX			; increase Ninja X
@@ -3181,7 +3507,7 @@ LC40E:	BIT	#2, R0			; check LEFT bit
 	CLRB	NJADIR			; set direction = left
 	JMP	LC14B
 ; Check if UP pressed
-LC42C:	MOVB	L7232, R0		; get Input bits
+LC42C:	MOVB	INPUTB, R0		; get Input bits
 	BIT	#10, R0			; check UP bit
 	BEQ	LC477
 ; Pressed UP
@@ -3247,7 +3573,7 @@ LC4BE:	ADD	R2, R3			; now R3 = address in Tile screen 4
 LC4D0:	MOV	#LC4DE, R3		; Movement handler address
 	MOV	#LD4B0, R2		; Sprite Ninja/Guard jumping
 	MOVB	#1, L7343		; set counter = 1
-	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 ; Movement handler: finishing the jump
 LC4DE:	DECB	L7343			; decrease counter
@@ -3261,7 +3587,7 @@ LC4E8:	CALL	LC57B			; Check if we have empty space
 LC4EC:	POP	R3
 	MOV	#LC4F6, R3		; Movement handler address
 	MOV	#LD5AC, R2		; Sprite Ninja jumping 3
-	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 ; Movement handler: jump 3 -> 4 (used in initial room)
 LC4F6:	CALL	LC57B			; Check if we have empty space
@@ -3271,7 +3597,7 @@ LC4F6:	CALL	LC57B			; Check if we have empty space
 	JMP	LC226			; => Ninja standing
 LC504:	MOV	#LC50D, R3		; Movement handler address
 	MOV	#LD5D6, R2		; Sprite Ninja jumping 4
-	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 ; Movement handler: Ninja in jumping 4
 LC50D:	MOV	#NJAX, R3		; Ninja X address
@@ -3305,7 +3631,7 @@ LC558:	INC	R3
 	SOB	R1, LC53D
 	MOV	#LC5A0, R3		; Movement handler: switch Ninja to standing
 	MOV	#LD5AC, R2		; Sprite Ninja jumping 3
-	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 ; Ninja direction = right
 LC56C:	CMPB	#24., (R3)		; Ninja X = 24. ?
 	BNE	LC571
@@ -3365,7 +3691,7 @@ LC5C6:	ADD	#30., NJAPOS		; Ninja position in tilemap +30.
 	JMP	LB8D0			; => Update Ninja on tilemap
 
 ; Ninja hit somehting after falling
-LC5EE:	MOVB	#1, LA39E
+LC5EE:	MOV	#1, LA39E
 	MOV	#NJAFAL, R3		; falling counter address
 	MOV	(R3), R1		; get counter value
 	CLR	(R3)
@@ -3393,7 +3719,7 @@ LC623:	MOVB	#10., NJAY		; set Ninja Y = 10
 ; Ninja falling
 LC643:	MOV	#LC5C6, R3		; Movement handler address: Ninja falling
 	MOV	#LD582, R2		; Sprite Ninja falling
-	JMP	LBFB0			; Set movement handler = HL, Ninja sprite = DE
+	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
 ; Room 791E (room with pier) initialization
 LC64C:	MOV	#LC65A, R3
@@ -3484,189 +3810,6 @@ LC70C:	MOV	#2, R4
 	SOB	R4, 10$
 	BR	LC6F5
 
-; Table of 35. records, 2 bytes each, see LB851
-LD210:	.BYTE	004,316,011,143,011,143,011,143,011,143,011,143,011,143,011,324
-	.BYTE	005,320,005,320,005,320,006,322,010,326,002,312,003,314,005,320
-	.BYTE	005,320,005,320,003,314,002,312,002,312,003,314,002,312,006,322
-	.BYTE	002,312,006,322,002,312,003,314,003,314,003,314,004,316,004,316
-	.BYTE	004,316,004,316,004,316
-
-; Table of objects, 35. records, 8. bytes each
-;   +$00/$01: Object tile offset
-;   +$02: Object tile unique, to identify the object
-;   +$03: Object item, for NEAR indicator
-;   +$04: Object tile as object type
-;   +$04: Even filler = 0
-;   +$06/$07: Object procedure, or 0
-LD256:	.WORD	004562		; Object 00: Brick
-	.BYTE	130,004,316, 0
-	.WORD	0
-LD25D:	.WORD	000324		; Object 01: Console in room 80F6
-	.BYTE	174,011,143, 0
-	.WORD	LB320
-LD264:	.WORD	000324		; Object 02: Console in room 99A6
-	.BYTE	175,011,143, 0
-	.WORD	LB32A
-LD26B:	.WORD	000324		; Object 03: Console in room 92A7
-	.BYTE	176,011,143, 0
-	.WORD	LB348
-LD272:	.WORD	000324		; Object 04: Console in room 92EF
-	.BYTE	177,011,143, 0
-	.WORD	LB334
-LD279:	.WORD	000324		; Object 05: Console in room 9005
-	.BYTE	200,011,143, 0
-	.WORD	LB33E
-LD280:	.WORD	005122		; Object 06
-	.BYTE	037,011,143, 0
-	.WORD	LB8D0
-LD287:	.WORD	000331		; Object 07: Diskette
-	.BYTE	234,011,324, 0
-	.WORD	0
-LD28E:	.WORD	000013		; Object 08: Pipe
-	.BYTE	232,005,320, 0
-	.WORD	0
-LD295:	.WORD	000700		; Object 09: Pipe
-	.BYTE	070,005,320, 0
-	.WORD	0
-LD29C:	.WORD	000324		; Object 10: Pipe
-	.BYTE	201,005,320, 0
-	.WORD	0
-LD2A3:	.WORD	000324		; Object 11: Granade
-	.BYTE	145,006,322, 0
-	.WORD	0
-LD2AA:	.WORD	000324		; Object 12: BOMB
-	.BYTE	146,010,326, 0
-	.WORD	0
-LD2B1:	.WORD	000324		; Object 13: Knife
-	.BYTE	147,002,312, 0
-	.WORD	0
-LD2B8:	.WORD	000324		; Object ?? 14
-	.BYTE	150,003,314, 0
-	.WORD	0
-LD2BF:	.WORD	000324		; Object 15: Pipe
-	.BYTE	151,005,320, 0
-	.WORD	0
-LD2C6:	.WORD	000324		; Object 16: Pipe
-	.BYTE	152,005,320, 0
-	.WORD	0
-LD2CD:	.WORD	000324		; Object 17: Pipe
-	.BYTE	153,005,320, 0
-	.WORD	0
-LD2D4:	.WORD	000324		; Object ?? 18
-	.BYTE	154,003,314, 0
-	.WORD	0
-LD2DB:	.WORD	000324		; Object 19: Knife
-	.BYTE	155,002,312, 0
-	.WORD	0
-LD2E2:	.WORD	000324		; Object 20: Knife
-	.BYTE	155,002,312, 0
-	.WORD	0
-LD2E9:	.WORD	000324		; Object ?? 21
-	.BYTE	156,003,314, 0
-	.WORD	0
-LD2F0:	.WORD	000324		; Object 22: Knife
-	.BYTE	157,002,312, 0
-	.WORD	0
-LD2F7:	.WORD	000324		; Object 23: Granade
-	.BYTE	160,006,322, 0
-	.WORD	0
-LD2FE:	.WORD	000324		; Object 24: Knife
-	.BYTE	161,002,312, 0
-	.WORD	0
-LD305:	.WORD	000324		; Object 25: Granade
-	.BYTE	162,006,322, 0
-	.WORD	0
-LD30C:	.WORD	000324		; Object 26: Knife
-	.BYTE	163,002,312, 0
-	.WORD	0
-LD313:	.WORD	000324		; Object ?? 27
-	.BYTE	164,003,314, 0
-	.WORD	0
-LD31A:	.WORD	000324		; Object ?? 28
-	.BYTE	165,003,314, 0
-	.WORD	0
-LD321:	.WORD	000324		; Object ?? 29
-	.BYTE	166,003,314, 0
-	.WORD	0
-LD328:	.WORD	000324		; Object 30: Brick
-	.BYTE	167,004,316, 0
-	.WORD	0
-LD32F:	.WORD	000324		; Object 31: Brick
-	.BYTE	170,004,316, 0
-	.WORD	0
-LD336:	.WORD	000324		; Object 32: Brick
-	.BYTE	171,004,316, 0
-	.WORD	0
-LD33D:	.WORD	000324		; Object 33: Brick
-	.BYTE	172,004,316, 0
-	.WORD	0
-LD344:	.WORD	000324		; Object 34: Brick
-	.BYTE	173,004,316, 0
-	.WORD	0
-
-; Table of objects, 29 records, 6 bytes each
-;   +$00/$01: room address
-;   +$02/$03: offset in Tile screen 0
-;   +$04: tile byte
-LD34D:	.WORD	RM9ED9, 000517		; Object L00: Pipe
-	.BYTE	201, 0
-LD352:	.WORD	RM9E22, 000614		; Object L01: Granade
-	.BYTE	145, 0
-LD357:	.WORD	RM9E22, 000636		; Object L02: BOMB
-	.BYTE	146, 0
-LD35C:	.WORD	RM990D, 000767		; Object L03: Knife
-	.BYTE	147, 0
-LD361:	.WORD	RM8D5C, 000727		; Object L04
-	.BYTE	150, 0
-LD366:	.WORD	RM8EE1, 000716		; Object L05: Pipe
-	.BYTE	151, 0
-LD36B:	.WORD	RM889F, 000514		; Object L06: Pipe
-	.BYTE	152, 0
-LD370:	.WORD	RM890E, 000411		; Object L07: Pipe
-	.BYTE	153, 0
-LD375:	.WORD	RM8CC8, 000762		; Object L08
-	.BYTE	154, 0
-LD37A:	.WORD	RM8739, 000432		; Object L09: Knife
-	.BYTE	155, 0
-LD37F:	.WORD	RM8799, 000707		; Object L10
-	.BYTE	156, 0
-LD384:	.WORD	RM913F, 000762		; Object L11: Knife
-	.BYTE	157, 0
-LD389:	.WORD	RM8321, 000747		; Object L12: Granade
-	.BYTE	160, 0
-LD38E:	.WORD	RM8162, 000762		; Object L13: Knife
-	.BYTE	161, 0
-LD393:	.WORD	RM7EF2, 000770		; Object L14: Granade
-	.BYTE	162, 0
-LD398:	.WORD	RM7F48, 000664		; Object L15: Knife in room 7F48
-	.BYTE	163, 0
-LD39D:	.WORD	RM7C6D, 000667		; Object L16
-	.BYTE	164, 0
-LD3A2:	.WORD	RM7A9E, 000715		; Object L17
-	.BYTE	165, 0
-LD3A7:	.WORD	RM7A9E, 000727		; Object L18
-	.BYTE	166, 0
-LD3AC:	.WORD	RM7A9E, 000731		; Object L19: Brick
-	.BYTE	167, 0
-LD3B1:	.WORD	RM7AF8, 000765		; Object L20: Brick
-	.BYTE	170, 0
-LD3B6:	.WORD	RM7AF8, 000766		; Object L21: Brick
-	.BYTE	171, 0
-LD3BB:	.WORD	RM9376, 000653		; Object L22: Brick
-	.BYTE	172, 0
-LD3C0:	.WORD	RM79C6, 000765		; Object L23: Brick in room 79C6
-	.BYTE	173, 0
-LD3C5:	.WORD	RM80F6, 000743		; Object L24: Console in room 80F6
-	.BYTE	174, 0
-LD3CA:	.WORD	RM99A6, 000763		; Object L25: Console in room 99A6
-	.BYTE	175, 0
-LD3CF:	.WORD	RM92A7, 000715		; Object L26: Console in room 92A7
-	.BYTE	176, 0
-LD3D4:	.WORD	RM92EF, 000330		; Object L27: Console in room 92EF
-	.BYTE	177, 0
-LD3D9:	.WORD	RM9005, 000445		; Object L28: Console in room 9005
-	.BYTE	200, 0
-
 ; Find record for the current room in DE84 table
 LDE68:	MOV	#20., R1		; 20. records
 	MOV	#LDE84, R3
@@ -3680,84 +3823,9 @@ LDE6D:	CMP	(R3)+, R4
 LDE7B:	MOV	#1, R0
 	RETURN
 
-; Dog rooms/flags ?? 20. records, 4 bytes each
-;   +$00/$01: room address
-LDE84:	.WORD	RM79C6
-	.BYTE	000, 0
-	.WORD	RM7C2E
-	.BYTE	000, 0
-	.WORD	RM7F9C
-	.BYTE	001, 0
-	.WORD	RM81E5
-	.BYTE	000, 0
-	.WORD	RM8162
-	.BYTE	001, 0
-	.WORD	RM7EF2
-	.BYTE	001, 0
-	.WORD	RM7E05
-	.BYTE	001, 0
-	.WORD	RM80A7
-	.BYTE	000, 0
-	.WORD	RM83ED
-	.BYTE	000, 0
-	.WORD	RM80F6
-	.BYTE	000, 0
-	.WORD	RM924E
-	.BYTE	000, 0
-	.WORD	RM91BA
-	.BYTE	001, 0
-	.WORD	RM90DB
-	.BYTE	001, 0
-	.WORD	RM909F
-	.BYTE	000, 0
-	.WORD	RM8802
-	.BYTE	000, 0
-	.WORD	RM8608
-	.BYTE	000, 0
-	.WORD	RM844E
-	.BYTE	000, 0
-	.WORD	RM9739
-	.BYTE	001, 0
-	.WORD	RM9A5A
-	.BYTE	000, 0
-	.WORD	RM9B9D
-	.BYTE	001, 0
-
 ; Clear strings on the screen
 ;LDEC1:
 ;	RETURN	;STUB
-
-;LDEE6:	.ASCII	/                /	; String 18 spaces
-
-TITLE:	.ASCII	/SABOTEUR 1 UKNC/
-VERSIO:
-.INCLUDE /VERSIO.MAC/
-	.ASCII	/P  PALETTE/
-LE1FE:	.ASCII	/1-9 SELECT LEVEL/
-LDF27:	.ASCII	/S  START MISSION/
-	.ASCII	/X  EXIT/
-
-;LBEEF:	.ASCII	/     SEPUKU    /
-;	.ASCII	/  MISSION ABORTED   /
-LBF12:	.ASCII	/     ESCAPE    /
-	.ASCII	/ MISSION SUCCESSFUL /
-LBF35:	.ASCII	/    TIME OUT   /
-	.ASCII	/ MISSION TERMINATED /
-LBF58:	.ASCII	/ SABOTEUR DEAD /
-	.ASCII	/  MISSION FAILURE   /
-
-LC062:	.ASCII	/DISK RETRIEVED/
-LC070:	.ASCII	/DISK /
-LC075:	.ASCII	/BONUS: $05000/
-LC082:	.ASCII	/LEVEL /
-LE1EC:	.ASCII	/1/	; Current Level digit
-LC087:	.ASCII	/TOTAL PAY : $/
-
-	.EVEN
-LE1ED:	.WORD	LE217	; Current level description address, 14-char string
-
-LE388:	.ASCII	/ 10/
-	.BYTE	10.
 
 ; Prepare for Menu
 LDF37:
@@ -3778,16 +3846,16 @@ LDF60:	CALL	WAITUP			; clear keyboard buffer
 	MOV	#<SCRTOP+<1200*6.>+14.>, R2
 	CALL	PRSTR			; Print string "P  PALETTE"
 	MOV	#16., R1
-	;MOV	#LE1FE, R3
-	MOV	#<SCRTOP+<1200*9.>+13.>, R2
-	CALL	PRSTR			; Print string "1-9 SELECT LEVEL"
-	MOV	#16., R1
 	;MOV	#LDF27, R3
 	MOV	#<SCRTOP+<1200*15.>+14.>, R2
 	CALL	PRSTR			; Print string "S  START MISSION"
 	MOV	#7., R1
 	MOV	#<SCRTOP+<1200*18.>+14.>, R2
 	CALL	PRSTR			; Print string "X  EXIT"
+	MOV	#16., R1
+	;MOV	#LE1FE, R3
+	MOV	#<SCRTOP+<1200*9.>+13.>, R2
+	CALL	PRSTR			; Print string "1-9 SELECT LEVEL"
 LDF8E:	MOV	#LC082, R3		; "LEVEL X"
 	MOV	#7., R1
 	MOV	#<SCRTOP+<1200*11.>+16.>, R2
@@ -3811,7 +3879,7 @@ LDF8E:	MOV	#LC082, R3		; "LEVEL X"
 22$:	CMPB	R0, #123		; 'S' ?
 	BNE	24$
 	CALL	LEVSEL			; apply level variables
-	JMP	LE2A7			; => Start Mission
+	BR	LE2A7			; => Start Mission
 24$:	CMPB	R0, #130		; 'X' ?
 	BNE	26$
 	JMP	FNCORE			; => Exit the program
@@ -3838,7 +3906,7 @@ LEVSEL:	MOVB	LE1EC, R0		; get current level digit 1..9
 	MOV	(R0), R3		; now R3 = address for level variables
 ; Prepare level variables, see E325
 	MOVB	(R3)+, LA3BF		; set Guard counter value
-	MOVB	(R3)+, L9C57		; set Dog counter value
+	MOVB	(R3)+, <L9C56+2>	; set Dog counter value
 	MOVB	(R3)+, <LB4C3+2>	; set Turret counter value
 	MOV	#LAD57, R1		; address for Indicator Time value
 	MOVB	(R3)+, (R1)+		; set Indicator Time value, lower digit
@@ -3889,112 +3957,6 @@ LF94D:
 	MOVB	R3, <L8D45+3>		; L - patch offset low byte
 	RETURN
 
-; Level descriptions and data addresses
-LE217:	.ASCII	/EXTREMELY EASY/
-	.WORD	LE38C
-	.ASCII	/  VERY  EASY  /
-	.WORD	LE3A0
-	.ASCII	/     EASY     /
-	.WORD	LE3B4
-	.ASCII	/SLIGHTLY  EASY/
-	.WORD	LE3C8
-	.ASCII	/   MODERATE   /
-	.WORD	LE3DC
-	.ASCII	/SLIGHTLY  HARD/
-	.WORD	LE3F0
-	.ASCII	/     HARD     /
-	.WORD	LE404
-	.ASCII	/  VERY HARD   /
-	.WORD	LE418
-	.ASCII	/EXTREMELY HARD/
-	.WORD	LE42C
-
-; Levels data
-;   +$00: Guard counter value
-;   +$01: Dog counter value
-;   +$02: Turret counter value
-;   +$03/$04: two digits for TIME value
-;   +$05/$06: two digits for BOMB timer
-;   +$07: flag for wall in room 97A6
-;   +$08: count for wall in room 9739: $01 = no wall, $07 = put wall
-;   +$09: count for wall in room 7F48
-;   +$0A: count for wall in room 8D5C
-;   +$0B: count for wall in room 8F20: $01 = no wall, $09 = put wall
-;   +$10/$11: room for BOMB placement
-;   +$12/$13: address in Tile screen 0 for BOMB placement
-; Level 1 "EXTREMELY EASY"
-LE38C:	.BYTE	20.,25.,50.
-	.ASCII	/9999/
-	.BYTE	000,001,001,001,001
-	.ASCII	/ 10/
-	.BYTE	10.
-	.WORD	RM9E22
-	.WORD	414.
-; Level 2 "VERY EASY"
-LE3A0:	.BYTE	18.,15.,45.
-	.ASCII	/9995/
-	.BYTE	000,001,001,001,001
-	.ASCII	/ 20/
-	.BYTE	024
-	.WORD	RM9E22
-	.WORD	414.
-; Level 3 "EASY"
-LE3B4:	.BYTE	16.,12.,40.
-	.ASCII	/9590/
-	.BYTE	000,007,001,001,001
-	.ASCII	/ 30/
-	.BYTE	036
-	.WORD	RM924E
-	.WORD	504.
-; Level 4 "SLIGHTLY EASY"
-LE3C8:	.BYTE	14.,10.,35.
-	.ASCII	/9080/
-	.BYTE	377,001,001,001,011
-	.ASCII	/ 50/
-	.BYTE	062
-	.WORD	RM8608
-	.WORD	503.
-; Level 5 "MODERATE"
-LE3DC:	.BYTE	12.,9.,30.
-	.ASCII	/9070/
-	.BYTE	377,001,001,007,001
-	.ASCII	/ 70/
-	.BYTE	106
-	.WORD	RM8689
-	.WORD	322.
-; Level 6 "SLIGHTLY HARD"
-LE3F0:	.BYTE	10.,7.,25.
-	.ASCII	/8560/
-	.BYTE	377,007,001,007,001
-	.ASCII	/100/
-	.BYTE	144
-	.WORD	RM8BAB
-	.WORD	496.
-; Level 7 "HARD"
-LE404:	.BYTE	8.,6.,20.
-	.ASCII	/8550/
-	.BYTE	377,007,010,007,001
-	.ASCII	/130/
-	.BYTE	202
-	.WORD	RM8D5C
-	.WORD	455.
-; Level 8 "VERY HARD"
-LE418:	.BYTE	5.,5.,15.
-	.ASCII	/8050/
-	.BYTE	377,007,010,007,011
-	.ASCII	/170/
-	.BYTE	252
-	.WORD	RM8279
-	.WORD	467.
-; Level 9 "EXTREMELY HARD"
-LE42C:	.BYTE	2.,3.,10.
-	.ASCII	/7040/
-	.BYTE	377,007,010,007,011
-	.ASCII	/250/
-	.BYTE	372
-	.WORD	RM8608
-	.WORD	503.
-
 ; Start Mission
 LE2A7:
 ;NOTE: in the original game, here we ask for Skill Level, moved to the Menu, see LEVSEL
@@ -4036,13 +3998,20 @@ LFA31:	CALL	NRJDEC			; Decrease Energy by R1
 
 ;------------------------------------------------------------------------------
 
+.INCLUDE /S1PICT.MAC/
+
+.INCLUDE /S1INDS.MAC/
+
+.INCLUDE /S1ROOM.MAC/
+
+.INCLUDE /S1FONT.MAC/
+
 .INCLUDE /S1SPRT.MAC/
-	.EVEN
 
 .INCLUDE /S1TILE.MAC/
-	.EVEN
 
 ;------------------------------------------------------------------------------
+	.EVEN
 
 ; Tile screen 0 30x17 tiles, 510 bytes - background
 TLSCR0:	.BLKB	510.
