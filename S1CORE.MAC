@@ -2151,9 +2151,12 @@ LB6DA:	MOV	#177777, (R3)+		; put two bytes $FF = transparent tile
 ; Room sequence processing loop
 LB6EE:	CLR	R0
 	BISB	(R3), R0		; get next token
-	CMPB	R0, #100
+	CMPB	R0, #20
 	BLO	LB6F4			; => process token #00..#0F
-	CMPB	#377, R0		; End of sequence?
+	CMPB	R0, #100
+	BHIS	10$
+	JMP	RTOK1X			; => process token #10..#1F
+10$:	CMPB	#377, R0		; End of sequence?
 	BNE	LB6F2			; no =>
 LB6F1:	JMP	@#LB724			; !!MUT-ARG!! => run Room initialization code
 LB6F2:	CMPB	R0, #200
@@ -2313,12 +2316,16 @@ RTOK09:	MOV	#-1, R4			; shift = -1
 RTOK04:	POP	R3			; Restore token sequence address
 	INC	R3			; Skip token byte
 	MOVB	(R3), R0		; get tile byte
-	PUSH	R3
+L73F6:	PUSH	R3
 	MOV	#TLSCR0, R2		; Tile screen 0 start address
 	MOV	#510., R1		; count
 10$:	MOVB	R0, (R2)+
 	SOB	R1, 10$
 	BR	LB702			; => Proceed to the next room token
+; Room token #00: Fill entire screen with $FF; no params
+RTOK00:	POP	R3			; Restore token sequence address
+	MOVB	#377, R0		; tile byte $FF
+	BR	L73F6			; => Fill entire screen
 ;
 ; Copy block of tiles
 L7414:	PUSH	R3
@@ -2354,20 +2361,23 @@ L7465:	MOVB	R0, (R2)+
 	ADD	#30., R2
 	SOB	R1, L7463
 	BR	LB702			; => Proceed to the next room token
-; Room token #00: Barrel, 3x3 tiles 7C21; params: 2 bytes (offset)
-RTOK00:	POP	R3			; Restore token sequence address
-	INC	R3			; Skip token byte
-	CLR	R2
+; Room token #10..#1F: Copy block of tiles using table TBLOK2
+RTOK1X:	MOVB	(R3)+, R5		; get the token
+	BIC	#177760, R5		; 0..15.
+	ASL	R5
+	ASL	R5			; * 4
+	ADD	#TBLOK2, R5		; + table address
+	MOV	(R5)+, R0		; get source address
+	MOVB	(R5)+, R4		; get width
+	MOVB	(R5)+, R1		; get count/height
+LB39D:	CLR	R2
 	BISB	(R3)+, R2		; get offset low byte
 	SWAB	R2
 	BISB	(R3), R2		; get offset high byte
 	SWAB	R2
 	ADD	#TLSCR0, R2		; + Tile screen 0 address
-	MOV	#L7C21, R0		; Tile block address
-	MOV	#3, R1			; 3 rows
-	MOV	#3, R4			; 3 columns
 	BR	L7414			; => Copy block of tiles
-; Room token #0F: Put 3x6 crane block in room 84A8; params: none
+; Room token #0F: Put 3x6 crane block in room 84A8; no params
 RTOK0F:	POP	R3			; Restore token sequence address
 	MOVB	#3, R4			; 3 columns
 	MOVB	#6, R1			; 6 rows
@@ -2384,7 +2394,7 @@ RTOK0D:
 	HALT	; DO NOTHING, we're not processing this token
 
 ; Table of Room tokens
-LB706:	.WORD	RTOK00	; #00: Put 3x3 tiles $7C21; params: 2 bytes (address)
+LB706:	.WORD	RTOK00	; #00: Fill entire screen with $FF; no params
 	.WORD	RTOK01	; #01: Fill to down; params: 4 bytes (count, filler, address)
 	.WORD	RTOK02	; #02: Fill to right; params: 4 bytes (count, filler, address)
 	.WORD	RTOK03	; #03: Fill rectangle; params: 5 bytes (filler, width, height, address)
@@ -2400,6 +2410,22 @@ LB706:	.WORD	RTOK00	; #00: Put 3x3 tiles $7C21; params: 2 bytes (address)
 	.WORD	RTOK0D	; #0D: Set border color; params: 1 byte
 	.WORD	RTOK0E	; #0E: Put one tile at the given address; params: 3 bytes (tile, address)
 	.WORD	RTOK0F	; #0F: Put 3x6 crane block in room 84A8; params: none
+	;.WORD	RTOK1X  ; #10: Put 3x3 barrel block $7C21; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #11: Put 3x3 box block 71A0; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #12: Put 2x4 console block 71BB; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #13: Put 4x3 box block 7E7B; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #14: Put 4x4 computer block 71A9; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #15: Put 4x7 ladder fencing block 798E; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #16: Put 4x7 ladder fencing block 79AA; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #17: Put 3x4 pots block 7C0C; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #18: Put 3x4 pots block 7C18; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #19: Put 2x1 box block 7E8A; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #1A: Put 2x1 ladder top block 889D; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #1B: Put 4x4 window block A00A; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #1C: Put 6x2 pile of garbage block 7188; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #1D: Put 4x3 pier fencing block 7194; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #1E: Put 1x4 lift part block 9372; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #1F: Put 3x1 box block 7E87; params: 2 bytes (offset)
 
 ; Finish room initialization
 ; Called to finish room initialization from room initialization procedure
