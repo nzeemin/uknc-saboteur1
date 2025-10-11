@@ -14,7 +14,7 @@
 
 ;------------------------------------------------------------------------------
 
-CHELTH=0		; Cheat code for no damage
+CHELTH=1		; Cheat code for no damage
 CVERT =0		; Cheat code for short route to Helicopter
 
 SCREEN = 100000		; Screen start, indirect address for UKNC
@@ -111,6 +111,9 @@ LA3B4:	.BYTE	1	; ?? Guard counter
 	.EVEN
 
 LB2FD:	.BYTE	195.	; Counter for Ninja/Guard head tile change
+	.EVEN
+
+LB4DD:	.BYTE	50.	; Turret counter 50..0
 	.EVEN
 
 TIMECN:	.BYTE	25	; Time fast counter 50..0
@@ -1545,7 +1548,7 @@ LAC6E:	SOB	R1, LAC5C
 	RETURN
 
 ; Draw game screen frames and indicator text
-LACCA:
+DRINDS:
 	MOV	#SCRTOP, @#176640	; Screen start address
 	MOV	#LAD65, R2		; Game screen frames/indicators RLE encoded sequence
 	CLR	R5			; counter up to 32.
@@ -1714,6 +1717,7 @@ LB1E4:	MOVB	(R2), R0		; get byte from the buffer
 20$:	BISB	R5, R0			; apply the pixels
 	MOVB	R0, (R2)+		; store byte back to the buffer
 	SOB	R1, LB1E4
+	;BR	LB263			; !!MUT-CMD!! Skip Dog and Guard drawing on 1st draw
 ; Process Tile screen 3 tile - Dog
 LB1FC:	MOV	L7233, R3		; get address in Tile scrren 3
 	MOVB	(R3), R0		; get tile from Tile screen 3
@@ -1956,9 +1960,6 @@ LB4D4 = LB4D3 + 2	; Turret X value
 	INCB	(R3)
 99$:	RETURN
 
-LB4DD:	.BYTE	50.	; Turret counter 50..0
-	.EVEN
-
 ; Increase PAY value by B * 100., print the PAY value
 INCPAY:	MOV	#<LAD52+2>, R3		; PAY value 3rd digit address
 LB4E3:	INCB	(R3)
@@ -2058,7 +2059,7 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	MOVB	R0, (R3)+
 	MOVB	R0, (R3)+
 	MOVB	R0, (R3)
-	CALL	LACCA			; Draw game screen frames and indicator text
+	CALL	DRINDS			; Draw game screen frames and indicator text
 	;NOP				; set BORDCR = 0
 	CLRB	TIMODE			; set Time mode = time ticking
 	CLR	LB850			; clear HELD tile
@@ -2150,32 +2151,63 @@ LB6DA:	MOV	#177777, (R3)+		; put two bytes $FF = transparent tile
 ; Room sequence processing loop
 LB6EE:	CLR	R0
 	BISB	(R3), R0		; get next token
+	CMPB	R0, #100
+	BLO	LB6F4			; => process token #00..#0F
 	CMPB	#377, R0		; End of sequence?
-	BNE	LB6F4			; no =>
+	BNE	LB6F2			; no =>
 LB6F1:	JMP	@#LB724			; !!MUT-ARG!! => run Room initialization code
+LB6F2:	CMPB	R0, #200
+	BHIS	RTOK80			; => token #80..#BF
+	BR	RTOK40			; => token #40..#7F
 LB6F4:	PUSH	R3			; Save address in the room sequence
 	ASL	R0			; * 2
-	ADD	#<LB706>, R0		; Table of Room tokens
-	MOV	(R0), R0		; get token procedure address
+	MOV	LB706(R0), R0		; get token procedure address
 	JMP	@R0			; => run token procedure
 ;NOTE: Room token procedures return to LB702 to continue the loop
 
-; Table of Room tokens
-LB706:	.WORD	RTOK00	; #00: Put 3x3 tiles $7C21; params: 2 bytes (address)
-LB708:	.WORD	RTOK01	; #01: Fill to down; params: 4 bytes (count, filler, address)
-LB70A:	.WORD	RTOK02	; #02: Fill to right; params: 4 bytes (count, filler, address)
-LB70C:	.WORD	RTOK03	; #03: Fill rectangle; params: 5 bytes (filler, width, height, address)
-LB70E:	.WORD	RTOK04	; #04: Fill whole Tile screen 0 with one tile; params: 1 byte (filler)
-LB710:	.WORD	RTOK05	; #05: Copy block of tiles; params: 5 bytes (width, height, source, address)
-LB712:	.WORD	RTOK06	; #06: Fill triangle from wide top; params: 4 bytes (filler, count, address)
-LB714:	.WORD	RTOK07	; #07: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
-LB716:	.WORD	RTOK08	; #08: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
-LB718:	.WORD	RTOK09	; #09: Fill triangle from wide top; params: 4 bytes (filler, count, address)
-LB71A:	.WORD	RTOK0A	; #0A: Fill to down-right; params: 4 bytes (count, filler, address)
-LB71C:	.WORD	RTOK0B	; #0B: Fill to down-left; params: 4 bytes (count, filler, address)
-LB71E:	.WORD	RTOK0C	; #0C: Copy block of tiles N times; params: 5 bytes (source, width, count, address)
-LB720:	.WORD	RTOK0D	; #0D: Set border color; params: 1 byte
-LB722:	.WORD	RTOK0E	; #0E: Put one tile at the given address; params: 3 bytes (tile, address)
+; Tokens #40..#7F: Copy block of tiles; params: 4 bytes (width, height, offset); source = lower bits of token
+; R3 = token sequence address; R0 = token
+RTOK40:	INC	R3
+	BIC	#177700, R0		; 0..63. = source index
+	ASL	R0
+	MOV	TBLOCK(R0), R0		; Convert source index to source address
+	MOVB	(R3)+, R4		; get width
+	MOVB	(R3)+, R1		; get count/height
+	CLR	R2
+	BISB	(R3)+, R2		; get offset low byte
+	SWAB	R2
+	BISB	(R3), R2		; get offset high byte
+	SWAB	R2
+	ADD	#TLSCR0, R2		; + Tile screen 0 address
+	JMP	L7414			; => Copy block of tiles
+;
+; Tokens #80..#BF: Copy block of tiles N times; params: 4 bytes (width, count, offset); source = lower bits of token
+; R3 = token sequence address; R0 = token
+RTOK80:	INC	R3			; Skip token byte
+	BIC	#177700, R0		; 0..63. = source index
+	ASL	R0
+	MOV	TBLOCK(R0), R0		; Convert source index to source address
+	MOVB	(R3)+, R4		; get width
+	MOVB	(R3)+, R1		; get count/height
+	CLR	R2
+	BISB	(R3)+, R2		; get offset low byte
+	SWAB	R2
+	BISB	(R3), R2		; get offset high byte
+	SWAB	R2
+	ADD	#TLSCR0, R2		; + Tile screen 0 address
+	PUSH	R3
+; Copy block of tiles N times
+L743A:	PUSH	R0
+	PUSH	R4
+	PUSH	R2
+L743D:	MOVB	(R0)+, (R2)+		; copy tile
+	SOB	R4, L743D
+	POP	R2
+	ADD	#30., R2		; next row
+	POP	R4
+	POP	R0
+	SOB	R1, L743A
+	BR	LB702			; => Proceed to the next room token
 ;
 ; Room token #0E: Put one tile at the given address; params: 3 bytes (tile, offset)
 RTOK0E:	POP	R3			; Restore token sequence address
@@ -2206,7 +2238,14 @@ L7384:	POP	R3			; Restore token sequence address
 10$:	MOVB	R0, (R2)		; put tile into tilemap
 	ADD	R4, R2			; apply the shift
 	SOB	R1, 10$
-	BR	LB702			; => Proceed to the next room token
+	;BR	LB702			; => Proceed to the next room token
+;
+; Proceed to the next room token
+LB702:
+	POP	R3			; Restore address in the room sequence
+	INC	R3			; to next token
+	BR	LB6EE			; => continue room sequence processing
+;
 ; Room token #0A: Fill to down-right; params: 4 bytes (count, filler, offset)
 RTOK0A:	MOV	#31., R4		; shift = 30. + 1
 	BR	L7384
@@ -2238,14 +2277,7 @@ L73BA:	MOVB	R0, (R2)		; put tile into tilemap
 	POP	R2
 	ADD	#30., R2		; next row
 	SOB	R1, L73B8		; continue loop by rows
-	;BR	LB702			; => Proceed to the next room token
-;
-; Proceed to the next room token
-LB702:
-	POP	R3			; Restore address in the room sequence
-	INC	R3			; to next token
-	BR	LB6EE			; => continue room sequence processing
-;
+	BR	LB702			; => Proceed to the next room token
 ; Room token #07: Fill triangle from wide bottom; params: 4 bytes (filler, count, offset)
 RTOK07:	MOV	#1, R4			; shift = 1
 L73C7:	POP	R3			; Restore token sequence address
@@ -2287,20 +2319,8 @@ RTOK04:	POP	R3			; Restore token sequence address
 10$:	MOVB	R0, (R2)+
 	SOB	R1, 10$
 	BR	LB702			; => Proceed to the next room token
-; Room token #05: Copy block of tiles; params: 5 bytes (width, height, source, offset)
-RTOK05:	POP	R3			; Restore token sequence address
-	INC	R3			; Skip token byte
-	MOVB	(R3)+, R4		; get width
-	MOVB	(R3)+, R1		; get count/height
-	MOVB	(R3)+, R0		; get source index
-	ASL	R0
-	MOV	TBLOCK(R0), R0		; Convert source index to source address
-	CLR	R2
-	BISB	(R3)+, R2		; get offset low byte
-	SWAB	R2
-	BISB	(R3), R2		; get offset high byte
-	SWAB	R2
-	ADD	#TLSCR0, R2		; + Tile screen 0 address
+;
+; Copy block of tiles
 L7414:	PUSH	R3
 L7415:	PUSH	R4
 	PUSH	R2
@@ -2311,32 +2331,7 @@ L7416:	MOVB	(R0)+, (R2)+
 	ADD	#30., R2		; next row
 	SOB	R1, L7415
 	BR	LB702			; => Proceed to the next room token
-; Room token #0C: Copy block of tiles N times; params: 5 bytes (source, width, count, offset)
-RTOK0C:	POP	R3			; Restore token sequence address
-	INC	R3			; Skip token byte
-	MOVB	(R3)+, R0		; get source index
-	ASL	R0
-	MOV	TBLOCK(R0), R0		; Convert source index to source address
-	MOVB	(R3)+, R4		; get width
-	MOVB	(R3)+, R1		; get count/height
-	CLR	R2
-	BISB	(R3)+, R2		; get offset low byte
-	SWAB	R2
-	BISB	(R3), R2		; get offset high byte
-	SWAB	R2
-	ADD	#TLSCR0, R2		; + Tile screen 0 address
-	PUSH	R3
-L743A:	PUSH	R0
-	PUSH	R4
-	PUSH	R2
-L743D:	MOVB	(R0)+, (R2)+		; copy tile
-	SOB	R4, L743D
-	POP	R2
-	ADD	#30., R2		; next row
-	POP	R4
-	POP	R0
-	SOB	R1, L743A
-	BR	LB702			; => Proceed to the next room token
+;
 ; Room token #03: Fill rectangle; params: 5 bytes (filler, width, height, offset)
 RTOK03:	POP	R3			; Restore token sequence address
 	INC	R3			; Skip token byte
@@ -2372,8 +2367,39 @@ RTOK00:	POP	R3			; Restore token sequence address
 	MOV	#3, R1			; 3 rows
 	MOV	#3, R4			; 3 columns
 	BR	L7414			; => Copy block of tiles
+; Room token #0F: Put 3x6 crane block in room 84A8; params: none
+RTOK0F:	POP	R3			; Restore token sequence address
+	MOVB	#3, R4			; 3 columns
+	MOVB	#6, R1			; 6 rows
+	MOV	#LF98F, R0		; Tile block address
+	MOV	#<TLSCR0+74.>, R2	; target address: 65DA
+	BR	L7414			; => Copy block of tiles
+
+; Room token #05: Copy block of tiles; params: 5 bytes (width, height, source, offset)
+RTOK05:		; Replaced with tokens #40..#7F
+; Room token #0C: Copy block of tiles N times; params: 5 bytes (source, width, count, offset)
+RTOK0C:		; Replaced with tokens #80..#BF
 ; Room token #0D: Set border color; params: 1 byte
-RTOK0D:	HALT	; DO NOTHING, we're not processing this token
+RTOK0D:
+	HALT	; DO NOTHING, we're not processing this token
+
+; Table of Room tokens
+LB706:	.WORD	RTOK00	; #00: Put 3x3 tiles $7C21; params: 2 bytes (address)
+	.WORD	RTOK01	; #01: Fill to down; params: 4 bytes (count, filler, address)
+	.WORD	RTOK02	; #02: Fill to right; params: 4 bytes (count, filler, address)
+	.WORD	RTOK03	; #03: Fill rectangle; params: 5 bytes (filler, width, height, address)
+	.WORD	RTOK04	; #04: Fill whole Tile screen 0 with one tile; params: 1 byte (filler)
+	.WORD	RTOK05	; #05: Copy block of tiles; params: 5 bytes (width, height, source, address)
+	.WORD	RTOK06	; #06: Fill triangle from wide top; params: 4 bytes (filler, count, address)
+	.WORD	RTOK07	; #07: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
+	.WORD	RTOK08	; #08: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
+	.WORD	RTOK09	; #09: Fill triangle from wide top; params: 4 bytes (filler, count, address)
+	.WORD	RTOK0A	; #0A: Fill to down-right; params: 4 bytes (count, filler, address)
+	.WORD	RTOK0B	; #0B: Fill to down-left; params: 4 bytes (count, filler, address)
+	.WORD	RTOK0C	; #0C: Copy block of tiles N times; params: 5 bytes (source, width, count, address)
+	.WORD	RTOK0D	; #0D: Set border color; params: 1 byte
+	.WORD	RTOK0E	; #0E: Put one tile at the given address; params: 3 bytes (tile, address)
+	.WORD	RTOK0F	; #0F: Put 3x6 crane block in room 84A8; params: none
 
 ; Finish room initialization
 ; Called to finish room initialization from room initialization procedure
@@ -2796,13 +2822,13 @@ LBBD4:	CALL	LBBDF			; Read input
 	JMP	LB8D0			; => Update Ninja on tilemap
 LBBDC:	JMP	LC226			; no FIRE => Ninja standing
 
-; Read Input
+; Procedure: Read Input
 LBBDF:
 	MOV	@#PPUKEY, R0
 	MOV	R0, INPUTB
 	RETURN
 
-; Routine: Get pseudo-random number, result in R3
+; Procedure: Get pseudo-random number, result in R3
 ; Uses: R0, R2, R3
 ; From Highway Encounter game code
 RANDOM:	MOV	RNDSED, R2	; A270	LD DE,($5C76)	; Read RND SEED variable
@@ -3206,9 +3232,6 @@ LC04A:	CMPB	#2, TIMODE		; Time mode = BOMB ticking mode ?
 	MOV	#100., R1
 	CALL	INCPAY			; Increase PAY value by 10000. - Escape with Disk and Bomb
 LC056:	MOV	#LBF12, LBEB4		; "ESCAPE" / "MISSION SUCCESSFUL"
-	;NOP
-	;NOP
-	;NOP
 	JMP	LBEB3			; => Game Over
 
 ; Movement handler: helicopter moving up
@@ -3640,7 +3663,7 @@ LC571:	INCB	(R3)			; increase Ninja X
 	INC	NJAPOS			; increase Ninja position in tilemap
 	BR	LC525
 
-; Check if we have empty space to continue the jump
+; Procedure: Check if we have empty space to continue the jump
 LC57B:	MOVB	NJADIR, R0		; get Ninja direction: 0/1
 	MOVB	DIR05(R0), R3		; 0/5
 	ADD	NJAPOS, R3		; + Ninja position in tilemap
@@ -3654,11 +3677,10 @@ LC59A:	ADD	#30., R3		; lower one row
 	SOB	R1, LC596
 	TST	R2			; NZ: impediment, Z: we have space
 	RETURN
-
 ; Table to map bytes 0/1 -> 0/5
 DIR05:	.BYTE	0, 5
 
-; Check for falling
+; Procedure: Check for falling
 LC5A3:	MOV	NJAPOS, R3		; get Ninja position in tilemap
 	ADD	#211., R3		; + 7 rows + 1
 	ADD	#TLSCR0, R3		; Tile screen 0 start address
@@ -3728,10 +3750,6 @@ LC64C:	MOV	#LC65A, R3
 LC655:	MOVB	(R3)+, (R2)+		; copy bytes to Background
 	SOB	R1, LC655
 	JMP	LB724			; => Finish room initialization
-LC65A:	.BYTE	343,343,343,366,366,343,343,343
-	.BYTE	366,366,343,343,343,343,343,343
-	.BYTE	343
-	.EVEN
 
 ; Room 93DF/947C (room right from Train) initialization
 LC671:	MOV	#RM947C, <RM7C9C+4>	; set "room to left" for room 7C9C
@@ -3997,6 +4015,7 @@ LFA31:	CALL	NRJDEC			; Decrease Energy by R1
 	RETURN
 
 ;------------------------------------------------------------------------------
+STARTD::
 
 .INCLUDE /S1PICT.MAC/
 
@@ -4010,6 +4029,7 @@ LFA31:	CALL	NRJDEC			; Decrease Energy by R1
 
 .INCLUDE /S1TILE.MAC/
 
+ENDD::
 ;------------------------------------------------------------------------------
 	.EVEN
 
