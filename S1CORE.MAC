@@ -116,6 +116,9 @@ LB2FD:	.BYTE	195.	; Counter for Ninja/Guard head tile change
 LB4DD:	.BYTE	50.	; Turret counter 50..0
 	.EVEN
 
+LB595:	.BYTE	0	; action cooldown counter
+	.EVEN
+
 TIMECN:	.BYTE	25	; Time fast counter 50..0
 LB5C5:	.BYTE	1	; Ninja standing counter
 TIMODE:	.BYTE	0	; Time mode: 0 = time ticking; 1 = Time stopped; 2 = BOMB ticking mode
@@ -241,7 +244,7 @@ LA31B:	.BYTE	366,000,000,006,000,002,017,000,001,001	; Room 9A5A dog
 LA325:	.BYTE	214,001,001,006,000,004,030,001,006,001	; Room 9B9D dog
 
 ; Turrets data, 11 records, 3 bytes each
-LA32F:	.BYTE	304,000,016	; Room 7A17 turret
+LA32F:	.BYTE	304,000,016	; Room 7D5A turret
 LA332:	.BYTE	047,000,007	; Room 7F48/9A9A turret
 LA335:	.BYTE	021,000,017	; Room 8FBD turret
 LA338:	.BYTE	053,000,012	; Room 7EF2/909F/92A7 turret
@@ -308,6 +311,14 @@ LACA2:	.WORD	LA31B,LA311,LA307,LA2FD
 	.WORD	LA2C1,LA2B7,LA2A3,LA285
 	.WORD	LA325,LA2AD,LA28F,LA27B
 	.WORD	LA271,LA2E9,LA299,L71D6
+
+; Table of Turett data addresses, 11. records
+TTURGA:
+	.WORD	LA32F,LA332,LA335,LA338
+	.WORD	LA33B,LA33E
+	;LA34
+	.WORD	LA344,LA347,LA34A,LA34D
+	.WORD	LA350
 
 ; Table of 35. records, 2 bytes each, see LB851
 LD210:	.BYTE	004,316,011,143,011,143,011,143,011,143,011,143,011,143,011,324
@@ -971,188 +982,9 @@ L9DF1:	SOB	R1, NRJDEC
 	;DI
 	RETURN
 
-LA0DF:	; Room 94AB initialization
-	MOV	#LA1E1, R3		; Guard data address
-; Initialize a guard, then Standard room initialization
-LA0E2:	CALL	INGARD			; Initialize a guard
-LA0E5:	JMP	LB422			; Standard room initialization
-LA0E8:	; Room 7DA9 initialization
-	MOV	#LA1E7, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA0ED:	; Room 7E8C initialization
-	MOV	#LA1ED, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA0F2:	; Room 920A initialization
-	MOV	#LA1F3, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA0F7:	; Room 8F84 initialization
-	MOV	#LA1F9, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA0FC:	; Room 8B71 initialization
-	MOV	#LA1FF, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA101:	; Room 8739 initialization
-	MOV	#LA205, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA106:	; Room 858F initialization
-	MOV	#LA20B, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA10B:	; Room 84EE initialization
-	MOV	#LA211, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA110:	; Room 99A6 initialization
-	MOV	#LA21D, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA115:	; Room 97F8 initialization
-	MOV	#LA223, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA11A:	; Room 94CF initialization
-	MOV	#LA229, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA11F:	; Room 9B51 initialization
-	MOV	#LA22F, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA124:	; Room 9F3A initialization
-	MOV	#LA235, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA129:	; Room 9F7E initialization
-	MOV	#LA23B, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA12E:	; Room 9EB8 initialization
-	MOV	#LA241, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA133:	; Room 9B19 initialization
-	MOV	#LA247, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-LA138:	; Room 9DF5 initialization
-	MOV	#LA24D, R3		; Guard data address
-	BR	LA0E2			; Initialize a guard, then Standard room initialization
-
-LA142:	; Room 7A17 initialization
-	MOV	#LA33E, R3		; Turret data address
-; Initialize a turret, then Standard room initialization
-LA145:	CALL	INTURG			; Initialize a turret
-	BR	LA0E5			; Standard room initialization
-LA14A:	; Room 7D5A initialization
-	MOV	#LA32F, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-LA14F:	; Room 7F48 initialization
-	MOV	#LA332, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-LA154:	; Room 7EF2 initialization
-	MOV	#LA299, R3		; Dog data address
-	CALL	INDOG			; Initialize a dog
-	MOV	#LA338, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-LA15F:	; Room 909F initialization
-	MOV	#LA2E9, R3		; Dog data address
-	CALL	INDOG			; Initialize a dog
-	MOV	#LA338, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-LA16A:	; Room 8FBD initialization
-	MOV	#LA335, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-LA16F:	; Room 92A7 initialization
-	MOV	#LA338, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-LA174:	; Room 8B25 initialization
-	MOV	#LA33B, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-LA179:	; Room 8526 initialization
-	MOV	#LA33E, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-
-LA183:	; Room 95D6 initialization
-	MOV	#LA344, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-LA188:	; Room 968A initialization
-	MOV	#LA347, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-
-; Room 97A6 initialization
+; Room 97A6 initialization (reduced)
 LB368:	MOVB	L97D0, <TLSCR0+357>	; copy trigger "E" value
-	;JMP	LA18D			; => Finish Room 97A6 initialization
-;LA18D:	; Finish Room 97A6 initialization
-	MOV	#LA34A, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-LA192:	; Room 9A9A initialization
-	MOV	#LA332, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-LA197:	; Room 9552 initialization
-	MOV	#LA34D, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-LA19C:	; Room 9BE7 initialization
-	MOV	#LA350, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-LA1A1:	; Room 8D5C initialization
-	MOV	#LA33B, R3		; Turret data address
-	BR	LA145			; Initialize a turret, then Standard room initialization
-LA1A6:	; Room 7C2E initialization
-	MOV	#LA271, R3		; Dog data address
-	CALL	INDOG			; Initialize a dog
-	MOV	#LA253, R3		; Guard data address
-LA1AF:	; Finish room with Guard initialization
-	CALL	INGARD			; Initialize a guard
 	JMP	LB422			; Standard room initialization
-LA1B5:	; Room 7F9C initialization
-	MOV	#LA27B, R3		; Dog data address
-	CALL	INDOG			; Initialize a dog
-	MOV	#LA259, R3		; Guard data address
-	BR	LA1AF			; Initialize a guard, then Standard room initialization
-LA1C0:	; Room 8162 initialization
-	MOV	#LA28F, R3		; Dog data address
-	CALL	INDOG			; Initialize a dog
-	MOV	#LA265, R3		; Guard data address
-	BR	LA1AF			; Initialize a guard, then Standard room initialization
-LA1CB:	; Room 80A7 initialization
-	MOV	#LA2AD, R3		; Dog data address
-	CALL	INDOG			; Initialize a dog
-	MOV	#LA265, R3		; Guard data address
-	BR	LA1AF			; Initialize a guard, then Standard room initialization
-LA1D6:	; Room 9B9D initialization
-	MOV	#LA325, R3		; Dog data address
-	CALL	INDOG			; Initialize a dog
-	MOV	#LA26B, R3		; Guard data address
-	BR	LA1AF			; Initialize a guard, then Standard room initialization
-
-LA353:	; Room 81E5 initialization
-	MOV	#LA285, R3		; Dog data address
-; Initialize a dog, then Standard room initialization
-LA356:	CALL	INDOG			; Initialize a dog
-	JMP	LB422			; Standard room initialization
-LA35C:	; Room 7E05 initialization
-	MOV	#LA2A3, R3		; Dog data address
-	BR	LA356			; Initialize a dog, then Standard room initialization
-LA361:	; Room 83ED initialization
-	MOV	#LA2B7, R3		; Dog data address
-	BR	LA356			; Initialize a dog, then Standard room initialization
-LA366:	; Room 924E initialization
-	MOV	#LA2CB, R3		; Dog data address
-	BR	LA356			; Initialize a dog, then Standard room initialization
-LA36B:	; Room 91BA initialization
-	MOV	#LA2D5, R3		; Dog data address
-	BR	LA356			; Initialize a dog, then Standard room initialization
-LA370:	; Room 90DB initialization
-	MOV	#LA2DF, R3		; Dog data address
-	BR	LA356			; Initialize a dog, then Standard room initialization
-LA375:	; Room 8802 initialization
-	MOV	#LA2F3, R3		; Dog data address
-	BR	LA356			; Initialize a dog, then Standard room initialization
-LA37A:	; Room 8608 initialization
-	MOV	#LA2FD, R3		; Dog data address
-	BR	LA356			; Initialize a dog, then Standard room initialization
-LA37F:	; Room 844E initialization
-	MOV	#LA307, R3		; Dog data address
-	BR	LA356			; Initialize a dog, then Standard room initialization
-LA384:	; Room 9739 initialization
-	MOV	#LA311, R3		; Dog data address
-	BR	LA356			; Initialize a dog, then Standard room initialization
-LA389:	; Room 9A5A initialization
-	MOV	#LA31B, R3		; Dog data address
-	BR	LA356			; Initialize a dog, then Standard room initialization
-LA38E:	; Room 80F6 initialization
-	MOV	#LA2C1, R3		; Dog data address
-	BR	LA356			; Initialize a dog, then Standard room initialization
 
 ; Ninja and Guard in 12. tiles by X
 LA3B5:	CMPB	NJAY, GARDY		; compare Ninja Y to Guard Y
@@ -1870,17 +1702,12 @@ INGARD:	MOV	#GARDPO, R2		; address to store guard data
 	MOVB	(R3)+, GARDDI		; set Guard direction
 	RETURN
 
-; Standard room initialization (for 60 rooms)
-;NOTE: LB422 now just alias for LB724	; => Finish room initialization
 ; Rooms 7C9C/92EF initialization
 L791B:	; redirect
 LB425:	MOV	#LC66B, R3		; Guard data address
 	CALL	INGARD			; Initialize a guard
 	JMP	LB724			; => Finish room initialization
-; Room 79C6 initialization
-LB42E:	MOV	#L71D6, R3		; Dog data address
-	CALL	INDOG			; Initialize a dog
-	JMP	LB724			; => Finish room initialization
+
 ; Room B513 procedure (initial Room)
 LB446:	CALL	LB4FA			; Processing in the initial room
 	JMP	LB937			; Standard room procedure
@@ -2034,9 +1861,6 @@ LB577:	INCB	NJAX			; increrase Ninja X
 	MOVB	#4, L7343		; set counter = 4
 	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
-LB595:	.BYTE	0			; action cooldown counter
-	.EVEN
-
 ; Play sound ??
 LB596:	MOV	#20., R1
 LB598:	JMP	LF9A1
@@ -2154,11 +1978,8 @@ LB6EE:	CLR	R0
 	CMPB	R0, #20
 	BLO	LB6F4			; => process token #00..#0F
 	CMPB	R0, #100
-	BHIS	10$
+	BHIS	LB6F2
 	JMP	RTOK1X			; => process token #10..#1F
-10$:	CMPB	#377, R0		; End of sequence?
-	BNE	LB6F2			; no =>
-LB6F1:	JMP	@#LB724			; !!MUT-ARG!! => run Room initialization code
 LB6F2:	CMPB	R0, #200
 	BHIS	RTOK80			; => token #80..#BF
 	BR	RTOK40			; => token #40..#7F
@@ -2167,6 +1988,35 @@ LB6F4:	PUSH	R3			; Save address in the room sequence
 	MOV	LB706(R0), R0		; get token procedure address
 	JMP	@R0			; => run token procedure
 ;NOTE: Room token procedures return to LB702 to continue the loop
+
+; Room token #0F: End of sequence + initialization; params: 3 bytes (dog, guard, turet)
+RTOK0F:	POP	R3
+	INC	R3			; Skip token byte
+	MOVB	(R3)+, R0		; get Dog index
+	BMI	10$			; => skip Dog initialization
+	PUSH	R3
+	ASL	R0
+	MOV	LACA2(R0), R3		; get Dog data address
+	CALL	INDOG			; Initialize a Dog
+	POP	R3
+10$:	MOVB	(R3)+, R0		; get Guard index
+	BMI	20$			; => skip Guard initialization
+	PUSH	R3
+	ASL	R0
+	MOV	LAC72(R0), R3		; get Guard data address
+	CALL	INGARD			; Initialize a Guard
+	POP	R3
+20$:	MOVB	(R3)+, R0		; get Turett index
+	BMI	30$			; => skip Turett initialization
+	PUSH	R3
+	ASL	R0
+	MOV	TTURGA(R0), R3		; get Turett data address
+	CALL	INTURG			; Initialize a Turett
+	POP	R3
+30$:	BR	LB6F1			; => run Room initialization code
+; Room token #00: End of sequence
+RTOK00:	POP	R3
+LB6F1:	JMP	@#LB724			; !!MUT-ARG!! => run Room initialization code
 
 ; Tokens #40..#7F: Copy block of tiles; params: 4 bytes (width, height, offset); source = lower bits of token
 ; R3 = token sequence address; R0 = token
@@ -2223,7 +2073,13 @@ RTOK0E:	POP	R3			; Restore token sequence address
 	SWAB	R2
 	PUSH	R3
 	MOVB	R0, TLSCR0(R2)		; put tile into tilemap (Tile screen 0 address + offset)
-	BR	LB702			; => Proceed to the next room token
+	;BR	LB702			; => Proceed to the next room token
+;
+; Proceed to the next room token
+LB702:	POP	R3			; Restore address in the room sequence
+	INC	R3			; to next token
+	BR	LB6EE			; => continue room sequence processing
+;
 ; Room token #01: Fill to down; params: 4 bytes (count, filler, offset)
 RTOK01:	MOV	#30., R4		; shift = 30.
 L7384:	POP	R3			; Restore token sequence address
@@ -2241,14 +2097,7 @@ L7384:	POP	R3			; Restore token sequence address
 10$:	MOVB	R0, (R2)		; put tile into tilemap
 	ADD	R4, R2			; apply the shift
 	SOB	R1, 10$
-	;BR	LB702			; => Proceed to the next room token
-;
-; Proceed to the next room token
-LB702:
-	POP	R3			; Restore address in the room sequence
-	INC	R3			; to next token
-	BR	LB6EE			; => continue room sequence processing
-;
+	BR	LB702			; => Proceed to the next room token
 ; Room token #02: Fill to right; params: 4 bytes (count, filler, offset)
 RTOK02:	MOV	#1, R4			; shift = 1
 	BR	L7384
@@ -2316,8 +2165,8 @@ L73F6:	PUSH	R3
 10$:	MOVB	R0, (R2)+
 	SOB	R1, 10$
 	BR	LB702			; => Proceed to the next room token
-; Room token #00: Fill entire screen with $FF; no params
-RTOK00:	POP	R3			; Restore token sequence address
+; Room token #05: Fill entire screen with $FF; no params
+RTOK05:	POP	R3			; Restore token sequence address
 	MOVB	#377, R0		; tile byte $FF
 	BR	L73F6			; => Fill entire screen
 ;
@@ -2333,7 +2182,7 @@ L7416:	MOVB	(R0)+, (R2)+
 	SOB	R1, L7415
 	BR	LB702			; => Proceed to the next room token
 ; Room token #0F: Fill rectangle with $FF; params: 4 bytes (width, height, offset)
-RTOK0F:	POP	R3			; Restore token sequence address
+RTOK0A:	POP	R3			; Restore token sequence address
 	INC	R3			; Skip token byte
 	MOV	#377, R0		; tile byte
 	BR	L7456			; => get params and fill rectangle
@@ -2359,7 +2208,7 @@ L7465:	MOVB	R0, (R2)+
 	POP	R2
 	ADD	#30., R2
 	SOB	R1, L7463
-	BR	LB702			; => Proceed to the next room token
+	JMP	LB702			; => Proceed to the next room token
 ; Room token #10..#1F: Copy block of tiles using table TBLOK2
 RTOK1X:	MOVB	(R3)+, R5		; get the token
 	BIC	#177760, R5		; 0..15.
@@ -2377,10 +2226,6 @@ LB39D:	CLR	R2
 	ADD	#TLSCR0, R2		; + Tile screen 0 address
 	BR	L7414			; => Copy block of tiles
 
-; Room token #05: Copy block of tiles; params: 5 bytes (width, height, source, offset)
-RTOK05:		; Replaced with tokens #40..#7F
-; Room token #0A: Fill to down-right; params: 4 bytes (count, filler, offset)
-RTOK0A:		; NOT USED
 ; Room token #0B: Fill to down-left; params: 4 bytes (count, filler, offset)
 RTOK0B:		; NOT USED
 ; Room token #0C: Copy block of tiles N times; params: 5 bytes (source, width, count, offset)
@@ -2390,22 +2235,22 @@ RTOK0D:
 	HALT	; DO NOTHING, we're not processing this token
 
 ; Table of Room tokens
-LB706:	.WORD	RTOK00	; #00: Fill entire screen with $FF; no params
+LB706:	.WORD	RTOK00	; #00: End of sequence
 	.WORD	RTOK01	; #01: Fill to down; params: 4 bytes (count, filler, address)
 	.WORD	RTOK02	; #02: Fill to right; params: 4 bytes (count, filler, address)
 	.WORD	RTOK03	; #03: Fill rectangle; params: 5 bytes (filler, width, height, address)
 	.WORD	RTOK04	; #04: Fill whole Tile screen 0 with one tile; params: 1 byte (filler)
-	.WORD	RTOK05	; #05: NOT USED
+	.WORD	RTOK05	; #05: Fill entire screen with $FF; no params
 	.WORD	RTOK06	; #06: Fill triangle from wide top; params: 4 bytes (filler, count, address)
 	.WORD	RTOK07	; #07: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
 	.WORD	RTOK08	; #08: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
 	.WORD	RTOK09	; #09: Fill triangle from wide top; params: 4 bytes (filler, count, address)
-	.WORD	RTOK0A	; #0A: NOT USED
+	.WORD	RTOK0A	; #0A: Fill rectangle with $FF; params: 4 bytes (width, height, offset)
 	.WORD	RTOK0B	; #0B: NOT USED
 	.WORD	RTOK0C	; #0C: NOT USED
 	.WORD	RTOK0D	; #0D: NOT USED
 	.WORD	RTOK0E	; #0E: Put one tile at the given address; params: 3 bytes (tile, address)
-	.WORD	RTOK0F	; #0F: Fill rectangle with $FF; params: 4 bytes (width, height, offset)
+	.WORD	RTOK0F	; #0F: End of sequence + initialization
 	;.WORD	RTOK1X  ; #10: Put 3x3 barrel block $7C21; params: 2 bytes (offset)
 	;.WORD	RTOK1X  ; #11: Put 3x3 box block 71A0; params: 2 bytes (offset)
 	;.WORD	RTOK1X  ; #12: Put 2x4 console block 71BB; params: 2 bytes (offset)
@@ -2425,8 +2270,9 @@ LB706:	.WORD	RTOK00	; #00: Fill entire screen with $FF; no params
 
 ; Finish room initialization
 ; Called to finish room initialization from room initialization procedure
-LB724:	MOV	#TLSCR1, R3		; Tile screen 1 start address
+LB724:
 LB422 = LB724
+	MOV	#TLSCR1, R3		; Tile screen 1 start address
 	MOV	#<510./2>, R1
 10$:	MOV	#401, (R3)+		; put two bytes $01
 	SOB	R1, 10$
@@ -3765,14 +3611,6 @@ LC643:	MOV	#LC5C6, R3		; Movement handler address: Ninja falling
 	MOV	#LD582, R2		; Sprite Ninja falling
 	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
-; Room 791E (room with pier) initialization
-LC64C:	MOV	#LC65A, R3
-	MOV	#<TLSCR0+220.>, R2	; = (Tile screen 0) + 7 rows + 10.
-	MOV	#17., R1
-LC655:	MOVB	(R3)+, (R2)+		; copy bytes to Background
-	SOB	R1, LC655
-	JMP	LB724			; => Finish room initialization
-
 ; Room 93DF/947C (room right from Train) initialization
 LC671:	MOV	#RM947C, <RM7C9C+4>	; set "room to left" for room 7C9C
 	MOV	#RM93DF, <RM7C9C+6>	; set "room to right" for room 7C9C
@@ -4069,5 +3907,59 @@ TLSCR3:	.BLKB	510.
 TLSCR4:	.BLKB	510.
 ; Tile screen 5 30x17 tiles, 510 bytes - front
 TLSCR5:	.BLKB	510.
+
+;------------------------------------------------------------------------------
+
+LA0DF = LB724	; Room 94AB initialization (reduced)
+LA0E8 = LB724	; Room 7DA9 initialization (reduced)
+LA0ED = LB724	; Room 7E8C initialization (reduced)
+LA0F2 = LB724	; Room 920A initialization (reduced)
+LA0F7 = LB724	; Room 8F84 initialization (reduced)
+LA0FC = LB724	; Room 8B71 initialization (reduced)
+LA101 = LB724	; Room 8739 initialization (reduced)
+LA106 = LB724	; Room 858F initialization (reduced)
+LA10B = LB724	; Room 84EE initialization (reduced)
+LA110 = LB724	; Room 99A6 initialization (reduced)
+LA115 = LB724	; Room 97F8 initialization (reduced)
+LA11A = LB724	; Room 94CF initialization (reduced)
+LA11F = LB724	; Room 9B51 initialization (reduced)
+LA124 = LB724	; Room 9F3A initialization (reduced)
+LA129 = LB724	; Room 9F7E initialization (reduced)
+LA12E = LB724	; Room 9EB8 initialization (reduced)
+LA133 = LB724	; Room 9B19 initialization (reduced)
+LA138 = LB724	; Room 9DF5 initialization (reduced)
+LA142 = LB724	; Room 7A17 initialization (reduced)
+LA14A = LB724	; Room 7D5A initialization (reduced)
+LA14F = LB724	; Room 7F48 initialization (reduced)
+LA154 = LB724	; Room 7EF2 initialization (reduced)
+LA15F = LB724	; Room 909F initialization (reduced)
+LA16A = LB724	; Room 8FBD initialization (reduced)
+LA16F = LB724	; Room 92A7 initialization (reduced)
+LA174 = LB724	; Room 8B25 initialization (reduced)
+LA179 = LB724	; Room 8526 initialization (reduced)
+LA183 = LB724	; Room 95D6 initialization (reduced)
+LA188 = LB724	; Room 968A initialization (reduced)
+LA192 = LB724	; Room 9A9A initialization (reduced)
+LA197 = LB724	; Room 9552 initialization (reduced)
+LA19C = LB724	; Room 9BE7 initialization (reduced)
+LA1A1 = LB724	; Room 8D5C initialization (reduced)
+LA1A6 = LB724	; Room 7C2E initialization (reduced)
+LA1B5 = LB724	; Room 7F9C initialization (reduced)
+LA1C0 = LB724	; Room 8162 initialization (reduced)
+LA1CB = LB724	; Room 80A7 initialization (reduced)
+LA1D6 = LB724	; Room 9B9D initialization (reduced)
+LA353 = LB724	; Room 81E5 initialization (reduced)
+LA35C = LB724	; Room 7E05 initialization (reduced)
+LA361 = LB724	; Room 83ED initialization (reduced)
+LA366 = LB724	; Room 924E initialization (reduced)
+LA36B = LB724	; Room 91BA initialization (reduced)
+LA370 = LB724	; Room 90DB initialization (reduced)
+LA375 = LB724	; Room 8802 initialization (reduced)
+LA37A = LB724	; Room 8608 initialization (reduced)
+LA37F = LB724	; Room 844E initialization (reduced)
+LA384 = LB724	; Room 9739 initialization (reduced)
+LA389 = LB724	; Room 9A5A initialization (reduced)
+LA38E = LB724	; Room 80F6 initialization (reduced)
+LB42E = LB724	; Room 79C6 initialization (reduced)
 
 ;------------------------------------------------------------------------------
