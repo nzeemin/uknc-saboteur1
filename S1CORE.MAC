@@ -1005,7 +1005,7 @@ LA3D1:	CMPB	NJAY, GARDY		; compare Ninja Y to Guard Y
 10$:	TSTB	LA3A6			; Object #2 active?
 	BNE	99$			; yes => return
 	POP	R3
-	MOVB	20., GARDST		; set Guard state = $14 = throwing a knife
+	MOVB	#20., GARDST		; set Guard state = $14 = throwing a knife
 	MOV	#LD504, LA70F		; set Sprite Ninja/Guard punching
 	JMP	DRGARD			; => Draw Guard on tilemap
 
@@ -1098,9 +1098,27 @@ LA4E7:	CMPB	R0, #20.
 ; Guard state = $14 = throwing a knife
 	MOVB	#4, (R3)		; set Guard state = $04
 	MOV	#LD486, LA70F		; set Guard sprite = Guard standing
-	;TODO
-	HALT
-
+	MOV	#60., R2
+	CLR	R4			; B = 0
+	MOV	#3, R1			; C = 3
+	TSTB	GARDDI			; check Guard direction
+	BEQ	LA50B
+	MOV	#65., R2
+	MOV	#5, R4			; B = 5
+	MOV	R4, R1			; C = 5
+LA50B:	MOV	GARDPO, R3		; get Guard position
+	ADD	R2, R3
+	MOV	#LA3A6, R5		; 2nd object address
+	MOVB	#312, LA3A6		; set object tile
+	MOV	R3, <LA3A6+2>		; set object position
+	MOVB	R1, <LA3A6+4>
+	MOVB	R1, <LA3A6+5>
+	MOVB	GARDX, R0		; get Guard X
+	ADD	R4, R0			; + B
+	MOVB	R0, <LA3A6+7>		; set object X
+	MOVB	GARDY, R0
+	ADD	#2, R0
+	MOVB	R0, <LA3A6+6>		; set object Y
 	JMP	DRGARD			; => Draw Guard on tilemap
 ; Guard state = $0A ?
 LA52F:	CMPB	R0, #10.
@@ -2062,11 +2080,16 @@ L743D:	MOVB	(R0)+, (R2)+		; copy tile
 	SOB	R1, L743A
 	BR	LB702			; => Proceed to the next room token
 ;
+; Room token #0D: Put one tile $2A at the given address; params: 2 bytes (offset)
+RTOK0D:	POP	R3			; Restore token sequence address
+	INC	R3			; Skip token byte
+	MOV	#052, R0		; tile $2A
+	BR	L7351			; => get offset and do fill
 ; Room token #0E: Put one tile at the given address; params: 3 bytes (tile, offset)
 RTOK0E:	POP	R3			; Restore token sequence address
 	INC	R3			; Skip token byte
 	MOVB	(R3)+, R0		; get tile byte
-	CLR	R2
+L7351:	CLR	R2
 	BISB	(R3)+, R2		; get offset low byte
 	SWAB	R2
 	BISB	(R3), R2		; get offset high byte
@@ -2080,14 +2103,20 @@ LB702:	POP	R3			; Restore address in the room sequence
 	INC	R3			; to next token
 	BR	LB6EE			; => continue room sequence processing
 ;
+; Room token #0B: Fill to down N tiles with $2B; params: 3 bytes (count, offset)
+RTOK0B:	MOV	#30., R4		; shift = 30.
+	POP	R3			; Restore address in the room sequence
+	INC	R3			; to next token
+	MOVB	(R3)+, R1		; get count byte, up to 11.
+	MOVB	#053, R0		; tile byte = $2B
+	BR	L738A			; => get offset and do fill
 ; Room token #01: Fill to down; params: 4 bytes (count, filler, offset)
 RTOK01:	MOV	#30., R4		; shift = 30.
 L7384:	POP	R3			; Restore token sequence address
 	INC	R3			; Skip token byte
-	CLR	R1
-	BISB	(R3)+, R1		; get count byte
+	MOVB	(R3)+, R1		; get count byte, up to 17.
 	MOVB	(R3)+, R0		; get tile byte
-	CLR	R2
+L738A:	CLR	R2
 	BISB	(R3)+, R2		; get offset low byte
 	SWAB	R2
 	BISB	(R3), R2		; get offset high byte
@@ -2101,6 +2130,14 @@ L7384:	POP	R3			; Restore token sequence address
 ; Room token #02: Fill to right; params: 4 bytes (count, filler, offset)
 RTOK02:	MOV	#1, R4			; shift = 1
 	BR	L7384
+; Room token #0C: Fill to right with $FF; params: 3 bytes (count, offset)
+RTOK0C:	MOV	#1, R4			; shift = 1
+	POP	R3			; Restore token sequence address
+	INC	R3			; Skip token byte
+	CLR	R1
+	BISB	(R3)+, R1		; get count byte
+	MOVB	#377, R0		; get tile byte
+	BR	L738A			; => get offset and do fill
 ; Room token #06: Fill triangle from wide top; params: 4 bytes (filler, count, offset)
 RTOK06:	MOV	#1, R4			; shift = 1
 L73A6:	POP	R3			; Restore token sequence address
@@ -2226,14 +2263,6 @@ LB39D:	CLR	R2
 	ADD	#TLSCR0, R2		; + Tile screen 0 address
 	BR	L7414			; => Copy block of tiles
 
-; Room token #0B: Fill to down-left; params: 4 bytes (count, filler, offset)
-RTOK0B:		; NOT USED
-; Room token #0C: Copy block of tiles N times; params: 5 bytes (source, width, count, offset)
-RTOK0C:		; Replaced with tokens #80..#BF
-; Room token #0D: Set border color; params: 1 byte
-RTOK0D:
-	HALT	; DO NOTHING, we're not processing this token
-
 ; Table of Room tokens
 LB706:	.WORD	RTOK00	; #00: End of sequence
 	.WORD	RTOK01	; #01: Fill to down; params: 4 bytes (count, filler, address)
@@ -2246,9 +2275,9 @@ LB706:	.WORD	RTOK00	; #00: End of sequence
 	.WORD	RTOK08	; #08: Fill triangle from wide bottom; params: 4 bytes (filler, count, address)
 	.WORD	RTOK09	; #09: Fill triangle from wide top; params: 4 bytes (filler, count, address)
 	.WORD	RTOK0A	; #0A: Fill rectangle with $FF; params: 4 bytes (width, height, offset)
-	.WORD	RTOK0B	; #0B: NOT USED
-	.WORD	RTOK0C	; #0C: NOT USED
-	.WORD	RTOK0D	; #0D: NOT USED
+	.WORD	RTOK0B	; #0B: Fill to down N tiles with $2B; params: 3 bytes (count, offset)
+	.WORD	RTOK0C	; #0C: Fill to right with $FF; params: 3 bytes (count, offset)
+	.WORD	RTOK0D	; #0D: Put one tile $2A at the given address; params: 2 bytes (offset)
 	.WORD	RTOK0E	; #0E: Put one tile at the given address; params: 3 bytes (tile, address)
 	.WORD	RTOK0F	; #0F: End of sequence + initialization
 	;.WORD	RTOK1X  ; #10: Put 3x3 barrel block $7C21; params: 2 bytes (offset)
@@ -2267,6 +2296,7 @@ LB706:	.WORD	RTOK00	; #00: End of sequence
 	;.WORD	RTOK1X  ; #1D: Put 4x3 pier fencing block 7194; params: 2 bytes (offset)
 	;.WORD	RTOK1X  ; #1E: Put 1x4 lift part block 9372; params: 2 bytes (offset)
 	;.WORD	RTOK1X  ; #1F: Put 3x1 box block 7E87; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #20: Put 3x1 element block 9996; params: 2 bytes (offset)
 
 ; Finish room initialization
 ; Called to finish room initialization from room initialization procedure
