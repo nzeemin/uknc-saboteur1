@@ -8,7 +8,7 @@
 ; Set PPU command and wait for acknowledgement
 .MACRO	PPUCMW	X
 	MOV	X, @#PPUCOM
-	TST	@#PpuComm
+	TST	@#PPUCOM
 	BNE	.-4
 .ENDM
 
@@ -250,7 +250,7 @@ PEXIT:	MTPS	#200
 	SOB	R3, .-2
 	MOV	BKP054, @#177054
 ; signal to CPU: we're finished
-	MOV	#PpuComm/2, @#177010
+	MOV	#PPUCOM/2, @#177010
 	CLR	@#177014
 	MTPS	#0
 	RETURN
@@ -314,23 +314,23 @@ VSYINT:
 SNDADR:	.WORD	0
 
 ; Start to play sound; R0 = sound number multiplied by 4
-PSOUND:	CALL	TIMRIN
-	ASR	R0			; divide by 2
-	ADD	PC, R0
-	ADD	#SNDTAB-., R0
-	ADD	(R0), R0
-	BEQ	99$
-	MOV	(R0)+, R1
-	BEQ	99$
-	MOV	R0, SNDADR
-	MOV	R1, @#177712		; load counter
-	TST	@#177714
-	TST	@#177714
-	BIC	#200, @#177716		; sound to LO
-	MOV	PC, R0
-	ADD	#SNINTH+2-., R0		; set sound interrupt to HI
-	MOV	R0, @#304
-	MOV	#^B01000111, @#177710	; allow int, start, timer = (..FFS) FF = 00 - 2mks, 01 - 4mks, 10 - 8mks, 11 - 16mks
+PSOUND:	;CALL	TIMRIN
+	;ASR	R0			; divide by 2
+	;ADD	PC, R0
+	;ADD	#SNDTAB-., R0
+	;ADD	(R0), R0
+	;BEQ	99$
+	;MOV	(R0)+, R1
+	;BEQ	99$
+	;MOV	R0, SNDADR
+	;MOV	R1, @#177712		; load counter
+	;TST	@#177714
+	;TST	@#177714
+	;BIC	#200, @#177716		; sound to LO
+	;MOV	PC, R0
+	;ADD	#SNINTH+2-., R0		; set sound interrupt to HI
+	;MOV	R0, @#304
+	;MOV	#^B01000111, @#177710	; allow int, start, timer = (..FFS) FF = 00 - 2mks, 01 - 4mks, 10 - 8mks, 11 - 16mks
 99$:	JMP	PDONE			; return to PPU main loop
 
 ; sound timer interrupt (LO)

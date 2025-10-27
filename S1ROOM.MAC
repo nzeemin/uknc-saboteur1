@@ -373,14 +373,13 @@ RM7F48:	; Room 7F48
 	.BYTE	007, 001, 005, 110,000	; Triangle with 01, count=5 at 65D8
 	.BYTE	210, 002, 015, 002,000	; Block 2 tiles from 7C9A to 6592 copy 13 times
 	.BYTE	210, 002, 016, 024,000	; Block 2 tiles from 7C9A to 65A4 copy 14 times
-L7F7A:	.BYTE	016, 344, 316,000	; Put tile E4 at 665E
+L7F7A:	.BYTE	016, 344, 316,000	; Put tile E4 at 665E - trigger "A", token $0E/$28
 	.BYTE	030, 117,013	; Block 3x3 tiles from 7C18 to 70DF
 	.BYTE	103, 001, 003, 262,001	; Block 1x3 tiles from 7B4F to 6742
 	.BYTE	103, 001, 003, 273,001	; Block 1x3 tiles from 7B4F to 674B
 	.BYTE	102, 002, 003, 256,001	; Block 2x3 tiles from 7984 to 673E
 	.BYTE	017, 377,201	; End of sequence + initialization
 	.EVEN
-L7F7B = L7F7A + 1		; trigger "A"
 RM7F9C:	; Room 7F9C
 	.WORD	LB458		; Room procedure
 	.WORD	LA1B5		; Initialization
@@ -1296,12 +1295,11 @@ RM8D5C:	; Room 8D5C
 	.BYTE	021, 154,013	; Block 3x3 tiles from 71A0 to 70FC
 	.BYTE	021, 157,013	; Block 3x3 tiles from 71A0 to 70FF
 	.BYTE	021, 163,013	; Block 3x3 tiles from 71A0 to 7103
-L8DBB:	.BYTE	016, 377, 324,000	; Put tile FF at 6664
+L8DBB:	.BYTE	016, 377, 324,000	; Put tile FF at 6664 - trigger "C" - token $0E/$26
 	.BYTE	013, 350,012	; Put tile 2A at 7078
 	.BYTE	045, 053, 006,013	; Fill vert 6 tiles with 2B at 7096
 	.BYTE	017, 377,204	; End of sequence + initialization
 	.EVEN
-L8DBC = L8DBB + 1		; trigger "C"
 RM8DCA:	; Room 8DCA
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization
@@ -1378,7 +1376,7 @@ RM8F20:	; Room 8F20
 	.WORD	RM8E9C		; Room to Up
 	.WORD	RM8F84		; Room to Down
 	.BYTE	014, 016, 000,000	; Fill horz 14 tiles with FF at 6590
-L8F31:	.BYTE	016, 377, 006,000	; Put tile FF at 6596
+L8F31:	.BYTE	016, 377, 006,000	; Put tile FF at 6596 - trigger "B"
 	.BYTE	013, 032,012	; Put tile 2A at 6FAA
 	.BYTE	013, 037,012	; Put tile 2A at 6FAF
 	.BYTE	046, 053, 070,012	; Fill vert 7 tiles with 2B at 6FC8
@@ -1395,7 +1393,6 @@ L8F31:	.BYTE	016, 377, 006,000	; Put tile FF at 6596
 	.BYTE	004, 005, 372, 007,001	; Fill horz 5 tiles with FA at 6697
 	.BYTE	000		; End of sequence
 	.EVEN
-L8F32 = L8F31 + 1		; trigger "B"
 RM8F84:	; Room 8F84
 	.WORD	L7918		; Room procedure
 	.WORD	LA0F7		; Initialization
@@ -1924,13 +1921,12 @@ RM9739:	; Room 9739
 	.BYTE	012, 013, 012, 000,000	; Rect 11x10 tiles with FF at 6590
 	.BYTE	010, 000, 006, 202,000	; Triangle with 00, count=6 at 6612
 	.BYTE	014, 042, 334,001	; Fill horz 34 tiles with FF at 676C
-L9755:	.BYTE	016, 344, 020,001	; Put tile E4 at 66A0
+L9755:	.BYTE	016, 344, 020,001	; Put tile E4 at 66A0 - trigger "D", token $0E/$26
 	.BYTE	056, 072, 032,000	; Fill vert 15 tiles with 3A at 65AA
 	.BYTE	032, 346,001	; Block 2x1 tiles from 889D to 6776
 	.BYTE	201, 002, 020, 014,000	; Block 2 tiles from 7348 to 659C copy 16 times
 	.BYTE	017, 001,377	; End of sequence + initialization
 	.EVEN
-L9756 = L9755 + 1		; trigger "D": height 1 or 7.
 RM976E:	; Room 976E
 	.WORD	LB41F		; Room procedure
 	.WORD	LB422		; Initialization

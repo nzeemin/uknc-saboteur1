@@ -572,17 +572,17 @@ LE217:	.ASCII	/EXTREMELY EASY/
 ;   +$02: Turret counter value
 ;   +$03/$04: two digits for TIME value
 ;   +$05/$06: two digits for BOMB timer
-;   +$07: flag for wall in room 97A6
-;   +$08: count for wall in room 9739: $01 = no wall, $07 = put wall
-;   +$09: count for wall in room 7F48
-;   +$0A: count for wall in room 8D5C
-;   +$0B: count for wall in room 8F20: $01 = no wall, $09 = put wall
+;   +$07: flag for wall in room 97A6: trigger "E", tile $00/$FF
+;   +$08: flag for wall in room 9739: trigger "D", token $0E/$26
+;   +$09: flag for wall in room 7F48: trigger "A", token $0E/$27
+;   +$0A: flag for wall in room 8D5C: trigger "C", token $0E/$26
+;   +$0B: flag for wall in room 8F20: trigger "B", token $0E/$28
 ;   +$10/$11: room for BOMB placement
 ;   +$12/$13: address in Tile screen 0 for BOMB placement
 ; Level 1 "EXTREMELY EASY"
 LE38C:	.BYTE	20.,25.,50.
 	.ASCII	/9999/
-	.BYTE	000,001,001,001,001
+	.BYTE	000,016,016,016,016
 	.ASCII	/ 10/
 	.BYTE	10.
 	.WORD	RM9E22
@@ -590,7 +590,7 @@ LE38C:	.BYTE	20.,25.,50.
 ; Level 2 "VERY EASY"
 LE3A0:	.BYTE	18.,15.,45.
 	.ASCII	/9995/
-	.BYTE	000,001,001,001,001
+	.BYTE	000,016,016,016,016
 	.ASCII	/ 20/
 	.BYTE	024
 	.WORD	RM9E22
@@ -598,7 +598,7 @@ LE3A0:	.BYTE	18.,15.,45.
 ; Level 3 "EASY"
 LE3B4:	.BYTE	16.,12.,40.
 	.ASCII	/9590/
-	.BYTE	000,007,001,001,001
+	.BYTE	000,046,016,016,016
 	.ASCII	/ 30/
 	.BYTE	036
 	.WORD	RM924E
@@ -606,7 +606,7 @@ LE3B4:	.BYTE	16.,12.,40.
 ; Level 4 "SLIGHTLY EASY"
 LE3C8:	.BYTE	14.,10.,35.
 	.ASCII	/9080/
-	.BYTE	377,001,001,001,011
+	.BYTE	377,016,016,016,050
 	.ASCII	/ 50/
 	.BYTE	062
 	.WORD	RM8608
@@ -614,7 +614,7 @@ LE3C8:	.BYTE	14.,10.,35.
 ; Level 5 "MODERATE"
 LE3DC:	.BYTE	12.,9.,30.
 	.ASCII	/9070/
-	.BYTE	377,001,001,007,001
+	.BYTE	377,016,016,046,016
 	.ASCII	/ 70/
 	.BYTE	106
 	.WORD	RM8689
@@ -622,7 +622,7 @@ LE3DC:	.BYTE	12.,9.,30.
 ; Level 6 "SLIGHTLY HARD"
 LE3F0:	.BYTE	10.,7.,25.
 	.ASCII	/8560/
-	.BYTE	377,007,001,007,001
+	.BYTE	377,046,016,046,016
 	.ASCII	/100/
 	.BYTE	144
 	.WORD	RM8BAB
@@ -630,7 +630,7 @@ LE3F0:	.BYTE	10.,7.,25.
 ; Level 7 "HARD"
 LE404:	.BYTE	8.,6.,20.
 	.ASCII	/8550/
-	.BYTE	377,007,010,007,001
+	.BYTE	377,046,047,046,016
 	.ASCII	/130/
 	.BYTE	202
 	.WORD	RM8D5C
@@ -638,7 +638,7 @@ LE404:	.BYTE	8.,6.,20.
 ; Level 8 "VERY HARD"
 LE418:	.BYTE	5.,5.,15.
 	.ASCII	/8050/
-	.BYTE	377,007,010,007,011
+	.BYTE	377,046,047,046,050
 	.ASCII	/170/
 	.BYTE	252
 	.WORD	RM8279
@@ -646,7 +646,7 @@ LE418:	.BYTE	5.,5.,15.
 ; Level 9 "EXTREMELY HARD"
 LE42C:	.BYTE	2.,3.,10.
 	.ASCII	/7040/
-	.BYTE	377,007,010,007,011
+	.BYTE	377,046,047,046,050
 	.ASCII	/250/
 	.BYTE	372
 	.WORD	RM8608
@@ -659,8 +659,7 @@ LAD57:	.ASCII	/99/			; Indicator time value
 LAD59:	.ASCII	/HELDTIMENEAR/
 LBD2F:	.ASCII	/BOMB/			; "BOMB" message
 
-;LDEE6:	.ASCII	/                /	; String 18 spaces
-
+; Menu
 TITLE:	.ASCII	/SABOTEUR 1 UKNC/
 VERSIO:
 .INCLUDE /VERSIO.MAC/
@@ -684,7 +683,7 @@ LC062:	.ASCII	/DISK RETRIEVED/
 LC070:	.ASCII	/DISK /			; "DISK BONUS:"
 LC075:	.ASCII	/BONUS: $05000/
 LC082:	.ASCII	/LEVEL /
-LE1EC:	.ASCII	/1/	; Current Level digit
+LEVED:	.ASCII	/1/	; Current Level digit
 LC087:	.ASCII	/TOTAL PAY : $/
 
 LE388:	.ASCII	/ 10/
@@ -693,6 +692,8 @@ LE388:	.ASCII	/ 10/
 ;LB061:	.ASCII	/00  $/
 
 ;LB0E8:	.ASCII	/          /		; String 10 spaces
+
+;LDEE6:	.ASCII	/                /	; String 18 spaces
 
 ;------------------------------------------------------------------------------
 
@@ -983,7 +984,7 @@ L9DF1:	SOB	R1, NRJDEC
 	RETURN
 
 ; Room 97A6 initialization (reduced)
-LB368:	MOVB	L97D0, <TLSCR0+357>	; copy trigger "E" value
+LB368:	MOVB	L97D0, <TLSCR0+357.>	; copy trigger "E" value
 	JMP	LB422			; Standard room initialization
 
 ; Ninja and Guard in 12. tiles by X
@@ -1660,24 +1661,24 @@ LB29B:	CLR	R0
 ;------------------------------------------------------------------------------
 
 ; Object procedure: flip trigger "D": set/remove wall in room 9739
-LB320:	MOV	#6, R0			; value for XOR
-	MOV	#L9756, R1		; address for XOR
+LB320:	MOV	#050, R0		; value for XOR, to switch token $0E/$26
+	MOV	#L9755, R1		; address for XOR
 	BR	LB34B			; XOR and => Change Console color in NEAR
 ; Object procedure: flip trigger "E": set/remove wall in room 97A6
-LB32A:	MOV	#377, R0		; value for XOR
+LB32A:	MOV	#377, R0		; value for XOR, to switch tile $00/$FF
 	MOV	#L97D0, R1		; address for XOR
 	BR	LB34B			; XOR and => Change Console color in NEAR
 ; Object procedure: flip trigger "C": set/remove wall in room 8D5C
-LB334:	MOV	#6, R0			; value for XOR
-	MOV	#L8DBC, R1		; address for XOR
+LB334:	MOV	#050, R0		; value for XOR, to switch token $0E/$26
+	MOV	#L8DBB, R1		; address for XOR
 	BR	LB34B			; XOR and => Change Console color in NEAR
 ; Object procedure: flip trigger "B": set/remove wall in room 8F20
-LB33E:	MOV	#8., R0			; value for XOR
-	MOV	#L8F32, R1		; address for XOR
+LB33E:	MOV	#046., R0		; value for XOR, to switch token $0E/$28
+	MOV	#L8F31, R1		; address for XOR
 	BR	LB34B			; XOR and => Change Console color in NEAR
 ; Object procedure: flip trigger "A": set/remove wall in room 7F48
-LB348:	MOV	#9., R0			; value for XOR
-	MOV	#L7F7B, R1		; address for XOR
+LB348:	MOV	#051., R0		; value for XOR, to switch token $0E/$27
+	MOV	#L7F7A, R1		; address for XOR
 LB34B:	MOVB	(R1), R5
 	XOR	R0, R5
 	MOVB	R5, (R1)
@@ -2253,7 +2254,7 @@ L7465:	MOVB	R0, (R2)+
 	JMP	LB702			; => Proceed to the next room token
 ; Room token #10..#20: Copy block of tiles using table TBLOK2
 RTOK1X:	MOVB	(R3)+, R5		; get the token
-	BIC	#177760, R5		; 0..15.
+	SUB	#20, R5			; 0..16.
 	ASL	R5
 	ASL	R5			; * 4
 	ADD	#TBLOK2, R5		; + table address
@@ -2270,11 +2271,11 @@ LB39D:	CLR	R2
 
 ; Table of Room tokens
 LB706:	.WORD	RTOK00	; #00: End of sequence; no params
-	.WORD	RTOKFI	; #01: Fill entire screen with $01; no params
+	.WORD	RTOKFI	; #01: Fill whole Tile screen 0 with $01; no params
 	.WORD	RTOKFI	; #02: Fill whole Tile screen 0 with $02; no params
 	.WORD	RTOK03	; #03: Fill rectangle; params: 5 bytes (filler, width, height, offset)
 	.WORD	RTOK04	; #04: Fill to right; params: 4 bytes (count, filler, offset)
-	.WORD	RTOK05	; #05: Fill entire screen with $FF; no params
+	.WORD	RTOK05	; #05: Fill whole Tile screen 0 with $FF; no params
 	.WORD	RTOK06	; #06: Fill triangle from wide top; params: 4 bytes (filler, count, offset)
 	.WORD	RTOK07	; #07: Fill triangle from wide bottom; params: 4 bytes (filler, count, offset)
 	.WORD	RTOK08	; #08: Fill triangle from wide bottom; params: 4 bytes (filler, count, offset)
@@ -2282,7 +2283,7 @@ LB706:	.WORD	RTOK00	; #00: End of sequence; no params
 	.WORD	RTOK0A	; #0A: Fill rectangle with $FF; params: 4 bytes (width, height, offset)
 	.WORD	RTOK0B	; #0B: Put one tile $2A at the given offset; params: 2 bytes (offset)
 	.WORD	RTOK0C	; #0C: Fill to right with $FF; params: 3 bytes (count, offset)
-	.WORD	RTOKFI	; #0D: Fill entire screen with $0D; no params
+	.WORD	RTOKFI	; #0D: Fill whole Tile screen 0 with $0D; no params
 	.WORD	RTOK0E	; #0E: Put one tile at the given offset; params: 3 bytes (tile, offset)
 	.WORD	RTOK0F	; #0F: End of sequence + initialization; params: 2 bytes (dog, guard/turet)
 	;.WORD	RTOK1X  ; #10: Put 3x3 barrel block $7C21; params: 2 bytes (offset)
@@ -2301,7 +2302,7 @@ LB706:	.WORD	RTOK00	; #00: End of sequence; no params
 	;.WORD	RTOK1X  ; #1D: Put 4x3 pier fencing block 7194; params: 2 bytes (offset)
 	;.WORD	RTOK1X  ; #1E: Put 1x4 lift part block 9372; params: 2 bytes (offset)
 	;.WORD	RTOK1X  ; #1F: Put 3x1 box block 7E87; params: 2 bytes (offset)
-	;.WORD	RTOK1X  ; #20: Put 3x1 element block 9996; params: 2 bytes (offset)
+	;.WORD	RTOK1X  ; #20: Put 3x1 element block 9997; params: 2 bytes (offset)
 ;NOTE: Room token #21..#30: Fill to down N tiles; params: 3 bytes (filler, offset); count/height in token lower bits
 
 ; Finish room initialization
@@ -3803,15 +3804,15 @@ LDF8E:	MOV	#LC082, R3		; "LEVEL X"
 	BLO	30$
 	CMPB	R0, #072		; '9'+1
 	BHIS	30$
-	MOVB	R0, LE1EC		; set current level digit 1..9
+	MOVB	R0, LEVED		; set current level digit 1..9
 	CALL	LEVSEL			; apply level variables
 	BR	LDF8E			; return to Menu, redraw LEVEL sign
 30$:
 	BR	10$			; continue menu loop
 ;
 ; Procedure: Apply level variables
-LEVSEL:	MOVB	LE1EC, R0		; get current level digit 1..9
-	SUB	#061, R0		; 0..8
+LEVSEL:	MOVB	LEVED, R0		; get current level digit 1..9.
+	SUB	#061, R0		; 0..8.
 	ADD	R0, R0
 	ADD	R0, R0
 	ADD	R0, R0
@@ -3821,20 +3822,20 @@ LEVSEL:	MOVB	LE1EC, R0		; get current level digit 1..9
 	ADD	#14., R0
 	MOV	(R0), R3		; now R3 = address for level variables
 ; Prepare level variables, see E325
-	MOVB	(R3)+, LA3BF		; set Guard counter value
-	MOVB	(R3)+, <L9C56+2>	; set Dog counter value
-	MOVB	(R3)+, <LB4C3+2>	; set Turret counter value
+	MOVB	(R3)+, LA3BF		; +$00: set Guard counter value
+	MOVB	(R3)+, <L9C56+2>	; +$01: set Dog counter value
+	MOVB	(R3)+, <LB4C3+2>	; +$02: set Turret counter value
 	MOV	#LAD57, R1		; address for Indicator Time value
-	MOVB	(R3)+, (R1)+		; set Indicator Time value, lower digit
-	MOVB	(R3)+, (R1)		; set Indicator Time value, higher digit
+	MOVB	(R3)+, (R1)+		; +$03: set Indicator Time value, lower digit
+	MOVB	(R3)+, (R1)		; +$04: set Indicator Time value, higher digit
 	MOV	#<LB7CA+1>, R1		; address for Time value for BOMB
-	MOVB	(R3)+, (R1)+		; set Time value for BOMB, lower digit
-	MOVB	(R3)+, (R1)		; set Time value for BOMB, higher digit
-	MOVB	(R3)+, L97D0		; set flag for wall in room RM97A6
-	MOVB	(R3)+, L9756		; set flag for wall in room RM9739
-	MOVB	(R3)+, L7F7B		; set flag for wall in room RM7F48
-	MOVB	(R3)+, L8DBC		; set flag for wall in room RM8D5C
-	MOVB	(R3)+, L8F32		; set flag for wall in room L8F20
+	MOVB	(R3)+, (R1)+		; +$05: set Time value for BOMB, lower digit
+	MOVB	(R3)+, (R1)		; +$06: set Time value for BOMB, higher digit
+	MOVB	(R3)+, L97D0		; +$07: set flag for wall in room RM97A6
+	MOVB	(R3)+, L9755		; +$08: set flag for wall in room RM9739
+	MOVB	(R3)+, L7F7A		; +$09: set flag for wall in room RM7F48
+	MOVB	(R3)+, L8DBB		; +$0A: set flag for wall in room RM8D5C
+	MOVB	(R3)+, L8F31		; +$0B: set flag for wall in room RM8F20
 	MOV	#LE388, R1
 	MOV	(R3)+, (R1)+
 	MOV	(R3)+, (R1)
@@ -3842,7 +3843,7 @@ LEVSEL:	MOVB	LE1EC, R0		; get current level digit 1..9
 	MOV	(R3)+, (R1)+		; Copy last 4 bytes: BOMB placement
 	MOV	(R3)+, (R1)
 ; Room changes according to the Level selected, see F913
-	MOVB	#4, <L89B3+1>		; patch length
+	MOVB	#4, <L89B3+1>		; patch length = 4
 	MOVB	#144, <L89B3+3>		; patch offset low byte
 	MOV	#13., R0		; H = length
 	MOV	#213, R3		; L = offset low byte
@@ -3850,17 +3851,17 @@ LEVSEL:	MOVB	LE1EC, R0		; get current level digit 1..9
 	MOV	R4, R1			; C = length
 	MOV	R4, R5			; D = length
 	MOV	#6, R2			; E = length
-	CMPB	#64, LE1EC		; compare Level to '4'
+	CMPB	LEVED, #64		; compare Level to '4'
 	BHIS	LF94D
 	MOV	#11., R2		; E = length
-	MOVB	#027, <L89B3+1>		; patch length
+	MOVB	#027, <L89B3+1>		; patch length = 23.
 	MOVB	#121, <L89B3+3>		; patch offset low byte
-	CMPB	#63, LE1EC		; compare Level to '3'
-	BHIS	LF94D
+	CMPB	LEVED, #63		; compare Level to '3'
+	BEQ	LF94D
 	MOV	#15., R1		; C = length
 	MOV	#11., R5		; D = length
-	CMPB	#62, LE1EC		; compare Level to '2'
-	BHIS	LF94D
+	CMPB	LEVED, #62		; compare Level to '2'
+	BEQ	LF94D
 	MOV	#10., R4		; B = length
 	MOV	#022, R0		; H = length
 	MOV	#206, R3		; L = offset low byte
