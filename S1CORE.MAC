@@ -716,11 +716,12 @@ L62A9:	MOV	#SCRTOP, R3		; Screen start address
 L62B1:	PUSH	R3			; save screen address
 	MOV	#<24.*8.>, R1		; Number of lines = 24. * 8.
 	MOV	R3, @#176640
-	MOV	#377, R5		; XOR value
+	;MOV	#377, R5		; XOR value
 L62B4:	MOVB	(R2)+, R0
 	MOVB	REFBFH(R0), R0		; byte mirroring
 	BIC	#177400, R0
-	XOR	R5, R0
+	;SWAB	R0
+	;XOR	R5, R0
 	MOV	R0, @#176642		; put pixels on the screen
 	ADD	#120, @#176640
 	SOB	R1, L62B4		; continue loop for lines
@@ -2768,7 +2769,7 @@ RNDSED:	.WORD	123456	; Pseudo-random seed
 
 LBC0D:
 ; Clear the screen
-	CALL	CLSRNM			; Clear screen with Blue color
+	;CALL	CLSRNM			; Clear screen with Blue color
 ; Prepare screen background for title picture
 	;TODO: Prepare screen background
 
@@ -3884,12 +3885,12 @@ LF94D:
 ; Start Mission
 LE2A7:
 ;NOTE: in the original game, here we ask for Skill Level, moved to the Menu, see LEVSEL
-	CALL	CLSRNB			; Clear the screen
 
 	MOVB	#TIMERI, TIMECN		; set initial value for the fast timer
 
 	CALL	WAITUP			; clear keyboard buffer
-	CALL	RUNPPU
+
+	CALL	RUNPPU			; Start PPU procedure, clear the screen
 	;BR	LF913
 LF913:
 	JMP	LB3B0

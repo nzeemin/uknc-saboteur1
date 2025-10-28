@@ -105,13 +105,7 @@ GETKEY:	TSTB	@#177560		; have a symbol?
 	RETURN
 
 ; Procedure: Clear screen with Blue color, for Menu screen
-CLSRNM:	MOV	#377, @#<CLSRN+2>
-	BR	CLSRN
-
-; Procedure: Clear screen with Black color, for Game screen
-CLSRNB:	CLR	@#<CLSRN+2>
-
-CLSRN:	MOV	#377, R0		; Blue color filler
+CLSRNM:	MOV	#177400, R0		; Blue color filler
 	MOV	#SCREEN + 2, @#176640
 	MOV	#208., R4
 10$:	MOV	#36., R1
@@ -233,6 +227,8 @@ PPSTA:
 	ADD	#VSYINT-., R0
 	MOV	R0, @#100
 	MOV	#200, @#102
+;
+	CALL	PCLSCR			; Clear screen
 PDONE:
 	MTPS	#0
 	MOV	#<PPUCOM/2>, @#177010	; ackn of command execution
@@ -258,6 +254,8 @@ PEXIT:	MTPS	#200
 	MOV	(R0)+, (R1)+
 	SOB	R3, .-2
 	MOV	BKP054, @#177054
+;
+	CALL	PCLSCR			; Clear screen
 ; signal to CPU: we're finished
 	MOV	#PPUCOM/2, @#177010
 	CLR	@#177014
@@ -366,6 +364,19 @@ DRTILS:
 	BNE	10$			; continue loop
 	TST	(SP)+
 	TST	(SP)+			; empty stack
+	RETURN
+
+; Clear screen in PPU
+PCLSCR:
+	MOV	#177010, R4
+	MOV	#177012, R3
+	MOV	#177014, R5
+	MOV	#100000, (R4)
+	MOV	#100000, R0
+10$:	CLR	(R5)
+	CLR	(R3)
+	INC	(R4)
+	SOB	R0, 10$
 	RETURN
 
 VSYINT:
