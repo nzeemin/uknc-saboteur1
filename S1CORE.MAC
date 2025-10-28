@@ -17,19 +17,15 @@
 CHELTH=1		; Cheat code for no damage
 CVERT =0		; Cheat code for short route to Helicopter
 
-SCREEN = 100000		; Screen start, indirect address for UKNC
-SCRTOP = SCREEN + 1200 + 4	; Where the game screen starts
-SCRIND = SCRTOP + <1200*19.>	; Screen address for first indicators line
-
 TIMERI = 200.		; Fast timer reset value, see TIMECN
 
 ;------------------------------------------------------------------------------
 ; Variables
 
 ; Game controls
-;  7   6   5   4   3   2   1   0
-;              Fr  Up  Dn  Lt  Rt
-INPUTB:	.BYTE	0	; Input bits: 000FUDLR
+;   7   6   5   4   3   2   1   0
+; Stop          Fr  Up  Dn  Lt  Rt
+INPUTB:	.BYTE	0	; Input bits: S00FUDLR
 	.EVEN
 
 ROOM:	.WORD	RM791E	; Current Room address
@@ -43,9 +39,9 @@ DOGPOS:	.WORD	398.	; Dog position in tilemap
 DOGDIR:	.BYTE	0	; Dog direction
 DOGX:	.BYTE	8.	; Dog X position
 DOGST:	.BYTE	0	; Dog state: 0 = run, 1 = changing direction, >= $42 is dead
-L71D0:	.BYTE	7	; Dog's left limit
-L71D1:	.BYTE	23.	; Dog's right limit
-L71D2:	.BYTE	0	; Dog changing direction: 0 = right to left, 1 = left to right
+DOGLTL:	.BYTE	7	; Dog's left limit
+DOGRTL:	.BYTE	23.	; Dog's right limit
+DOGDIX:	.BYTE	0	; Dog changing direction: 0 = right to left, 1 = left to right
 DOGY:	.BYTE	6	; Dog Y position
 	.EVEN
 
@@ -62,7 +58,7 @@ NJAWLK:	.BYTE	0	; Ninja walking phase
 
 L7343:	.BYTE	7	; Counter used in movement handlers
 	.EVEN
-L7344:	.BYTE	0	; Dog's flag: 1 = ignore left/right limit
+DOGNOL:	.BYTE	0	; Dog's flag: 1 = ignore left/right limit
 	.EVEN
 L7345:	.BYTE	20.	; Dog ??
 	.EVEN
@@ -740,7 +736,7 @@ L7472:	MOV	#<SCRTOP+<1200*21.>+6>, R2	; screen address
 	MOV	#15., R1
 10$:	MOV	R2, @#176640
 	MOV	#16., R4
-20$:	MOV	#177400, @#176642
+20$:	MOV	#377, @#176642
 	ADD	#120, @#176640		; next line
 	SOB	R4, 20$
 	INC	R2
@@ -764,7 +760,6 @@ L749E:	TST	NRJLO
 DRNRJC:	MOV	NRJ, R2			; 0..14.
 	ADD	#<SCRTOP+<1200*21.>+6>, R2	; screen address
 	MOV	NRJLO, R1
-	SWAB	R1 ;DEBUG Color adjustment
 	MOV	#16., R4
 	MOV	R2, @#176640
 10$:	MOV	R1, @#176642
@@ -781,22 +776,22 @@ L74D3:	MOV	LB5B0(R0), R2		; !!MUT-ARG!! get item address from the table
 	MOV	#24., R1
 L74E4:	CLR	R3			; <
 	BISB	(R2)+, R3
-	SWAB	R3 ;DEBUG Color adjustment
+	;SWAB	R3 ;DEBUG Color adjustment
 	MOV	R3, @#176642		; | copy pixels
 	INC	(R5)
 	CLR	R3
 	BISB	(R2)+, R3
-	SWAB	R3 ;DEBUG Color adjustment
+	;SWAB	R3 ;DEBUG Color adjustment
 	MOV	R3, @#176642		; | copy pixels
 	INC	(R5)
 	CLR	R3
 	BISB	(R2)+, R3
-	SWAB	R3 ;DEBUG Color adjustment
+	;SWAB	R3 ;DEBUG Color adjustment
 	MOV	R3, @#176642		; | copy pixels
 	INC	(R5)
 	CLR	R3
 	BISB	(R2)+, R3
-	SWAB	R3 ;DEBUG Color adjustment
+	;SWAB	R3 ;DEBUG Color adjustment
 	MOV	R3, @#176642		; | copy pixels
 	ADD	#<120-3>, (R5)		; |  next line
 	SOB	R1, L74E4		; repeat
@@ -827,7 +822,7 @@ L9C71:	MOVB	NJAX, R0		; get Ninja X
 	INC	R0
 	CMPB	R0, DOGX		; compare to Dog X position
 	BHIS	L9C80			; Ninja X + 1 >= Dog X =>
-L9C7B:	MOVB	#1, L7344		; set "Dog ignore left/right limit" flag
+L9C7B:	MOVB	#1, DOGNOL		; set "Dog ignore left/right limit" flag
 L9C80:	MOVB	@#DOGDIR, R0		; !!MUT-ARG!! get Dog direction
 L9C81 = L9C80 + 2	; Dog direction address
 	MOVB	R0, DOGDIR
@@ -860,24 +855,24 @@ L9CC5:	TSTB	DOGDIR			; check Dog direction
 L9CCC:	INC	DOGPOS			; increment Dog position in tilemap
 	MOV	#DOGX, R3		; Dog X position address
 	INCB	(R3)			; one tile right
-	CMPB	#1, L7344
+	CMPB	#1, DOGNOL
 	BEQ	L9CE4
-	CMPB	L71D1, (R3)		; compare to Dog's right limit
+	CMPB	DOGRTL, (R3)		; compare to Dog's right limit
 	BNE	L9D14
-L9CE4:	CLRB	L7344
-	CLRB	L71D2			; chaning direction right to left
+L9CE4:	CLRB	DOGNOL
+	CLRB	DOGDIX			; chaning direction right to left
 	MOVB	#1, DOGST		; set state = change direction
 	BR	L9D14
 ; Dog running left
 L9CF1:	DEC	DOGPOS			; decrement Dog position in tilemap
 	MOV	#DOGX, R3		; Dog X position address
 	DECB	(R3)			; one tile left
-	CMPB	#1, L7344
+	CMPB	#1, DOGNOL
 	BEQ	L9D09
-	CMPB	L71D0, (R3)		; compare to Dog's left limit
+	CMPB	DOGLTL, (R3)		; compare to Dog's left limit
 	BNE	L9D14
-L9D09:	CLRB	L7344
-	MOVB	#1, L71D2		; chaning direction left to right
+L9D09:	CLRB	DOGNOL
+	MOVB	#1, DOGDIX		; chaning direction left to right
 	MOVB	#1, DOGST		; set state = change direction
 ;
 L9D14:	MOV	#L71D5, R3
@@ -940,7 +935,7 @@ L9D78:	MOVB	(R2)+, -(R3)
 
 ; Part of Dog processing, Dog changing direction
 L9D8B:	MOV	#L7216, DOGSPR		; set Sprite Dog 4 - changing direction
-	TSTB	L71D2			; check how we change direction
+	TSTB	DOGDIX			; check how we change direction
 	BEQ	L9DB3
 ; Dog changing direction from left to right
 	TSTB	DOGDIR			; check Dog direction
@@ -1484,15 +1479,17 @@ L7231:	.WORD	0			; address in Tile screen 2
 L7233:	.WORD	0			; address in Tile screen 3
 L7235:	.WORD	0			; address in Tile screen 4
 L7237:	.WORD	0			; address in Tile screen 5
+SCRADR:	.WORD	SCRTOP+1200+1		; current screen address
 
-; Tile buffer
-LB13E:	.BLKB	8.			; Pixel bytes
-	.BYTE	0			; Attribute byte
-	.BYTE	0			; Background attribute byte
+; Tile buffer: size = TLBUFS * 12.
+; Each record: 2. bytes screen address, 8. pixel bytes, 2. attribute bytes
+TILBUF:	.BLKB	TLBUFS*12.
+TLBUFE:		; Tile buffer end
+TLBUFA:	.WORD	TLBUFE-10.		; Current address in the Tile Buffer
 
 ; Draw tile map on the screen
 DRALL:	MOV	#17., R1		; 17. rows
-	MOV	#<SCRTOP+1200+1>, @#176640	; screen address
+	MOV	#<SCRTOP+1200+1>, SCRADR	; screen address
 	MOV	#TLSCR1, R3		; start address in Tile screen 1
 	MOV	#TLSCR0, L722F		; start address in Tile screen 0
 	MOV	#TLSCR2, L7231		; start address in Tile screen 2
@@ -1507,8 +1504,8 @@ LB16F:	PUSH	R4			; save columns counter
 	MOVB	(R3), R0		; check "need update" flag in Tile screen 1
 	BNE	DRTILE			; not zero => do the tile rendering
 ; Next column
-	ADD	#1, @#176640		; screen address +1
-LB2A9:	MOV	#L722F, R3
+LB2A9:	INC	SCRADR			; screen address +1
+	MOV	#L722F, R3
 	INC	(R3)+			; next address in Tile screen 0
 	INC	(R3)+			; next address in Tile screen 2
 	INC	(R3)+			; next address in Tile screen 3
@@ -1519,28 +1516,39 @@ LB2A9:	MOV	#L722F, R3
 	POP	R4			; restore columns counter
 	SOB	R4, LB16F		; continue loop by columns
 ; Next tile row
-	ADD	#<1200-30.>, @#176640	; screen address to next row
+	ADD	#<1200-30.>, SCRADR	; screen address to next row
 	POP	R1			; restore rows counter
 	SOB	R1, LB16D		; continue loop by rows
 	RETURN
 
 ; Do the tile rendering
-DRTILE:	CLRB	(R3)			; clear "need to update" flag
+DRTILE:
+	CLRB	(R3)			; clear "need to update" flag
+; Select a record in the Tile Buffer
+	MOV	TLBUFA, R3		; get current address in Tile Buffer
+	ADD	#10., R3		; to next record
+	CMP	R3, #TLBUFE		; end of Tile Buffer?
+	BLO	10$
+	MOV	#TILBUF, R3
+10$:	TST	(R3)			; is it free?
+	BNE	10$			; wait for PPU to finish work
+	TST	(R3)+			; skip screen address word
+	MOV	R3, TLBUFA		; update current address
 ; Process Tile screen 0 - background tile
 	MOVB	@L722F, R0		; get tile from Tile screen 0
 	;CMPB	#377, R0		; $FF - "earth" background?
 	;TODO: Don't draw Ninja for background tile $FF
 	BIC	#177400, R0
-	ASL	R0
-	ASL	R0
-	ASL	R0			; * 8.
-	ADD	#LF700, R0		; + Background tiles base address
 	MOV	R0, R3
-	MOV	#LB13E, R2		; buffer address
-	MOV	(R3)+, (R2)+		; copy two bytes
-	MOV	(R3)+, (R2)+
-	MOV	(R3)+, (R2)+
-	MOV	(R3)+, (R2)+		; copied 8. bytes
+	ASL	R3
+	ASL	R3
+	ASL	R3			; * 8.
+	ADD	R0, R3			; * 9.
+	ADD	#LF700, R3		; + Background tiles base address
+	MOV	TLBUFA, R2		; buffer address
+	.REPT	9.			; copy 8. pixel bytes + attr byte
+	MOVB	(R3)+, (R2)+
+	.ENDR
 ; Process Tile screen 2 tile - Ninja
 LB1A3:	MOV	L7231, R3		; get address in Tile scrren 2
 	MOVB	(R3), R0		; get tile from Tile screen 2
@@ -1554,7 +1562,7 @@ LB1A3:	MOV	L7231, R3		; get address in Tile scrren 2
 	ADD	#LE700, R0		; + Ninja tiles base address
 	MOV	R0, R3			; now HL = tile data address
 	MOV	#8., R1			; 8 bytes
-	MOV	#LB13E, R2		; tile buffer address
+	MOV	TLBUFA, R2		; tile buffer address
 LB1E4:	MOVB	(R2), R0		; get byte from the buffer
 	MOVB	(R3)+, R5		; get mask byte
 	TSTB	NJADIR			; check direction
@@ -1582,7 +1590,7 @@ LB1FC:	MOV	L7233, R3		; get address in Tile scrren 3
 	ADD	#LF0F0, R0		; + Dog tiles base address
 	MOV	R0, R3			; now HL = tile data address
 	MOV	#8., R1
-	MOV	#LB13E, R2		; tile buffer address
+	MOV	TLBUFA, R2		; tile buffer address
 LB218:	MOVB	(R2), R0		; get byte from the buffer
 	MOVB	(R3)+, R5		; get mask byte
 	TSTB	DOGDIR			; check Dog direction
@@ -1609,7 +1617,7 @@ LB230:	MOV	L7235, R3		; get address in Tile scrren 4
 	ADD	#LE700, R0		; + Guard tiles base address
 	MOV	R0, R3			; now HL = tile data address
 	MOV	#8., R1
-	MOV	#LB13E, R2		; tile buffer address
+	MOV	TLBUFA, R2		; tile buffer address
 LB24B:	MOVB	(R2), R0		; get byte from the buffer
 	MOVB	(R3)+, R5		; get mask byte
 	TSTB	GARDDI			; check direction
@@ -1632,30 +1640,29 @@ LB263:	MOV	L7237, R3		; get address in Tile scrren 5
 	BHIS	5$
 	SUB	#<365-126.>, R0		; correction for tiles $F5..$FE
 5$:	BIC	#177400, R0
-	ASL	R0
-	ASL	R0
-	ASL	R0
-	ASL	R0			; * 16.
-	ADD	#LD600, R0		; + front tiles base address
 	MOV	R0, R3
-	MOV	#LB13E, R2		; buffer address
+	ASL	R3
+	ASL	R3
+	ASL	R3
+	ASL	R3			; * 16.
+	ADD	R0, R3			; * 17.
+	ADD	#LD600, R3		; + front tiles base address
+	MOV	TLBUFA, R2		; buffer address
 	MOV	#8., R1
 10$:	MOVB	(R2), R0		; get byte from the buffer
 	BICB	(R3)+, R0		; apply the mask
 	BISB	(R3)+, R0		; apply the pixels
 	MOVB	R0, (R2)+		; store byte back to the buffer
 	SOB	R1, 10$
-; Draw prepared tile on the screen
-LB293:	MOV	#LB13E, R2
-	MOV	#8., R1
-LB29B:	CLR	R0
-	BISB	(R2)+, R0		; get byte from the buffer
-	SWAB	R0 ;DEBUG color adjustment
-	MOV	R0, @#176642		; put byte on the screen
-	ADD	#120, @#176640		; screen address next line
-	SOB	R1, LB29B
+	MOVB	(R3), R0		; get attribute byte
+	CMPB	#377, R0		; $FF?
+	BEQ	30$			; yes => skip
+	MOVB	R0, (R2)		; save attribute byte
+30$:
+; Mark prepared Tile Buffer record to draw on the screen
+LB293:	MOV	TLBUFA, R3
+	MOV	SCRADR, -2(R3)		; write screen address - mark record to draw
 ;
-	ADD	#<1-1200>, @#176640	; screen address +1
 	JMP	LB2A9			; continue the loop
 
 ;------------------------------------------------------------------------------
@@ -1833,7 +1840,7 @@ PRSTR:	CLR	R0
 10$:	CLR	R5
 	BISB	(R0)+, R5
 	SWAB	R5
-	BIS	#377, R5 ;DEBUG Color adjustment
+	;BIS	#377, R5 ;DEBUG Color adjustment
 	MOV	R5, @#176642		; Write to UKNC VRAM
 	ADD	#120, @#176640		; next screen line
 	SOB	R4, 10$
@@ -2688,7 +2695,7 @@ LBA5D:	MOV	#3, R1			; !!MUT-ARG!! width
 	MOV	#8., R5
 20$:	CLR	R0
 	BISB	(R2)+, R0		; get pixels
-	SWAB	R0 ;DEBUG color adjustment
+	;SWAB	R0 ;DEBUG color adjustment
 	MOV	R0, @#176642		; write pixels to UKNC screen
 	ADD	#120, @#176640		; next line
 	SOB	R5, 20$
@@ -3895,7 +3902,8 @@ LF9A1:
 ; Pause, then wait for any key pressed
 LF9B9:
 	CALL	PAUSE
-	CALL	WTKEY ;DEBUG
+	CALL	WAITUP			; Clear key buffer
+	CALL	WTKEY
 	RETURN
 
 LF9F9:	MOV	#264, R3		; $00B4

@@ -1,6 +1,8 @@
 	.TITLE	SABOT1
 	.ASECT
 
+;------------------------------------------------------------------------------
+
 ; Set PPU command
 .MACRO	PPUCMD	X
 	MOV	X, @#PPUCOM
@@ -14,6 +16,10 @@
 
 ;------------------------------------------------------------------------------
 
+SCREEN = 100000		; Screen start, indirect address for UKNC
+SCRTOP = SCREEN + 1200 + 4	; Where the game screen starts
+SCRIND = SCRTOP + <1200*19.>	; Screen address for first indicators line
+
 ; PPUKEY bits
 PKEYRT =: 001	; RIGHT
 PKEYLT =: 002	; LEFT
@@ -22,10 +28,12 @@ PKEYUP =: 010	; UP
 PKEYFR =: 020	; FIRE key
 PKEYST =: 200	; STOP key
 
-PPUCOM = 1000 - 2
-PPUADR = 1000 - 4
+PPUCOM = 1000 - 2	; PPU/CPU command and acknowledge
+PPUADR = 1000 - 4	; allocated PPU address
 PPUDAT = 1000 - 6
 PPUKEY = 1000 - 10
+
+TLBUFS = 30.	; Tile buffer size
 
 ;------------------------------------------------------------------------------
 
@@ -40,7 +48,7 @@ START::
 	CALL	PRINT
 	CALL	PAUSE			; wait while screen updates
 ;
-K01220:	JMP	LBC0D			; => title picture and Menu
+	JMP	LBC0D			; => title picture and Menu
 ;
 OSTACK:	.WORD	01000			; Saved initial SP
 ;
@@ -186,9 +194,9 @@ STOPPU:	PPUCMW	#177777			; command PPU to exit
 	CLR	PPUKEY
 	RETURN
 
-;------------------------------------------------------------------------------
+;==============================================================================
+; PPU code block
 
-; Start of PPU code block
 PPSTA:
 	MTPS	#200
 ; stop FDD (do we need that?)
@@ -230,7 +238,8 @@ PDONE:
 	MOV	#<PPUCOM/2>, @#177010	; ackn of command execution
 	CLR	@#177014
 ; Main loop of the PPU procedure
-PMAIN:	MOV	#<PPUCOM/2>, @#177010	; get command from CPU
+PMAIN:	CALL	DRTILS			; draw tiles
+	MOV	#<PPUCOM/2>, @#177010	; get command from CPU
 	MOV	@#177014, R0
 	BMI	PEXIT			; exit PPU command
 	ASL	R0
@@ -282,7 +291,7 @@ KEYINT:	MOV	@#177010, -(SP)
 	BNE	15$
 	BIS	#PKEYFR, @#177014
 	BR	90$
-15$:	CMP	R0, #200		; C_KEY_STOP
+15$:	CMP	R0, #4			; C_KEY_STOP
 	BNE	90$
 	BIS	#PKEYST, @#177014
 	BR	90$
@@ -307,6 +316,57 @@ KEYINT:	MOV	@#177010, -(SP)
 90$:	MOV	(SP)+, R0
 	MOV	(SP)+, @#177010
 	RTI
+
+; Draw tiles
+DRTILS:
+	MOV	#<TILBUF/2>, R0
+	MOV	R0, -(SP)		; PUSH TILBUF/2
+	MOV	PC, -(SP)
+	ADD	#TMPBUF-., (SP)		; (SP) = temp buffer addr
+	MOV	#177010, R4		; mem index
+	MOV	#177014, R5		; mem data
+	MOV	#177024, R3		; pix data
+	MOV	#TLBUFS, <91$+2>	; tiles max
+10$:
+	MOV	2(SP), (R4)		; TILBUF/2
+	MOV	(R5), R1		; get screen address
+	BEQ	90$			; nothing to draw =>
+; Copy tile data 8. bytes to temp buffer
+	MOV	(SP), R2
+	INC	(R4)			; skip screen address
+	.REPT	4
+	MOV	(R5), R0
+	MOV	R0, (R2)+
+	SWAB	R0
+	MOV	R0, (R2)+
+	INC	(R4)
+	.ENDR
+; Convert and set colors
+	MOV	(R5), R0		; get attribute
+	MOV	R0, @#177016		; set INK color
+	ASR	R0
+	BIC	#^B1111111111100011, R0
+	ADD	PC, R0
+	ADD	#COLTBL-., R0
+	MOV	(R0)+, @#177020		; set PAPER color
+	MOV	(R0)+, @#177022
+	MOV	R1, (R4)		; set screen address
+; Copy temp buffer to screen
+	MOV	(SP), R2
+	MOV	#120, R1		; screen line offset
+	.REPT	8.
+	MOV	(R2)+, (R3)
+	ADD	R1, (R4)
+	.ENDR
+; Mark the record as drawn
+	MOV	2(SP), (R4)
+	CLR	(R5)
+90$:	ADD	#6, 2(SP)		; next record
+91$:	DEC	#TLBUFS			; !!MUT-ARG!! counter here
+	BNE	10$			; continue loop
+	TST	(SP)+
+	TST	(SP)+			; empty stack
+	RETURN
 
 VSYINT:
 	RTI
@@ -376,20 +436,31 @@ SND001:	.WORD	30,30, 30,30, 20,20
 	.WORD	0
 	.RADIX	8
 
-BKP054:	.WORD	0
+; Color conversion table
+COLTBL:	.WORD	^B0000000000000000, ^B0000000000000000
+	.WORD	^B0001000100010001, ^B0001000100010001
+	.WORD	^B0010001000100010, ^B0010001000100010
+	.WORD	^B0011001100110011, ^B0011001100110011
+	.WORD	^B0100010001000100, ^B0100010001000100
+	.WORD	^B0101010101010101, ^B0101010101010101
+	.WORD	^B0110011001100110, ^B0110011001100110
+	.WORD	^B0111011101110111, ^B0111011101110111
+
+TMPBUF:	.BLKW	8.			; Temp buffer for tile drawing
+BKP054:	.WORD	0			; Saved 177054
 BKP:	.BLKW	400			; 0-1000 addrs backup
 
-PPEND:	; End of PPU code block
-
-;------------------------------------------------------------------------------
+PPEND:
+; End of PPU code block
+;==============================================================================
 
 PALNO:	.WORD	0		; Current palette number
 ; Palette to set up in the PPU memory
 ;		 |____....____....|
 PALETD:	.WORD	^B1011101010011000	; Default UKNC palette
 	.WORD	^B1111111011011100	;
-PALETT:	.WORD	^B1010100111000000	; Game palette 0 - for GRB
-	.WORD	^B1100110011011010	;   black / blue / red / green
+PALETT:	.WORD	^B1011101010011000	; Game palette 0 - for GRB
+	.WORD	^B1111111011011100	;   black / blue / red / green
 	.WORD	^B1010100111010000	; Game palette 1 - for RGB
 	.WORD	^B1010101011011100	;   black / blue / green / red
 	.WORD	^B1011111110011001	; Game palette 2
