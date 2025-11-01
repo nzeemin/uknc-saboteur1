@@ -16,6 +16,7 @@
 
 CHELTH=1		; Cheat code for no damage
 CVERT =0		; Cheat code for short route to Helicopter
+CBOMB =0		; Cheat code for carrying BOMB
 
 TIMERI = 200.		; Fast timer reset value, see TIMECN
 
@@ -440,63 +441,63 @@ LD344:	.WORD	000324		; Object 34: Brick
 ;   +$00/$01: room address
 ;   +$02/$03: offset in Tile screen 0
 ;   +$04: tile byte
-LD34D:	.WORD	RM9ED9, 000517		; Object L00: Pipe
+LD34D:	.WORD	RM9ED9, 000517		; Object 00: Pipe
 	.BYTE	201, 0
-LD352:	.WORD	RM9E22, 000614		; Object L01: Granade
+LD352:	.WORD	RM9E22, 000614		; Object 01: Granade
 	.BYTE	145, 0
-LD357:	.WORD	RM9E22, 000636		; Object L02: BOMB
+LD357:	.WORD	RM9E22, 000636		; Object 02: BOMB
 	.BYTE	146, 0
-LD35C:	.WORD	RM990D, 000767		; Object L03: Knife
+LD35C:	.WORD	RM990D, 000767		; Object 03: Knife
 	.BYTE	147, 0
-LD361:	.WORD	RM8D5C, 000727		; Object L04
+LD361:	.WORD	RM8D5C, 000727		; Object 04
 	.BYTE	150, 0
-LD366:	.WORD	RM8EE1, 000716		; Object L05: Pipe
+LD366:	.WORD	RM8EE1, 000716		; Object 05: Pipe
 	.BYTE	151, 0
-LD36B:	.WORD	RM889F, 000514		; Object L06: Pipe
+LD36B:	.WORD	RM889F, 000514		; Object 06: Pipe
 	.BYTE	152, 0
-LD370:	.WORD	RM890E, 000411		; Object L07: Pipe
+LD370:	.WORD	RM890E, 000411		; Object 07: Pipe
 	.BYTE	153, 0
-LD375:	.WORD	RM8CC8, 000762		; Object L08
+LD375:	.WORD	RM8CC8, 000762		; Object 08
 	.BYTE	154, 0
-LD37A:	.WORD	RM8739, 000432		; Object L09: Knife
+LD37A:	.WORD	RM8739, 000432		; Object 09: Knife
 	.BYTE	155, 0
-LD37F:	.WORD	RM8799, 000707		; Object L10
+LD37F:	.WORD	RM8799, 000707		; Object 10
 	.BYTE	156, 0
-LD384:	.WORD	RM913F, 000762		; Object L11: Knife
+LD384:	.WORD	RM913F, 000762		; Object 11: Knife
 	.BYTE	157, 0
-LD389:	.WORD	RM8321, 000747		; Object L12: Granade
+LD389:	.WORD	RM8321, 000747		; Object 12: Granade
 	.BYTE	160, 0
-LD38E:	.WORD	RM8162, 000762		; Object L13: Knife
+LD38E:	.WORD	RM8162, 000762		; Object 13: Knife
 	.BYTE	161, 0
-LD393:	.WORD	RM7EF2, 000770		; Object L14: Granade
+LD393:	.WORD	RM7EF2, 000770		; Object 14: Granade
 	.BYTE	162, 0
-LD398:	.WORD	RM7F48, 000664		; Object L15: Knife in room 7F48
+LD398:	.WORD	RM7F48, 000664		; Object 15: Knife in room 7F48
 	.BYTE	163, 0
-LD39D:	.WORD	RM7C6D, 000667		; Object L16
+LD39D:	.WORD	RM7C6D, 000667		; Object 16
 	.BYTE	164, 0
-LD3A2:	.WORD	RM7A9E, 000715		; Object L17
+LD3A2:	.WORD	RM7A9E, 000715		; Object 17
 	.BYTE	165, 0
-LD3A7:	.WORD	RM7A9E, 000727		; Object L18
+LD3A7:	.WORD	RM7A9E, 000727		; Object 18
 	.BYTE	166, 0
-LD3AC:	.WORD	RM7A9E, 000731		; Object L19: Brick
+LD3AC:	.WORD	RM7A9E, 000731		; Object 19: Brick
 	.BYTE	167, 0
-LD3B1:	.WORD	RM7AF8, 000765		; Object L20: Brick
+LD3B1:	.WORD	RM7AF8, 000765		; Object 20: Brick
 	.BYTE	170, 0
-LD3B6:	.WORD	RM7AF8, 000766		; Object L21: Brick
+LD3B6:	.WORD	RM7AF8, 000766		; Object 21: Brick
 	.BYTE	171, 0
-LD3BB:	.WORD	RM9376, 000653		; Object L22: Brick
+LD3BB:	.WORD	RM9376, 000653		; Object 22: Brick
 	.BYTE	172, 0
-LD3C0:	.WORD	RM79C6, 000765		; Object L23: Brick in room 79C6
+LD3C0:	.WORD	RM79C6, 000765		; Object 23: Brick in room 79C6
 	.BYTE	173, 0
-LD3C5:	.WORD	RM80F6, 000743		; Object L24: Console in room 80F6
+LD3C5:	.WORD	RM80F6, 000743		; Object 24: Console in room 80F6
 	.BYTE	174, 0
-LD3CA:	.WORD	RM99A6, 000763		; Object L25: Console in room 99A6
+LD3CA:	.WORD	RM99A6, 000763		; Object 25: Console in room 99A6
 	.BYTE	175, 0
-LD3CF:	.WORD	RM92A7, 000715		; Object L26: Console in room 92A7
+LD3CF:	.WORD	RM92A7, 000715		; Object 26: Console in room 92A7
 	.BYTE	176, 0
-LD3D4:	.WORD	RM92EF, 000330		; Object L27: Console in room 92EF
+LD3D4:	.WORD	RM92EF, 000330		; Object 27: Console in room 92EF
 	.BYTE	177, 0
-LD3D9:	.WORD	RM9005, 000445		; Object L28: Console in room 9005
+LD3D9:	.WORD	RM9005, 000445		; Object 28: Console in room 9005
 	.BYTE	200, 0
 
 ; Dog rooms/flags ?? 20. records, 4 bytes each
@@ -1475,11 +1476,7 @@ LAD1D:
 
 ;------------------------------------------------------------------------------
 
-L722F:	.WORD	0			; address in Tile screen 0
-L7231:	.WORD	0			; address in Tile screen 2
-L7233:	.WORD	0			; address in Tile screen 3
-L7235:	.WORD	0			; address in Tile screen 4
-L7237:	.WORD	0			; address in Tile screen 5
+L7238:	.WORD	0			; offset in all tilemaps
 SCRADR:	.WORD	SCRTOP+1200+1		; current screen address
 
 ; Tile buffer: size = TLBUFS * 12.
@@ -1492,11 +1489,7 @@ TLBUFA:	.WORD	TLBUFE-10.		; Current address in the Tile Buffer
 DRALL:	MOV	#17., R1		; 17. rows
 	MOV	#<SCRTOP+1200+1>, SCRADR	; screen address
 	MOV	#TLSCR1, R3		; start address in Tile screen 1
-	MOV	#TLSCR0, L722F		; start address in Tile screen 0
-	MOV	#TLSCR2, L7231		; start address in Tile screen 2
-	MOV	#TLSCR3, L7233		; start address in Tile screen 3
-	MOV	#TLSCR4, L7235		; start address in Tile screen 4
-	MOV	#TLSCR5, L7237		; start address in Tile screen 5
+	CLR	L7238			; offset = 0
 ; Loop start
 LB16D:	PUSH	R1			; save rows counter
 	MOV	#30., R4		; 30. columns
@@ -1506,12 +1499,7 @@ LB16F:	PUSH	R4			; save columns counter
 	BNE	DRTILE			; not zero => do the tile rendering
 ; Next column
 LB2A9:	INC	SCRADR			; screen address +1
-	MOV	#L722F, R3
-	INC	(R3)+			; next address in Tile screen 0
-	INC	(R3)+			; next address in Tile screen 2
-	INC	(R3)+			; next address in Tile screen 3
-	INC	(R3)+			; next address in Tile screen 4
-	INC	(R3)			; next address in Tile screen 5
+	INC	L7238			; next offset in tilemaps
 	POP	R3			; restore address in Tile screen 1
 	INC	R3			; next address in Tile screen 1
 	POP	R4			; restore columns counter
@@ -1536,7 +1524,8 @@ DRTILE:
 	TST	(R3)+			; skip screen address word
 	MOV	R3, TLBUFA		; update current address
 ; Process Tile screen 0 - background tile
-	MOVB	@L722F, R0		; get tile from Tile screen 0
+	MOV	L7238, R3		; get offset
+	MOVB	TLSCR0(R3), R0		; get tile from Tile screen 0
 	;CMPB	#377, R0		; $FF - "earth" background?
 	;TODO: Don't draw Ninja for background tile $FF
 	BIC	#177400, R0
@@ -1551,8 +1540,8 @@ DRTILE:
 	MOVB	(R3)+, (R2)+
 	.ENDR
 ; Process Tile screen 2 tile - Ninja
-LB1A3:	MOV	L7231, R3		; get address in Tile scrren 2
-	MOVB	(R3), R0		; get tile from Tile screen 2
+LB1A3:	MOV	L7238, R3		; get offset
+	MOVB	TLSCR2(R3), R0		; get tile from Tile screen 2
 	CMPB	#377, R0		; $FF ?
 	BEQ	LB1FC			; $FF => skip Ninja tile drawing
 	BIC	#177400, R0
@@ -1579,8 +1568,8 @@ LB1E4:	MOVB	(R2), R0		; get byte from the buffer
 	SOB	R1, LB1E4
 	;BR	LB263			; !!MUT-CMD!! Skip Dog and Guard drawing on 1st draw
 ; Process Tile screen 3 tile - Dog
-LB1FC:	MOV	L7233, R3		; get address in Tile scrren 3
-	MOVB	(R3), R0		; get tile from Tile screen 3
+LB1FC:	MOV	L7238, R3		; get offset
+	MOVB	TLSCR3(R3), R0		; get tile from Tile screen 3
 	CMPB	#377, R0		; $FF ?
 	BEQ	LB230			; $FF => skip Dog tile drawing
 	BIC	#177400, R0
@@ -1606,8 +1595,8 @@ LB218:	MOVB	(R2), R0		; get byte from the buffer
 	MOVB	R0, (R2)+		; store byte back to the buffer
 	SOB	R1, LB218
 ; Process Tile screen 4 tile - Guard
-LB230:	MOV	L7235, R3		; get address in Tile scrren 4
-	MOVB	(R3), R0		; get tile from Tile screen 4
+LB230:	MOV	L7238, R3		; get offset
+	MOVB	TLSCR4(R3), R0		; get tile from Tile screen 4
 	CMPB	#377, R0		; $FF ?
 	BEQ	LB263			; $FF => skip Guard tile drawing
 	BIC	#177400, R0
@@ -1633,8 +1622,8 @@ LB24B:	MOVB	(R2), R0		; get byte from the buffer
 	MOVB	R0, (R2)+		; store byte back to the buffer
 	SOB	R1, LB24B
 ; Process Tile screen 5 tile - front
-LB263:	MOV	L7237, R3		; get address in Tile scrren 5
-	MOVB	(R3), R0		; get tile from Tile screen 5
+LB263:	MOV	L7238, R3		; get offset
+	MOVB	TLSCR5(R3), R0		; get tile from Tile screen 5
 	CMPB	#377, R0		; $FF - transparent?
 	BEQ	LB293			; $FF => skip front tile drawing
 	CMPB	#364, R0		; <= $F4 ?
@@ -1785,7 +1774,7 @@ LB48E = LB48D + 2	; Turret address on Tile Screen 5
 	SUB	#TLSCR5, R3		; now R3 = Turret offset in tilemap
 	SUB	#046, R0
 	MOVB	R0, LA3B0
-	MOVB	R0, <LA3B0+1>
+	MOVB	R0, LA3B1
 	MOV	R3, LA3AE
 	MOVB	#332, LA3AD		; $DA
 	MOV	#30., R2
@@ -1850,9 +1839,13 @@ PRSTR:	CLR	R0
 	RETURN
 
 ; Processing in initial room - the boat moving
-LB4FA:
-	;TODO: Update front tile
-	MOV	#<TLSCR1+<30.*9.>>, R3
+LB4FA:	MOV	#6, R1
+	MOV	#<LD600+187.>, R3
+LB4FF:	MOVB	(R3), R0
+	ROLB	R0
+	ROLB	(R3)+
+	SOB	R1, LB4FF
+	MOV	#<TLSCR1+360.>, R3
 	MOV	#30., R1
 10$:	MOVB	#1, (R3)+		; put "need update" mark
 	SOB	R1, 10$
@@ -1941,6 +1934,10 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 .IF NE CVERT		; Cheat code for short route to Helicopter
 	MOVB	#324, LBD7A		; Diskette -> HELD
 	MOV	#RM8D5C, <RM791E+6>	; Right from room 791E -> room 8D5C
+.ENDC
+.IF NE CBOMB		; Cheat code for carrying BOMB
+	MOVB	#326, LBD7A		; BOMB -> HELD
+	MOV	#RM9F7E, <RM791E+6>	; Right from room 791E -> room 9F7E
 .ENDC
 	;JMP	LBE80 ;DEBUG: Bomb explodes
 
@@ -3363,7 +3360,8 @@ LC368:	CALL	LC392			; Check if tile is a ladder
 	TSTB	NJADIR			; check Ninja direction
 	BEQ	LC37D			; left =>
 	MOV	#<TLSCR0+65.>, R2	; Tile screen 0 + 2 rows + 5
-LC37D:	CMPB	#144, (R3)		; $64
+LC37D:	ADD	R2, R3
+	CMPB	#144, (R3)		; $64
 	BHIS	LC384
 	JMP	LC4D0			; => finalize the jump
 LC384:	MOV	#LC4A7, R3		; Movement handler
@@ -3836,7 +3834,7 @@ LEVSEL:	MOVB	LEVED, R0		; get current level digit 1..9.
 	MOV	#LAD57, R1		; address for Indicator Time value
 	MOVB	(R3)+, (R1)+		; +$03: set Indicator Time value, lower digit
 	MOVB	(R3)+, (R1)		; +$04: set Indicator Time value, higher digit
-	MOV	#<LB7CA+1>, R1		; address for Time value for BOMB
+	MOV	#<LB7CA+2>, R1		; address for Time value for BOMB
 	MOVB	(R3)+, (R1)+		; +$05: set Time value for BOMB, lower digit
 	MOVB	(R3)+, (R1)		; +$06: set Time value for BOMB, higher digit
 	MOVB	(R3)+, L97D0		; +$07: set flag for wall in room RM97A6
