@@ -1039,11 +1039,35 @@ LA418:	CMPB	NJAY, GARDY		; compare Ninja Y to Guard Y
 LA434:	CALL	UPGARD			; Set update flags for Guard, 6x7 tiles
 	MOV	#GARDST, R3		; Guard state address
 	MOVB	(R3), R0		; get Guard state
-; Guard state = $0B ?
-	CMPB	R0, #11.
-	BNE	LA4E7
+	CMPB	R0, #21.		; < $15 ?
+	BLO	10$
+	CLR	R0			; => GAROTH
+10$:	ADD	R0, R0			; * 2
+	MOV	TGARDS(R0), PC
+TGARDS:	.WORD	GAROTH			; $00
+	.WORD	GAROTH			; $01
+	.WORD	GAROTH			; $02
+	.WORD	GAROTH			; $03
+	.WORD	GAROTH			; $04
+	.WORD	GARS05			; $05 - jump
+	.WORD	GARS06			; $06 - jump-kick
+	.WORD	GARS07			; $07 - back to standing
+	.WORD	GARS08			; $08 - punching ?
+	.WORD	GARS09			; $09 - dead
+	.WORD	GARS0A			; $0A - standing
+	.WORD	GARS0B			; $0B - auto-gun
+	.WORD	GAROTH			; $0C
+	.WORD	GAROTH			; $0D
+	.WORD	GAROTH			; $0E
+	.WORD	GAROTH			; $0F
+	.WORD	GAROTH			; $10
+	.WORD	GAROTH			; $11
+	.WORD	GAROTH			; $12
+	.WORD	GAROTH			; $13
+	.WORD	GARS14			; $14 - throwing a knife
+
 ; Guard state = $0B = auto-gun
-	MOV	#LA3B4, R3		; Guard counter address
+GARS0B:	MOV	#LA3B4, R3		; Guard counter address
 	DECB	(R3)			; decrease Guard counter
 	CMPB	(R3), #6
 	BLO	LA44A
@@ -1090,11 +1114,9 @@ LA4D4:	;TODO: Sound off
 	BNE	LA4E4			; => Draw Guard on tilemap
 	MOVB	#4., GARDST		; set Guard state = $04
 LA4E4:	JMP	DRGARD			; => Draw Guard on tilemap
-; Guard state = $14 ?
-LA4E7:	CMPB	R0, #20.
-	BNE	LA52F
+
 ; Guard state = $14 = throwing a knife
-	MOVB	#4, (R3)		; set Guard state = $04
+GARS14:	MOVB	#4, (R3)		; set Guard state = $04
 	MOV	#LD486, LA70F		; set Guard sprite = Guard standing
 	MOV	#60., R2
 	CLR	R4			; B = 0
@@ -1118,11 +1140,9 @@ LA50B:	MOV	GARDPO, R3		; get Guard position
 	ADD	#2, R0
 	MOVB	R0, <LA3A6+6>		; set object Y
 	JMP	DRGARD			; => Draw Guard on tilemap
-; Guard state = $0A ?
-LA52F:	CMPB	R0, #10.
-	BNE	LA56D
-; Guard state = $0A - Standing
-	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
+
+; Guard state = $0A - standing
+GARS0A:	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
 	MOV	#NJAY, R3		; Ninja Y address
 	MOVB	GARDY, R0		; get Guard Y
 	ADD	#3, R0			; Guard Y + 3
@@ -1146,16 +1166,13 @@ LA55F:	SUB	#3, R0			; for right, Guard X - 3
 	JMP	DRGARD			; Guard not reached Ninja => Draw Guard on tilemap
 LA565:	MOVB	#4, GARDST		; set Guard state = $04
 	JMP	DRGARD			; => Draw Guard on tilemap
-; Guard state = $09 ?
-LA56D:	CMPB	#9., R0
-	BNE	LA57A
+
 ; Guard state = $09 - Guard is dead
-	MOV	#LA0B5, LA70F		; set Sprite Ninja/Guard dead
+GARS09:	MOV	#LA0B5, LA70F		; set Sprite Ninja/Guard dead
 	JMP	DRGARD			; => Draw Guard on tilemap
-; Guard state = $08 ? - Punching ?
-LA57A:	CMPB	#8., R0
-	BNE	LA5AA
-	DECB	LA3B4			; decrease Guard counter
+
+; Guard state = $08 - Punching ?
+GARS08:	DECB	LA3B4			; decrease Guard counter
 	BEQ	LA587
 	JMP	DRGARD			; => Draw Guard on tilemap
 LA587:	MOVB	#3, (R3)		; set Guard state = walking state 3
@@ -1171,19 +1188,17 @@ LA599:	ADD	R2, R3
 	CALL	LFA31			; => Decrease Energy by B + Sound
 LA5A1:	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
 	JMP	DRGARD			; => Draw Guard on tilemap
-; Guard state = $05 ? - Jump
-LA5AA:	CMPB	#5., R0
-	BNE	LA5C7
-	DECB	LA3B4			; decrement Guard counter
+
+; Guard state = $05 - jump
+GARS05:	DECB	LA3B4			; decrement Guard counter
 	BNE	90$
 	MOVB	#3, LA3B4		; set Guard counter = 3
 	MOVB	#6, (R3)		; set Guard state = $06: jump-kick
 	MOV	#LD4DA, LA70F		; set Sprite Ninja/Guard jump-kick
 90$:	JMP	DRGARD			; => Draw Guard on tilemap
-; Guard state = $06 ? Jump-kick
-LA5C7:	CMPB	#6., R0
-	BNE	LA5FC
-	DECB	LA3B4			; decrement Guard counter
+
+; Guard state = $06 - jump-kick
+GARS06:	DECB	LA3B4			; decrement Guard counter
 	BNE	90$
 	MOVB	#1, LA3B4		; set Guard counter = 1
 	MOVB	#7, (R3)		; set Guard state = $07: back to standing
@@ -1199,19 +1214,20 @@ LA5C7:	CMPB	#6., R0
 	MOV	#10., R1		; 10. damage
 	CALL	LFA31			; Decrease Energy + Sound
 90$:	JMP	DRGARD			; => Draw Guard on tilemap
-; Guard state = $07 ? - back to standing
-LA5FC:	CMPB	#7., R0
-	BNE	LA614
-	DECB	LA3B4			; decrement Guard counter
+
+; Guard state = $07 - back to standing
+GARS07:	DECB	LA3B4			; decrement Guard counter
 	BNE	90$
 	MOVB	#3, (R3)		; set Guard state = walking phase 3
 	MOV	#LD486, LA70F		; set Sprite Ninja/Guard standing
 90$:	JMP	DRGARD			; => Draw Guard on tilemap
+
 ; Guard state is none of the above
-LA614:	MOVB	NJAX, R1		; get Ninja X
+GAROTH:	MOVB	NJAX, R1		; get Ninja X
 	MOVB	GARDX, R0		; get Guard X
 	SUB	R1, R0			; now R0 = Guard X - Ninja X
 	BNE	LA635
+; Guard X == Ninja X
 	CALL	LA418
 	MOV	#GARDST, R3		; Guard state address
 	CMPB	#10., (R3)		; Guard state = $0A ?
@@ -1724,8 +1740,20 @@ LB425:	MOV	#LC66B, R3		; Guard data address
 	CALL	INGARD			; Initialize a guard
 	JMP	LB724			; => Finish room initialization
 
-; Room B513 procedure (initial Room)
-LB446:	CALL	LB4FA			; Processing in the initial room
+; Room B513/791E procedure (initial room / room with pier)
+LB446:
+; Make moving waves
+	MOV	#6, R1
+	MOV	#<LD600+187.>, R3
+LB4FF:	MOVB	(R3), R0
+	ROLB	R0
+	ROLB	(R3)+
+	SOB	R1, LB4FF
+	MOV	#<TLSCR1+360.>, R3
+	MOV	#30., R1
+10$:	MOVB	#1, (R3)+		; put "need update" mark
+	SOB	R1, 10$
+;
 	JMP	LB937			; Standard room procedure
 
 ; Room procedure (for 5 rooms with a guard and a dog)
@@ -1838,19 +1866,6 @@ PRSTR:	CLR	R0
 	SOB	R1, PRSTR
 	RETURN
 
-; Processing in initial room - the boat moving
-LB4FA:	MOV	#6, R1
-	MOV	#<LD600+187.>, R3
-LB4FF:	MOVB	(R3), R0
-	ROLB	R0
-	ROLB	(R3)+
-	SOB	R1, LB4FF
-	MOV	#<TLSCR1+360.>, R3
-	MOV	#30., R1
-10$:	MOVB	#1, (R3)+		; put "need update" mark
-	SOB	R1, 10$
-	RETURN
-
 ; Movement handler for initial room (B8CE handler)
 LB532:	INC	NJAPOS			; increase Ninja position in tilemap
 	INCB	NJAX			; increase Ninja X
@@ -1921,7 +1936,7 @@ LB5C7:	CALL	LAC44			; Reset Guard data and Dog data
 	MOVB	#4, <LD486+15.>		; set tile in Sprite Ninja/Guard standing sprite
 	MOVB	#250., LB2FD		; $FA set counter for head animation
 	MOVB	#310, LBD7A		; $C8 Shuriken - set HELD tile
-	;MOVB	#322, LBD7A ;DEBUG Grenade
+	;MOVB	#322, LBD7A ;DEBUG Granade
 	CALL	L7472			; Initial Energy fill
 	;DI
 	MOV	#RMB513, ROOM		; set Current Room = Initial room
@@ -2619,6 +2634,7 @@ LBA32:	MOVB	#1, (R5)+
 	SOB	R1, LBA2F
 ;
 	CALL	DRALL			; Draw tile map on the screen
+;
 	;TODO: Restore drawing of Dog and Guard tiles
 	TSTB	LBAB2
 	BEQ	LBA4F
@@ -2633,19 +2649,20 @@ LBAD5:	CMP	#RM8DCA, ROOM		; current room = 8DCA (room with helicopter) ?
 LBAE4:	MOVB	(R4), R0
 	CMPB	#322, R0		; $D2 ? Granade
 	BEQ	LBAF0			; yes =>
-	CMPB	#323, R0		; $D3 ?
+	CMPB	#323, R0		; $D3 ? Granade
 	BNE	LBBA7			; no => delete the object
+; Granade; R4 = LA39F
 LBAF0:	MOV	#LBAB2, R3		; Explosion counter address
 	TSTB	(R3)			; have Explosion already?
 	BNE	LBBA7			; yes => delete the object
 	MOV	#6., (R3)		; set Explosion counter
 	MOV	2(R4), R3		; get object offset
-	ADD	#<TLSCR1-31.>, R3	; + Tile screen 1 - 33.
+	ADD	#<TLSCR1-31.>, R3	; + Tile screen 1 - 31.
 	MOV	R3, <LBA2A+2>		; set Tile screen 1 address
 	MOVB	6(R4), R0		; get object Y
 	DEC	R0
 	ADD	R0, R0
-	MOV	LBAB3(R0), R3		; now R3 = screen address
+	MOV	LBAB3(R0), R3		; now R3 = screen address of the row
 	MOVB	7(R4), R2		; get object X
 	ADD	R2, R3			; + object X
 	DEC	R3
@@ -3147,7 +3164,7 @@ LC056:	MOV	#LBF12, LBEB4		; "ESCAPE" / "MISSION SUCCESSFUL"
 	JMP	LBEB3			; => Game Over
 
 ; Movement handler: helicopter moving up
-;NOTE: Scrolling block of 17x16 tiles, scroll 4 lines up
+; Scrolling block of 17x15 tiles, scroll 4 lines up
 LC094:	DECB	L7343			; decrease counter
 	BEQ	LBFD5			; => zero => Escaped; final messages, then Game Over
 	MOV	#<SCRTOP+1200+500+7>, R3	; from
