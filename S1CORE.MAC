@@ -775,29 +775,29 @@ DRNRJC:	MOV	NRJ, R2			; 0..14.
 ; R3 = address on the screen; R0 = item number 0..9.
 DRITEM:	ASL	R0
 L74D3:	MOV	LB5B0(R0), R2		; !!MUT-ARG!! get item address from the table
-	MOV	#176640, R5
-	MOV	R3, (R5)		; set UKNC indirect address
-	MOV	#24., R1
-L74E4:	CLR	R3			; <
-	BISB	(R2)+, R3
-	;SWAB	R3 ;DEBUG Color adjustment
-	MOV	R3, @#176642		; | copy pixels
-	INC	(R5)
-	CLR	R3
-	BISB	(R2)+, R3
-	;SWAB	R3 ;DEBUG Color adjustment
-	MOV	R3, @#176642		; | copy pixels
-	INC	(R5)
-	CLR	R3
-	BISB	(R2)+, R3
-	;SWAB	R3 ;DEBUG Color adjustment
-	MOV	R3, @#176642		; | copy pixels
-	INC	(R5)
-	CLR	R3
-	BISB	(R2)+, R3
-	;SWAB	R3 ;DEBUG Color adjustment
-	MOV	R3, @#176642		; | copy pixels
-	ADD	#<120-3>, (R5)		; |  next line
+	MOV	#3, R1			; 3 rows
+L74E4:	PUSH	R1
+	MOV	#4, R4			; 4 columns
+; Select a record in the Tile Buffer
+20$:	MOV	TLBUFA, R0		; get current address in Tile Buffer
+	ADD	#10., R0		; to next record
+	CMP	R0, #TLBUFE		; end of Tile Buffer?
+	BLO	25$
+	MOV	#TILBUF, R0
+25$:	TST	(R0)			; is it free?
+	BNE	25$			; wait for PPU to finish work
+	TST	(R0)+			; skip screen address word
+	MOV	R0, TLBUFA		; update current address
+; Copy item tile to the buffer
+	MOV	#9., R1
+30$:	MOVB	(R2)+, (R0)+		; copy 8 + 1 bytes
+	SOB	R1, 30$
+	MOV	R3, -11.(R0)		; write screen address - mark record to draw
+; to the next column
+	INC	R3			; next column
+	SOB	R4, 20$
+	ADD	#<1200-4>, R3		; next line
+	POP	R1
 	SOB	R1, L74E4		; repeat
 	RETURN
 
@@ -1415,7 +1415,7 @@ LAC6E:	SOB	R1, LAC5C
 
 ; Draw game screen frames and indicator text
 DRINDS:
-	MOV	#SCRTOP, @#176640	; Screen start address
+	MOV	#SCRTOP, R3		; Screen start address
 	MOV	#LAD65, R2		; Game screen frames/indicators RLE encoded sequence
 	CLR	R5			; counter up to 32.
 10$:	CLR	R0
@@ -1436,23 +1436,35 @@ DRINDS:
 	ASL	R2
 	ASL	R2
 	ASL	R2			; * 8.
-	ASL	R2			; * 16.
+	ADD	R0, R2			; * 9.
 	ADD	#LAE02, R2		; Indicator tiles address
-27$:	MOV	#8., R4
-30$:	;CLR	R0
-	MOV	(R2)+, R0
-	MOV	R0, @#176642		; Write to UKNC VRAM
-	ADD	#120, @#176640		; next line
+; Select a record in the Tile Buffer
+23$:	MOV	TLBUFA, R0		; get current address in Tile Buffer
+	ADD	#10., R0		; to next record
+	CMP	R0, #TLBUFE		; end of Tile Buffer?
+	BLO	25$
+	MOV	#TILBUF, R0
+25$:	TST	(R0)			; is it free?
+	BNE	25$			; wait for PPU to finish work
+	TST	(R0)+			; skip screen address word
+	MOV	R0, TLBUFA		; update current address
+; Copy frame tile to the buffer
+	MOV	#9., R4
+30$:	MOVB	(R2)+, (R0)+		; copy 8 + 1 bytes
 	SOB	R4, 30$
-	SUB	#<1200-1>, @#176640	; next column
+	MOV	R3, -11.(R0)		; write screen address - mark record to draw
+; to the next screen address
+	INC	R3			; next column
 	INC	R5
 	BIC	#177740, R5		; keep 5 lower bits = 0..31.
 	BNE	40$
-	ADD	#<1200-40>, @#176640	; next row
-40$:	SUB	#16., R2
-	SOB	R1, 27$
+	ADD	#<1200-40>, R3		; next row
+; continue the loop
+40$:	SUB	#9., R2
+	SOB	R1, 23$
 	POP	R2
 	BR	10$
+;
 LAD1D:
 	MOV	#<SCRIND+7.>, R2
 	MOV	#13., R1
@@ -1471,26 +1483,6 @@ LAD1D:
 	MOV	#4, R1
 	CALL	PRSTR			; Print string "NEAR"
 	RETURN
-
-;LAEF0:
-
-;LAF7E:
-
-;LAF84:
-
-
-;LAF9C:
-
-;LAFAA:
-
-;LAFBE:
-
-; Print table of records
-;LB005:
-;	RETURN
-
-;LB040:
-;	BR	LAFBE
 
 ;------------------------------------------------------------------------------
 
