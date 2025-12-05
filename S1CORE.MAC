@@ -564,18 +564,20 @@ LE217:	.ASCII	/EXTREMELY EASY/
 	.WORD	LE42C
 
 ; Levels data
-;   +$00: Guard counter value
-;   +$01: Dog counter value
-;   +$02: Turret counter value
-;   +$03/$04: two digits for TIME value
-;   +$05/$06: two digits for BOMB timer
-;   +$07: flag for wall in room 97A6: trigger "E", tile $00/$FF
-;   +$08: flag for wall in room 9739: trigger "D", token $0E/$26
-;   +$09: flag for wall in room 7F48: trigger "A", token $0E/$27
-;   +$0A: flag for wall in room 8D5C: trigger "C", token $0E/$26
-;   +$0B: flag for wall in room 8F20: trigger "B", token $0E/$28
-;   +$10/$11: room for BOMB placement
-;   +$12/$13: address in Tile screen 0 for BOMB placement
+; +$00: Guard counter value
+; +$01: Dog counter value
+; +$02: Turret counter value
+; +$03/$04: two digits for TIME value
+; +$05/$06: two digits for BOMB timer
+; +$07: flag for wall in room 97A6: trigger "E", tile $00/$FF
+; +$08: flag for wall in room 9739: trigger "D", token $0E/$26
+; +$09: flag for wall in room 7F48: trigger "A", token $0E/$27
+; +$0A: flag for wall in room 8D5C: trigger "C", token $0E/$26
+; +$0B: flag for wall in room 8F20: trigger "B", token $0E/$28
+; +$0C: 3-char string for level bonus
+; +$0F: level bonus value
+; +$10/$11: room for BOMB placement
+; +$12/$13: address in Tile screen 0 for BOMB placement
 ; Level 1 "EXTREMELY EASY"
 LE38C:	.BYTE	20.,25.,50.
 	.ASCII	/9999/
@@ -683,8 +685,8 @@ LC082:	.ASCII	/LEVEL /
 LEVED:	.ASCII	/1/	; Current Level digit
 LC087:	.ASCII	/TOTAL PAY : $/
 
-LE388:	.ASCII	/ 10/
-	.BYTE	10.
+LE388:	.ASCII	/ 10/			; level bonus string
+	.BYTE	10.			; level bonus value
 
 ;LB061:	.ASCII	/00  $/
 
@@ -1072,7 +1074,7 @@ GARS0B:	MOV	#LA3B4, R3		; Guard counter address
 	CMPB	(R3), #6
 	BLO	LA44A
 	JMP	DRGARD			; => Draw Guard on tilemap
-LA44A:	PPUCMD	#1			; Sound
+LA44A:	;PPUCMD	#1			; Sound
 	MOVB	GARDY, R0		; get Guard Y = 0..9
 	ADD	R0, R0			; Guard Y * 2
 	MOV	LA747(R0), R3		; now R3 = screen address
@@ -1100,9 +1102,9 @@ LA4A2:	CMPB	#144, TLSCR0(R2)	; $64, in Tile screen 0
 	MOV	#73567, R5		; $7777
 	MOV	R3, @#176640		; set UKNC indirect address
 	XOR	R5, @#176642		; write to screen
-LA4C0:	CMPB	#377, TLSCR2(R2)	; $FF, in Tile screen 5
-	BEQ	LA4CF
-	MOV	#4, R1
+LA4C0:	CMPB	#377, TLSCR2(R2)	; $FF, in Tile screen 2
+	BEQ	LA4CF			; yes =>
+	MOV	#4, R1			; Ninja hit
 	CALL	NRJDEC			; Decrease Energy by B = 4
 	BR	LA4D4			; => exit the loop
 LA4CF:
@@ -1526,6 +1528,17 @@ LB2A9:	INC	SCRADR			; screen address +1
 	SOB	R1, LB16D		; continue loop by rows
 	RETURN
 
+; Special case: draw background tile $FF, don't draw any other planes
+DRTIFF:
+	MOV	TLBUFA, R3
+	MOV	#175737, (R3)+		; 373,337
+	MOV	#177773, (R3)+		; 373,377
+	MOV	#177757, (R3)+		; 357,377
+	MOV	#177773, (R3)+		; 373,377
+	MOVB	#010, (R3)		; attribute
+	MOV	SCRADR, -12(R3)		; write screen address - mark record to draw
+	BR	LB2A9			; continue the loop
+
 ; Do the tile rendering
 DRTILE:
 	CLRB	(R3)			; clear "need to update" flag
@@ -1542,8 +1555,8 @@ DRTILE:
 ; Process Tile screen 0 - background tile
 	MOV	L7238, R3		; get offset
 	MOVB	TLSCR0(R3), R0		; get tile from Tile screen 0
-	;CMPB	#377, R0		; $FF - "earth" background?
-	;TODO: Don't draw Ninja for background tile $FF
+	CMPB	#377, R0		; $FF - "earth" background?
+	BEQ	DRTIFF
 	BIC	#177400, R0
 	MOV	R0, R3
 	ASL	R3
@@ -1884,7 +1897,7 @@ LB53E = LB53D + 2	; Boat position
 	MOVB	<LB5A7+1>, R0
 	XOR	R5, R0
 	MOVB	R0, <LB5A7+1>
-	PPUCMD	#1			; Sound
+	;PPUCMD	#1			; Sound
 	DECB	L7343			; decrease counter
 	BEQ	LB577
 	JMP	LB8D0			; => Update Ninja on tilemap
@@ -2523,9 +2536,8 @@ LB937:	MOV	#LA39F, R4		; Three objects start address
 	MOV	#3, R1
 LB93D:	MOVB	#4, LB951
 	TSTB	(R4)			; have an object here?
-	BNE	LB94A
-	JMP	LBA21			; no => skip to end of loop
-LB94A:	PUSH	R1
+	BEQ	LBA21			; no => skip to end of loop
+	PUSH	R1
 	CALL	LBBAE			; set "need update" mark for object
 	MOV	#2, R1
 LB94F:	MOVB	4(R4), R0
@@ -2581,35 +2593,17 @@ LB9B4:	MOV	R3, R5
 	MOV	R3, R5
 	ADD	#TLSCR3, R5		; Tile screen 3 start address
 	CMPB	#377, (R5)
-	BEQ	LB9DA
-	MOVB	DOGST, R0
-	CMPB	R0, #102
-	BHIS	LBAD5
-	ADD	#102, R0
-	MOVB	R0, DOGST
-	BR	LBAD5
+	BNE	LB9CA			; => Dog hit by the object
 LB9DA:	MOV	R3, R5
 	ADD	#TLSCR4, R5		; + Tile screen 4 start address
 	CMPB	#377, (R5)
-	BEQ	LB9F9
-; Hit the Guard
-	CMPB	#9., GARDST		; Guard state = $09 dead ?
-	BEQ	LBAD5			; already dead =>
-	MOVB	#9., GARDST		; set Guard state = $09 dead
-	PUSH	R4
-	MOV	#1, R1			; 1 hundred
-	CALL	INCPAY			; Increase PAY value by 100. - Guard killed by weapon
-	POP	R4			; restore object address
-	BR	LBAD5
+	BNE	LB9E4			; => Guard hit by the object
 LB9F9:	INCB	LB951
 	DEC	R1
 	BNE	LB94F
 	ADD	#TLSCR2, R3		; Tile screen 2 start address
 	CMPB	(R3), #310		; $C8
-	BHIS	LBA14
-	MOV	#20., R1
-	CALL	NRJDEC			; Decrease Energy by B = 20.
-	BR	LBAD5
+	BLO	LBA0C			; => Ninja hit by the object
 LBA14:	MOVB	(R4), R0
 	MOVB	R0, (R3)
 	MOV	#1, R5
@@ -2620,8 +2614,7 @@ LBA14:	MOVB	(R4), R0
 LBA20:	POP	R1
 LBA21:	ADD	#8., R4			; next object record
 	DEC	R1
-	BEQ	LBA2A
-	JMP	LB93D
+	BNE	LB93D
 ;
 ; Fill "need update" marks
 LBA2A:	MOV	#<TLSCR1+165.>, R3	; !!MUT-ARG!! Tile screen 1 + 5 rows + 15.
@@ -2641,15 +2634,35 @@ LBA32:	MOVB	#1, (R5)+
 	CALL	LBA52			; Draw Explosion
 LBA4F:	JMP	LB77B			; => Game loop start
 
-; Called from logic in Standard room procedure, see B937
+; Dog hit by the object
+LB9CA:	MOVB	DOGST, R0
+	CMPB	R0, #102
+	BHIS	LBAD5			; => delete the object
+	ADD	#102, R0
+	MOVB	R0, DOGST
+	BR	LBAD5			; => delete the object
+; Guard hit by the object
+LB9E4:	CMPB	#9., GARDST		; Guard state = $09 dead ?
+	BEQ	LBAD5			; already dead => delete the object
+	MOVB	#9., GARDST		; set Guard state = $09 dead
+	PUSH	R4
+	MOV	#1, R1			; 1 hundred
+	CALL	INCPAY			; Increase PAY value by 100. - Guard killed by weapon
+	POP	R4			; restore object address
+	BR	LBAD5			; => delete the object
+; Ninja hit by the object
+LBA0C:	MOV	#20., R1
+	CALL	NRJDEC			; Decrease Energy by B = 20.
+	;BR	LBAD5			; => delete the object
+
+; This object should be deleted, Granade explode
 ; R4 = object address in LA39F table
 LBAD5:	CMP	#RM8DCA, ROOM		; current room = 8DCA (room with helicopter) ?
 	BEQ	LBBA7			; yes => delete the object
 ;
 LBAE4:	MOVB	(R4), R0
-	CMPB	#322, R0		; $D2 ? Granade
-	BEQ	LBAF0			; yes =>
-	CMPB	#323, R0		; $D3 ? Granade
+	BIC	#1, R0
+	CMPB	#322, R0		; $D2/$D3 ? Granade
 	BNE	LBBA7			; no => delete the object
 ; Granade; R4 = LA39F
 LBAF0:	MOV	#LBAB2, R3		; Explosion counter address
@@ -2695,7 +2708,7 @@ LBB7C:
 	MOV	R0, <LBA2D+2>		; set height
 
 LBBA7:	CLR	(R4)			; delete the object
-	BR	LBA20
+	JMP	LBA20
 
 ; Procedure: Draw Explosion image on the screen and make some noise
 LBA52:	;TODO: Sound
@@ -2935,7 +2948,7 @@ LBD9B:	BIT	#4, R0			; check DOWN bit
 	ADD	#3, R1
 LBDA2:	MOVB	R1, LA3A2
 	CALL	LF9F9
-	PPUCMD	#1			; Sound
+	;PPUCMD	#1			; Sound
 	MOV	#LD504, R2		; Sprite Ninja/Guard punching
 	JMP	LBFB0			; Set movement handler = R3, Ninja sprite = R2
 
@@ -3153,7 +3166,7 @@ LBFD5:	MOV	#10., R1
 	MOV	#<SCREEN+<1200*11.>+25.>, R2
 	MOV	#3., R1
 	CALL	PRSTR			; Print string
-	MOVB	<LE388+3>, R1
+	MOVB	<LE388+3>, R1		; get level bonus value
 	CALL	INCPAY			; Increase PAY value by B * 100.
 ;NOTE: Skipped code to set BEDF instruction
 LC04A:	CMPB	#2, TIMODE		; Time mode = BOMB ticking mode ?
