@@ -23,8 +23,8 @@ Work in Progress
 
 ### Tools
 
- - [RT-11 simulator](http://emulator.pdp-11.org.ru/RT-11/distr/) written by Dmitry Patronov
- - RT-11 `MACRO` and `LINK` to compile the sources
+ - [macro11](https://gitlab.com/Rhialto/macro11) cross-compiler
+ - [pclink11](https://github.com/nzeemin/pclink11) cross-linker
  - [UKNCBTL utilities](https://github.com/nzeemin/ukncbtl-utils): `rt11dsk` to work with disk images
 
 Emulators of the machine, to test the result:

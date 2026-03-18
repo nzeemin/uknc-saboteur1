@@ -1,5 +1,4 @@
 @echo off
-set rt11exe=C:\bin\rt11\rt11.exe
 
 rem Define ESCchar to use in ANSI escape sequences
 rem https://stackoverflow.com/questions/2048509/how-to-echo-with-different-colors-in-the-windows-command-line
@@ -19,10 +18,8 @@ echo 	.ASCII /REV.%REVISION% %DATESTAMP%/ > VERSIO.MAC
 @if exist SABOT1.SAV del SABOT1.SAV
 @if exist SABOT1.SAV del SABOT1.SAV
 
-%rt11exe% MACRO/LIST:DK: SABOT1.MAC
-
-for /f "delims=" %%a in ('findstr /B "Errors detected" SABOT1.LST') do set "errdet=%%a"
-if "%errdet%"=="Errors detected:  0" (
+tools\macro11.exe SABOT1.MAC -l SABOT1.lst -o SABOT1.obj -rt11 -se
+if not errorlevel 1 (
   echo SABOT1 COMPILED SUCCESSFULLY
 ) ELSE (
   findstr /RC:"^[ABDEILMNOPQRTUZ] " SABOT1.LST
@@ -30,17 +27,17 @@ if "%errdet%"=="Errors detected:  0" (
   goto :Failed
 )
 
-%rt11exe% LINK SABOT1 /MAP:SABOT1.MAP
-
-for /f "delims=" %%a in ('findstr /B "Undefined globals" SABOT1.MAP') do set "undefg=%%a"
-if "%undefg%"=="" (
-  type SABOT1.MAP
-  echo.
-  echo SABOT1 LINKED SUCCESSFULLY
-) ELSE (
+tools\pclink11.exe /VERBOSITY:1 SABOT1.obj /MAP /EXECUTE:SABOT1.SAV
+if errorlevel 1 (
   echo ======= LINK FAILED =======
   goto :Failed
 )
+for /f "delims=" %%a in ('findstr /B "Undefined globals" SABOT1.MAP') do set "undefg=%%a"
+if not "%undefg%"=="" (
+  echo ======= LINK FAILED: Undefined globals =======
+  goto :Failed
+)
+echo S1ATB LINKED SUCCESSFULLY
 
 dir /-c SABOT1.SAV|findstr /R /C:"SABOT1.SAV"
 
